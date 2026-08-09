@@ -1,0 +1,76 @@
+# SpaceXAI individual contribution stack
+
+Domain: **`spacexai`**. Company name stays SpaceXAI; model IDs change over time and are **discovered** from the account (`models.list`), then presented in selectors. Image models are currently a curated Imagine list and should move to discovery in a follow-on when the API exposes stable image metadata.
+
+This folder is the **human-facing contribution kit**. Core code still lives in `homeassistant/components/spacexai/` on the fork stack. Do **not** open against `home-assistant/core` until OAuth client, brands, docs, and AI-policy human review are ready.
+
+## External prerequisites (parallel, not Core commits)
+
+| Track | Repo / branch | Content | Status artifact |
+| --- | --- | --- | --- |
+| Brands | `home-assistant/brands` → `master` | `core_integrations/spacexai/` from [`brands/`](brands/) | [`brands/SOURCE.md`](brands/SOURCE.md) |
+| Docs | `home-assistant/home-assistant.io` → `next` | `source/_integrations/spacexai.markdown` from [`docs/spacexai.markdown`](docs/spacexai.markdown) | Front matter `ha_quality_scale: bronze` until flip wave |
+| OAuth | xAI allowlist | Dedicated Home Assistant public client ID | Blocker until issued |
+
+## Core stack (fork today → `home-assistant/core` `dev` when ready)
+
+Each wave starts from the final quality bar for **code** and only adds capability. Tests, hassfest, ruff, mypy, and the development checklist apply to every wave.
+
+| Wave | Branch (fork) | Adds | Quality-scale intent |
+| --- | --- | --- | --- |
+| 1 | `cursor/spacexai-conversation-0109` | Conversation + OAuth app credentials + client + diagnostics | Bronze code `done`; `brands` + bronze `docs-*` stay `todo` with comments pointing at this kit |
+| 2 | `cursor/spacexai-ai-task-0109` | AI Task `GENERATE_DATA` | Same docs/brands todos |
+| 3 | `cursor/spacexai-capabilities-0109` | Web search / X search / code interpreter | Same |
+| 4 | `cursor/spacexai-device-code-0109` | RFC 8628 device-code login | Same |
+| 5 | `cursor/spacexai-hardening-0109` | Attachments + `GENERATE_IMAGE` | Same |
+| 6 | `cursor/spacexai-full-capabilities-0109` | STT + TTS | Same; tip of feature stack |
+| 7 | *(to open)* `cursor/spacexai-quality-docs-brands-0109` | No feature code — flip `brands` + all applicable `docs-*` to `done` after external PRs merge; sync docs front matter | Unblocks hassfest bronze certification |
+| 8 | *(to open)* `cursor/spacexai-quality-platinum-0109` | Raise `manifest.json` / docs `ha_quality_scale` to the tier the rules support (code Platinum rules already `done`) | Declaration-only after wave 7 |
+
+Wave 1’s PR body should link the brands + docs PRs (even as drafts). Later feature waves do not rewrite earlier ones.
+
+## Per-wave validation (every Core PR)
+
+Run from a Core checkout of that wave tip:
+
+```bash
+uv run --no-sync pytest tests/components/spacexai/ -q
+uv run --no-sync prek run --all-files   # or the scoped hooks from .vscode/tasks.json
+python3 -m script.hassfest
+python3 -m script.translations develop --integration spacexai   # if strings.json changed
+```
+
+Human checklist (do not auto-check):
+
+- [ ] Author understands and can explain the diff ([AI policy](https://developers.home-assistant.io/docs/ai_policy))
+- [ ] CLA signed for the submitting GitHub account
+- [ ] PR template fully filled; unchecked boxes left visible
+- [ ] No fork-only demo media required upstream (`.github/spacexai-pr-media/` may be omitted from upstream PRs)
+- [ ] Application Credentials + device-code smoke against a real subscription
+
+## Feature confirmation matrix
+
+| Surface | Covered by tests today | Live smoke |
+| --- | --- | --- |
+| Conversation + `llm_hass_api` | `test_conversation.py` | Assist HA control demos |
+| Model discovery / selector | config flow + client model list | Reconfigure model list |
+| AI Task `generate_data` | `test_ai_task.py` | Dev Tools Actions |
+| AI Task `generate_image` | `test_ai_task.py` / `test_client.py` | Imagine stills |
+| Attachments (JPEG, PDF, GIF) | `test_ai_task.py` (incl. GIF) | Assist / AI Task attach |
+| Server tools | conversation tool tests | web_search Assist |
+| Device code | `test_oauth_device.py` | Wait-screen capture |
+| STT / TTS | `test_stt_tts.py` | Voice pipeline |
+
+**GIF note:** Imagine **output** is JPEG today (`client.py`). “Fun GIFs” are supported as **input attachments** (`image/gif`). Animated Imagine output needs a provider model + client change before it can be promised in docs.
+
+## Assist version questions
+
+Home Assistant’s default LLM prompt and Assist API do **not** expose Core version or the configured LLM model id. SpaceXAI now appends a small runtime identity block (HA Core version + configured Grok model) so Assist can answer those questions without a new Assist tool. See `conversation.py`.
+
+## Suggested human submission order
+
+1. Brands PR (`home-assistant/brands`)
+2. Docs PR (`home-assistant.io` `next`) — `ha_quality_scale: bronze`
+3. Core wave 1 → … → 6 stacked on `home-assistant/core` `dev`
+4. Wave 7 quality flip after brands + docs merge
+5. Wave 8 declare Platinum (optional) once wave 7 is green

@@ -1,0 +1,118 @@
+rules:
+  # Bronze
+  action-setup:
+    status: exempt
+    comment: No service actions are registered by this integration.
+  appropriate-polling:
+    status: exempt
+    comment: Integration does not poll periodically; it validates on setup and responds to user requests.
+  brands:
+    status: todo
+    comment: Assets prepared in .github/spacexai-contribution/brands/; mark done after the home-assistant/brands PR merges (contribution stack wave 7).
+  common-modules: done
+  config-flow-test-coverage: done
+  config-flow: done
+  dependency-transparency: done
+  docs-actions:
+    status: exempt
+    comment: Integration does not provide service actions.
+  docs-conditions:
+    status: exempt
+    comment: Integration does not provide conditions.
+  docs-high-level-description:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  docs-installation-instructions:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  docs-removal-instructions:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  docs-triggers:
+    status: exempt
+    comment: Integration does not provide triggers.
+  entity-event-setup:
+    status: exempt
+    comment: Conversation entities do not subscribe to integration events.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+
+  # Silver
+  action-exceptions:
+    status: exempt
+    comment: No service actions are registered by this integration.
+  config-entry-unloading: done
+  docs-configuration-parameters:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  docs-installation-parameters:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable: done
+  parallel-updates: done
+  reauthentication-flow: done
+  test-coverage: done
+
+  # Gold
+  devices: done
+  diagnostics: done
+  discovery-update-info:
+    status: exempt
+    comment: Service integration, no discovery.
+  discovery:
+    status: exempt
+    comment: Service integration, no discovery.
+  docs-data-update:
+    status: exempt
+    comment: On-demand LLM responses; no periodic data update cadence to document.
+  docs-examples:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  docs-known-limitations:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  docs-supported-devices:
+    status: exempt
+    comment: Service integration, no physical devices.
+  docs-supported-functions:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  docs-troubleshooting:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  docs-use-cases:
+    status: todo
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+  dynamic-devices:
+    status: exempt
+    comment: Service integration, no discovered devices.
+  entity-category:
+    status: exempt
+    comment: Conversation entities are primary service entities.
+  entity-device-class:
+    status: exempt
+    comment: Conversation entities do not have device classes.
+  entity-disabled-by-default:
+    status: exempt
+    comment: The configured conversation entity is the primary integration feature.
+  entity-translations: done
+  exception-translations: done
+  icon-translations: done
+  reconfiguration-flow: done
+  repair-issues: done
+  stale-devices:
+    status: exempt
+    comment: Service integration, no discovered devices.
+
+  # Platinum
+  async-dependency: done
+  inject-websession:
+    status: done
+    comment: Uses Home Assistant's shared httpx and aiohttp clients.
+  strict-typing: done

@@ -1,0 +1,9 @@
+{
+  "entity": {
+    "conversation": {
+      "conversation": {
+        "default": "mdi:message-processing"
+      }
+    }
+  }
+}

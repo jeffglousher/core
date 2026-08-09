@@ -6,6 +6,8 @@
 *.ico binary
 *.jpg binary
 *.png binary
+*.gif binary
+*.webp binary
 *.zip binary
 *.mp3 binary
 *.pcm binary
