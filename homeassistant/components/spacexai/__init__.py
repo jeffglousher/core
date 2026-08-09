@@ -45,7 +45,7 @@ from .errors import (
     TransientProviderError,
 )
 
-PLATFORMS = (Platform.CONVERSATION,)
+PLATFORMS = (Platform.AI_TASK, Platform.CONVERSATION)
 ISSUE_SUBSCRIPTION_NOT_ENTITLED = "subscription_not_entitled"
 ISSUE_MODEL_NOT_ENTITLED = "model_not_entitled"
 

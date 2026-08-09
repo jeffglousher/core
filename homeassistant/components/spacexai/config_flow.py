@@ -36,6 +36,7 @@ from . import SpaceXAIConfigEntry
 from .client import ProviderSnapshot, SpaceXAIClient, StaticAccessTokenProvider
 from .const import (
     CONF_MAX_OUTPUT_TOKENS,
+    DEFAULT_AI_TASK_NAME,
     DEFAULT_CONVERSATION_NAME,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
@@ -203,7 +204,16 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
                         "data": user_input,
                         "title": DEFAULT_CONVERSATION_NAME,
                         "unique_id": None,
-                    }
+                    },
+                    {
+                        "subentry_type": "ai_task_data",
+                        "data": {
+                            CONF_MODEL: user_input[CONF_MODEL],
+                            CONF_MAX_OUTPUT_TOKENS: user_input[CONF_MAX_OUTPUT_TOKENS],
+                        },
+                        "title": DEFAULT_AI_TASK_NAME,
+                        "unique_id": None,
+                    },
                 ],
             )
 
@@ -223,7 +233,10 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         cls, config_entry: SpaceXAIConfigEntry
     ) -> dict[str, type[ConfigSubentryFlow]]:
         """Return supported subentry flow handlers."""
-        return {"conversation": SpaceXAIConversationSubentryFlow}
+        return {
+            "conversation": SpaceXAIConversationSubentryFlow,
+            "ai_task_data": SpaceXAIAITaskSubentryFlow,
+        }
 
 
 class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
@@ -273,6 +286,52 @@ class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
                 _llm_api_options(self.hass),
                 user_input or suggested,
             ),
+        )
+
+
+class SpaceXAIAITaskSubentryFlow(ConfigSubentryFlow):
+    """Add or reconfigure a SpaceXAI AI Task entity."""
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Add an AI Task subentry."""
+        return await self._async_configure(user_input, is_new=True)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Reconfigure an AI Task subentry."""
+        return await self._async_configure(user_input, is_new=False)
+
+    async def _async_configure(
+        self,
+        user_input: dict[str, Any] | None,
+        *,
+        is_new: bool,
+    ) -> SubentryFlowResult:
+        """Create or update an AI Task subentry."""
+        entry = self._get_entry()
+        if entry.state is not ConfigEntryState.LOADED:
+            return self.async_abort(reason="entry_not_loaded")
+
+        snapshot = entry.runtime_data.snapshot
+        if user_input is not None:
+            if is_new:
+                return self.async_create_entry(
+                    title=DEFAULT_AI_TASK_NAME,
+                    data=user_input,
+                )
+            return self.async_update_and_abort(
+                entry,
+                self._get_reconfigure_subentry(),
+                data=user_input,
+            )
+
+        suggested = None if is_new else dict(self._get_reconfigure_subentry().data)
+        return self.async_show_form(
+            step_id="user" if is_new else "reconfigure",
+            data_schema=_ai_task_schema(snapshot, user_input or suggested),
         )
 
 
@@ -336,6 +395,24 @@ def _conversation_schema(
                 CONF_PROMPT,
                 description={"suggested_value": suggested_prompt},
             ): TemplateSelector(),
+            **_max_output_tokens_schema(suggested_max_tokens),
+        }
+    )
+
+
+def _ai_task_schema(
+    snapshot: ProviderSnapshot,
+    suggested: Mapping[str, Any] | None,
+) -> vol.Schema:
+    """Build the AI Task configuration schema."""
+    default_model, suggested_max_tokens, model_options = _model_selector_defaults(
+        snapshot, suggested
+    )
+    return vol.Schema(
+        {
+            vol.Required(CONF_MODEL, default=default_model): SelectSelector(
+                SelectSelectorConfig(options=model_options)
+            ),
             **_max_output_tokens_schema(suggested_max_tokens),
         }
     )

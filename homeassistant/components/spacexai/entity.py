@@ -43,6 +43,8 @@ from openai.types.responses import (
     ResponseTextDoneEvent,
 )
 from openai.types.responses.response_input_param import FunctionCallOutput
+from openai.types.responses.response_text_config_param import ResponseTextConfigParam
+import voluptuous as vol
 from voluptuous_openapi import convert
 
 from homeassistant.components import conversation
@@ -52,6 +54,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, llm
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.json import json_dumps
+from homeassistant.util import slugify
 
 from . import SpaceXAIConfigEntry
 from .const import (
@@ -75,6 +78,43 @@ from .errors import (
     ToolLoopLimitError,
     TransientProviderError,
 )
+
+
+def _adjust_schema(schema: dict[str, Any]) -> None:
+    """Adjust a JSON schema for Responses API structured output."""
+    if schema["type"] == "object":
+        schema.setdefault("strict", True)
+        schema.setdefault("additionalProperties", False)
+        if "properties" not in schema:
+            return
+
+        if "required" not in schema:
+            schema["required"] = []
+
+        for prop, prop_info in schema["properties"].items():
+            _adjust_schema(prop_info)
+            if prop not in schema["required"]:
+                prop_info["type"] = [prop_info["type"], "null"]
+                schema["required"].append(prop)
+
+    elif schema["type"] == "array":
+        if "items" not in schema:
+            return
+        _adjust_schema(schema["items"])
+
+
+def _format_structured_output(
+    schema: vol.Schema, llm_api: llm.APIInstance | None
+) -> dict[str, Any]:
+    """Convert a Voluptuous schema into Responses API JSON schema."""
+    result: dict[str, Any] = convert(
+        schema,
+        custom_serializer=(
+            llm_api.custom_serializer if llm_api else llm.selector_serializer
+        ),
+    )
+    _adjust_schema(result)
+    return result
 
 
 def _format_tool(
@@ -441,6 +481,8 @@ class SpaceXAIBaseLLMEntity(Entity):
     async def _async_handle_chat_log(
         self,
         chat_log: conversation.ChatLog,
+        structure_name: str | None = None,
+        structure: vol.Schema | None = None,
         *,
         max_iterations: int = MAX_TOOL_ITERATIONS,
     ) -> None:
@@ -453,6 +495,15 @@ class SpaceXAIBaseLLMEntity(Entity):
                 dict(_format_tool(tool, chat_log.llm_api.custom_serializer))
                 for tool in chat_log.llm_api.tools
             ]
+        text: ResponseTextConfigParam | None = None
+        if structure and structure_name:
+            text = {
+                "format": {
+                    "type": "json_schema",
+                    "name": slugify(structure_name),
+                    "schema": _format_structured_output(structure, chat_log.llm_api),
+                }
+            }
 
         for _iteration in range(max_iterations):
             try:
@@ -462,6 +513,7 @@ class SpaceXAIBaseLLMEntity(Entity):
                     tools=tools,
                     max_output_tokens=self._max_output_tokens,
                     prompt_cache_key=chat_log.conversation_id,
+                    text=text,
                 )
             except TimeoutError as err:
                 raise RequestTimeoutError(

@@ -151,9 +151,18 @@ async def test_full_flow(
     assert result["result"].unique_id == ACCOUNT_ID
     assert result["data"]["token"]["access_token"] == ACCESS_TOKEN
     subentries = list(result["result"].subentries.values())
-    assert len(subentries) == 1
-    assert subentries[0].subentry_type == "conversation"
-    assert subentries[0].data == CONVERSATION_DATA
+    assert len(subentries) == 2
+    conversation = next(
+        subentry for subentry in subentries if subentry.subentry_type == "conversation"
+    )
+    ai_task = next(
+        subentry for subentry in subentries if subentry.subentry_type == "ai_task_data"
+    )
+    assert conversation.data == CONVERSATION_DATA
+    assert ai_task.data == {
+        CONF_MODEL: CONVERSATION_DATA[CONF_MODEL],
+        CONF_MAX_OUTPUT_TOKENS: CONVERSATION_DATA[CONF_MAX_OUTPUT_TOKENS],
+    }
     mock_validate.assert_awaited_once()
 
 
@@ -418,7 +427,7 @@ async def test_subentry_add_and_reconfigure(
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert len(mock_config_entry.subentries) == 2
+    assert len(mock_config_entry.subentries) == 3
     added_subentry = next(
         subentry
         for subentry in mock_config_entry.subentries.values()
@@ -496,13 +505,15 @@ async def test_reconfigure_withdrawn_model(
     )
 
 
+@pytest.mark.parametrize("subentry_type", ["conversation", "ai_task_data"])
 async def test_subentry_requires_loaded_entry(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
+    subentry_type: str,
 ) -> None:
     """Abort subentry changes while the parent entry is not loaded."""
     result = await hass.config_entries.subentries.async_init(
-        (mock_config_entry.entry_id, "conversation"),
+        (mock_config_entry.entry_id, subentry_type),
         context={"source": config_entries.SOURCE_USER},
     )
     assert result["type"] is FlowResultType.ABORT
@@ -519,3 +530,75 @@ async def test_missing_configuration(hass: HomeAssistant) -> None:
         result = await _start_flow(hass)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "missing_configuration"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_ai_task_subentry_add(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+    entity_registry: er.EntityRegistry,
+) -> None:
+    """Add an AI Task subentry without Assist tools."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "ai_task_data"),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.FORM
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            CONF_MODEL: "grok-4.3",
+            CONF_MAX_OUTPUT_TOKENS: 512,
+        },
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    added = next(
+        subentry
+        for subentry in mock_config_entry.subentries.values()
+        if subentry.title == "Grok AI Task"
+        and subentry.data.get(CONF_MODEL) == "grok-4.3"
+    )
+    assert CONF_LLM_HASS_API not in added.data
+    assert any(
+        entity.config_subentry_id == added.subentry_id
+        for entity in er.async_entries_for_config_entry(
+            entity_registry, mock_config_entry.entry_id
+        )
+    )
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_ai_task_subentry_reconfigure(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+) -> None:
+    """Reconfigure an AI Task subentry model and token limit."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    subentry = next(
+        entry
+        for entry in mock_config_entry.subentries.values()
+        if entry.subentry_type == "ai_task_data"
+    )
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "ai_task_data"),
+        context={
+            "source": "reconfigure",
+            "subentry_id": subentry.subentry_id,
+        },
+    )
+    assert result["type"] is FlowResultType.FORM
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            CONF_MODEL: "grok-4.3",
+            CONF_MAX_OUTPUT_TOKENS: 1024,
+        },
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert subentry.data[CONF_MODEL] == "grok-4.3"
+    assert subentry.data[CONF_MAX_OUTPUT_TOKENS] == 1024

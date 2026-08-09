@@ -81,6 +81,15 @@ def mock_config_entry(hass: HomeAssistant) -> MockConfigEntry:
                 title="Grok",
                 unique_id=None,
             ),
+            ConfigSubentryData(
+                data={
+                    CONF_MODEL: DEFAULT_MODEL,
+                    CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
+                },
+                subentry_type="ai_task_data",
+                title="Grok AI Task",
+                unique_id=None,
+            ),
         ],
     )
     entry.add_to_hass(hass)

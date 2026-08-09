@@ -32,6 +32,7 @@ async def async_get_config_entry_diagnostics(
         },
         "available_models": [model.id for model in runtime.snapshot.models],
         "conversation": _subentry_diagnostics(runtime, entry, "conversation"),
+        "ai_task": _subentry_diagnostics(runtime, entry, "ai_task_data"),
     }
 
 
