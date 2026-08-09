@@ -94,13 +94,13 @@ rules:
     comment: Service integration, no discovered devices.
   entity-category:
     status: exempt
-    comment: Conversation entities are primary service entities.
+    comment: Conversation, AI Task, STT, and TTS entities are primary service entities.
   entity-device-class:
     status: exempt
-    comment: Conversation entities do not have device classes.
+    comment: Conversation, AI Task, STT, and TTS entities do not have device classes.
   entity-disabled-by-default:
     status: exempt
-    comment: The configured conversation entity is the primary integration feature.
+    comment: The configured conversation, AI Task, STT, and TTS entities are the primary integration features.
   entity-translations: done
   exception-translations: done
   icon-translations: done

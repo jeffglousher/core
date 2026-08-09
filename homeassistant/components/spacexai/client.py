@@ -1,6 +1,7 @@
 """Async client boundary for SpaceXAI."""
 
 from asyncio import Lock
+import base64
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, cast
@@ -28,6 +29,8 @@ from .const import (
     DEFAULT_MODEL,
     GROK_CLI_REQUEST_HEADERS,
     HTTP_TIMEOUT_SECONDS,
+    IMAGE_TIMEOUT_SECONDS,
+    IMAGES_URL,
     LOGGER,
     RESPONSE_TIMEOUT,
     REVOCATION_URL,
@@ -52,6 +55,17 @@ from .errors import (
 )
 
 HTTP_TIMEOUT = ClientTimeout(total=HTTP_TIMEOUT_SECONDS)
+IMAGE_TIMEOUT = ClientTimeout(total=IMAGE_TIMEOUT_SECONDS)
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedImage:
+    """Image bytes returned by Imagine."""
+
+    image_data: bytes
+    mime_type: str
+    model: str
+    revised_prompt: str | None = None
 
 
 class AccessTokenProvider(Protocol):
@@ -306,6 +320,57 @@ class SpaceXAIClient:
                 )
         except (openai.OpenAIError, ValidationError) as err:
             raise self.translate_sdk_error(err, context) from err
+
+    async def async_generate_image(
+        self,
+        *,
+        model: str,
+        prompt: str,
+    ) -> GeneratedImage:
+        """Generate an image with the Imagine API."""
+        token = await self._token_provider.async_get_access_token()
+        context = ErrorContext(operation=Operation.IMAGE, model=model)
+        session = async_get_clientsession(self._hass)
+        try:
+            async with session.post(
+                IMAGES_URL,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "n": 1,
+                    "response_format": "b64_json",
+                },
+                timeout=IMAGE_TIMEOUT,
+            ) as response:
+                if response.status >= 400:
+                    body = await _safe_json(response)
+                    raise self._error_for_status(
+                        response.status,
+                        ErrorContext(
+                            operation=Operation.IMAGE,
+                            model=model,
+                            status=response.status,
+                            provider_code=_provider_error_code(body),
+                        ),
+                        body=body,
+                    )
+                payload = await response.json()
+        except SpaceXAIError:
+            raise
+        except (ContentTypeError, TypeError, ValueError) as err:
+            raise MalformedProviderResponseError(
+                "Image endpoint returned invalid JSON", context=context
+            ) from err
+        except ClientError as err:
+            raise ConnectionFailureError(
+                "Could not connect to the image endpoint", context=context
+            ) from err
+
+        return _parse_generated_image(payload, model=model, context=context)
 
     async def async_revoke(
         self,
@@ -563,3 +628,44 @@ async def _safe_json(response: Any) -> object | None:
     except ContentTypeError, TypeError, ValueError:
         return None
     return payload
+
+
+def _parse_generated_image(
+    payload: object,
+    *,
+    model: str,
+    context: ErrorContext,
+) -> GeneratedImage:
+    """Parse an Imagine images.generations response."""
+    if not isinstance(payload, Mapping):
+        raise MalformedProviderResponseError(
+            "Image endpoint returned a non-object response", context=context
+        )
+    data = payload.get("data")
+    if not isinstance(data, list) or not data:
+        raise MalformedProviderResponseError(
+            "Image endpoint omitted image data", context=context
+        )
+    first = data[0]
+    if not isinstance(first, Mapping):
+        raise MalformedProviderResponseError(
+            "Image endpoint returned an invalid image entry", context=context
+        )
+    b64_json = first.get("b64_json")
+    if not isinstance(b64_json, str) or not b64_json:
+        raise MalformedProviderResponseError(
+            "Image endpoint omitted base64 image data", context=context
+        )
+    try:
+        image_data = base64.b64decode(b64_json, validate=True)
+    except (TypeError, ValueError) as err:
+        raise MalformedProviderResponseError(
+            "Image endpoint returned invalid base64 data", context=context
+        ) from err
+    revised = first.get("revised_prompt")
+    return GeneratedImage(
+        image_data=image_data,
+        mime_type="image/jpeg",
+        model=model,
+        revised_prompt=revised if isinstance(revised, str) else None,
+    )

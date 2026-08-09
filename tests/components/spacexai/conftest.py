@@ -17,7 +17,9 @@ from homeassistant.components.spacexai.client import (
     ProviderSnapshot,
 )
 from homeassistant.components.spacexai.const import (
+    CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
+    DEFAULT_IMAGE_MODEL,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
     DOMAIN,
@@ -85,6 +87,7 @@ def mock_config_entry(hass: HomeAssistant) -> MockConfigEntry:
                 data={
                     CONF_MODEL: DEFAULT_MODEL,
                     CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
+                    CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
                 },
                 subentry_type="ai_task_data",
                 title="Grok AI Task",

@@ -11,8 +11,10 @@ USERINFO_URL = "https://auth.x.ai/oauth2/userinfo"
 REVOCATION_URL = "https://auth.x.ai/oauth2/revoke"
 DEVICE_CODE_URL = "https://auth.x.ai/oauth2/device/code"
 # Subscription OAuth (Grok CLI / Hermes-compatible) uses the CLI chat proxy.
-# The developer API at api.x.ai rejects subscription bearers with 402/403.
+# Imagine still uses the developer API host with the same OAuth bearer.
 API_BASE_URL = "https://cli-chat-proxy.grok.com/v1"
+DEVELOPER_API_BASE_URL = "https://api.x.ai/v1"
+IMAGES_URL = f"{DEVELOPER_API_BASE_URL}/images/generations"
 
 # Public Grok CLI OAuth client id used by Hermes/OpenCode device-code login.
 GROK_CLI_OAUTH_CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828"
@@ -42,6 +44,7 @@ CONF_MAX_OUTPUT_TOKENS = "max_output_tokens"
 CONF_WEB_SEARCH = "web_search"
 CONF_X_SEARCH = "x_search"
 CONF_CODE_INTERPRETER = "code_interpreter"
+CONF_IMAGE_MODEL = "image_model"
 
 DEFAULT_CONVERSATION_NAME = "Grok"
 DEFAULT_AI_TASK_NAME = "Grok AI Task"
@@ -51,7 +54,9 @@ DEFAULT_MODEL_PLACEHOLDER = "Grok"
 DEFAULT_WEB_SEARCH = False
 DEFAULT_X_SEARCH = False
 DEFAULT_CODE_INTERPRETER = False
+DEFAULT_IMAGE_MODEL = "grok-imagine-image-quality"
 HTTP_TIMEOUT_SECONDS = 30
+IMAGE_TIMEOUT_SECONDS = 120
 MAX_TOOL_ITERATIONS = 10
 RESPONSE_TIMEOUT = 300
 DEVICE_CODE_MAX_POLL_SECONDS = 900
@@ -59,3 +64,7 @@ PROVIDER_WEB_SEARCH_TOOL = "web_search_call"
 PROVIDER_X_SEARCH_TOOL = "x_search_call"
 PROVIDER_CODE_INTERPRETER_TOOL = "code_interpreter"
 PROVIDER_SEARCH_TOOLS = frozenset({PROVIDER_WEB_SEARCH_TOOL, PROVIDER_X_SEARCH_TOOL})
+IMAGE_MODELS = (
+    "grok-imagine-image-quality",
+    "grok-imagine-image",
+)

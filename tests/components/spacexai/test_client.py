@@ -1,5 +1,6 @@
 """Tests for the typed SpaceXAI client boundary."""
 
+import base64
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from aiohttp import ClientConnectionError
@@ -25,7 +26,11 @@ from homeassistant.components.spacexai.client import (
     SpaceXAIClient,
     StaticAccessTokenProvider,
 )
-from homeassistant.components.spacexai.const import REVOCATION_URL, USERINFO_URL
+from homeassistant.components.spacexai.const import (
+    IMAGES_URL,
+    REVOCATION_URL,
+    USERINFO_URL,
+)
 from homeassistant.components.spacexai.errors import (
     AuthenticationRejectedError,
     ConnectionFailureError,
@@ -272,6 +277,33 @@ async def test_stream_request_options(hass: HomeAssistant) -> None:
     assert create.call_args.kwargs["prompt_cache_key"] == "conversation-id"
     assert create.call_args.kwargs["timeout"] == 300.0
     assert "text" not in create.call_args.kwargs
+
+    with patch(
+        "openai.resources.responses.AsyncResponses.create",
+        new_callable=AsyncMock,
+        return_value=stream,
+    ) as create_structured:
+        await _client(hass).async_stream_response(
+            model="grok-4.5",
+            input=[],
+            tools=[],
+            max_output_tokens=2048,
+            prompt_cache_key="conversation-id",
+            text={
+                "format": {
+                    "type": "json_schema",
+                    "name": "task",
+                    "schema": {"type": "object", "properties": {}},
+                }
+            },
+        )
+    assert create_structured.call_args.kwargs["text"] == {
+        "format": {
+            "type": "json_schema",
+            "name": "task",
+            "schema": {"type": "object", "properties": {}},
+        }
+    }
 
 
 async def test_sdk_client_is_reused(hass: HomeAssistant) -> None:
@@ -694,3 +726,88 @@ async def test_http_400_with_non_object_body(
     aioclient_mock.get(USERINFO_URL, json="rejected", status=400)
     with pytest.raises(PermanentProviderError):
         await _client(hass).async_get_account()
+
+
+async def test_generate_image_success(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Return decoded image bytes from the Imagine endpoint."""
+    aioclient_mock.post(
+        IMAGES_URL,
+        json={
+            "data": [
+                {
+                    "b64_json": base64.b64encode(b"image-bytes").decode(),
+                    "revised_prompt": "a red bicycle at sunset",
+                }
+            ]
+        },
+    )
+    generated = await _client(hass).async_generate_image(
+        model="grok-imagine-image-quality", prompt="a red bicycle"
+    )
+    assert generated.image_data == b"image-bytes"
+    assert generated.mime_type == "image/jpeg"
+    assert generated.model == "grok-imagine-image-quality"
+    assert generated.revised_prompt == "a red bicycle at sunset"
+    request = aioclient_mock.mock_calls[0][2]
+    assert request["response_format"] == "b64_json"
+    assert request["n"] == 1
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param("not-an-object", id="not-an-object"),
+        pytest.param({"data": []}, id="empty-data"),
+        pytest.param({"data": ["nope"]}, id="invalid-entry"),
+        pytest.param({"data": [{"b64_json": ""}]}, id="empty-base64"),
+        pytest.param({"data": [{"b64_json": "!!!not-base64!!!"}]}, id="invalid-base64"),
+    ],
+)
+async def test_generate_image_malformed(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, payload: object
+) -> None:
+    """Reject malformed Imagine responses."""
+    aioclient_mock.post(IMAGES_URL, json=payload)
+    with pytest.raises(MalformedProviderResponseError):
+        await _client(hass).async_generate_image(
+            model="grok-imagine-image-quality", prompt="a red bicycle"
+        )
+
+
+async def test_generate_image_status_error(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Classify an Imagine endpoint status failure."""
+    aioclient_mock.post(
+        IMAGES_URL, json={"error": {"code": "rate_limited"}}, status=429
+    )
+    with pytest.raises(RateLimitedError):
+        await _client(hass).async_generate_image(
+            model="grok-imagine-image-quality", prompt="a red bicycle"
+        )
+
+
+async def test_generate_image_invalid_json(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Reject a non-JSON Imagine response."""
+    aioclient_mock.post(
+        IMAGES_URL, text="not json", headers={"Content-Type": "application/json"}
+    )
+    with pytest.raises(MalformedProviderResponseError):
+        await _client(hass).async_generate_image(
+            model="grok-imagine-image-quality", prompt="a red bicycle"
+        )
+
+
+async def test_generate_image_connection_failure(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Surface a transport failure from the Imagine endpoint."""
+    aioclient_mock.post(IMAGES_URL, exc=ClientConnectionError("offline"))
+    with pytest.raises(ConnectionFailureError):
+        await _client(hass).async_generate_image(
+            model="grok-imagine-image-quality", prompt="a red bicycle"
+        )

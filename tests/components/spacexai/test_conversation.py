@@ -37,6 +37,7 @@ from homeassistant.components.spacexai.const import (
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
     DEFAULT_MODEL,
+    DOMAIN,
     MAX_TOOL_ITERATIONS,
 )
 from homeassistant.components.spacexai.errors import (
@@ -52,6 +53,7 @@ from homeassistant.const import (
     __version__ as HA_VERSION,
 )
 from homeassistant.core import Context, HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, intent
 
 from . import EventStream, message_events, tool_events
@@ -1415,3 +1417,25 @@ async def test_reasoning_summary_before_assistant_turn(
             hass, "hello", None, Context(), agent_id="conversation.grok"
         )
     assert result.response.speech["plain"]["speech"] == "Done"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_translated_error_is_not_replaced(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_chat_log: MockChatLog,  # noqa: F811
+) -> None:
+    """Surface an already-translated error instead of a generic failure."""
+    with patch(
+        "homeassistant.components.spacexai.entity.SpaceXAIBaseLLMEntity._async_handle_chat_log",
+        side_effect=HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="attachment_not_found",
+            translation_placeholders={"path": "missing.jpg"},
+        ),
+    ):
+        result = await conversation.async_converse(
+            hass, "Describe this", None, Context(), agent_id="conversation.grok"
+        )
+    assert result.response.error_code == "unknown"
+    assert "missing.jpg" in result.response.speech["plain"]["speech"]

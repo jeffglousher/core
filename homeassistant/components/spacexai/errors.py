@@ -35,6 +35,7 @@ class Operation(StrEnum):
     ACCOUNT = "account"
     MODELS = "models"
     RESPONSE = "response"
+    IMAGE = "image"
     REFRESH = "refresh"
     REVOCATION = "revocation"
     TOOL = "tool"

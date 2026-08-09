@@ -18,10 +18,12 @@ from homeassistant.components.spacexai.client import (
 )
 from homeassistant.components.spacexai.const import (
     CONF_CODE_INTERPRETER,
+    CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
     DEFAULT_CODE_INTERPRETER,
+    DEFAULT_IMAGE_MODEL,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
     DEFAULT_WEB_SEARCH,
@@ -181,6 +183,7 @@ async def test_full_flow(
     assert ai_task.data == {
         CONF_MODEL: CONVERSATION_DATA[CONF_MODEL],
         CONF_MAX_OUTPUT_TOKENS: CONVERSATION_DATA[CONF_MAX_OUTPUT_TOKENS],
+        CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
     }
     mock_validate.assert_awaited_once()
 
@@ -537,33 +540,6 @@ async def test_reconfigure_withdrawn_model(
     )
 
 
-@pytest.mark.parametrize("subentry_type", ["conversation", "ai_task_data"])
-async def test_subentry_requires_loaded_entry(
-    hass: HomeAssistant,
-    mock_config_entry: MockConfigEntry,
-    subentry_type: str,
-) -> None:
-    """Abort subentry changes while the parent entry is not loaded."""
-    result = await hass.config_entries.subentries.async_init(
-        (mock_config_entry.entry_id, subentry_type),
-        context={"source": config_entries.SOURCE_USER},
-    )
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "entry_not_loaded"
-
-
-async def test_missing_configuration(hass: HomeAssistant) -> None:
-    """Abort when the integration exposes no Application Credentials platform."""
-    assert await async_setup_component(hass, APPLICATION_CREDENTIALS_DOMAIN, {})
-    with patch(
-        "homeassistant.components.spacexai.config_flow.async_get_application_credentials",
-        return_value=[],
-    ):
-        result = await _start_flow(hass)
-    assert result["type"] is FlowResultType.ABORT
-    assert result["reason"] == "missing_configuration"
-
-
 @pytest.mark.usefixtures("setup_credentials")
 async def test_ai_task_subentry_add(
     hass: HomeAssistant,
@@ -583,6 +559,7 @@ async def test_ai_task_subentry_add(
         {
             CONF_MODEL: "grok-4.3",
             CONF_MAX_OUTPUT_TOKENS: 512,
+            CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -628,12 +605,41 @@ async def test_ai_task_subentry_reconfigure(
         {
             CONF_MODEL: "grok-4.3",
             CONF_MAX_OUTPUT_TOKENS: 1024,
+            CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
         },
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert subentry.data[CONF_MODEL] == "grok-4.3"
     assert subentry.data[CONF_MAX_OUTPUT_TOKENS] == 1024
+    assert subentry.data[CONF_IMAGE_MODEL] == DEFAULT_IMAGE_MODEL
+
+
+@pytest.mark.parametrize("subentry_type", ["conversation", "ai_task_data"])
+async def test_subentry_requires_loaded_entry(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    subentry_type: str,
+) -> None:
+    """Abort subentry changes while the parent entry is not loaded."""
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, subentry_type),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "entry_not_loaded"
+
+
+async def test_missing_configuration(hass: HomeAssistant) -> None:
+    """Abort when the integration exposes no Application Credentials platform."""
+    assert await async_setup_component(hass, APPLICATION_CREDENTIALS_DOMAIN, {})
+    with patch(
+        "homeassistant.components.spacexai.config_flow.async_get_application_credentials",
+        return_value=[],
+    ):
+        result = await _start_flow(hass)
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "missing_configuration"
 
 
 @pytest.mark.usefixtures("setup_credentials", "mock_setup_entry")
