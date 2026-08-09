@@ -20,12 +20,16 @@ from homeassistant.components.spacexai.const import (
     CONF_CODE_INTERPRETER,
     CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
+    CONF_TTS_SPEED,
+    CONF_VOICE,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
     DEFAULT_CODE_INTERPRETER,
     DEFAULT_IMAGE_MODEL,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
+    DEFAULT_STT_NAME,
+    DEFAULT_VOICE,
     DEFAULT_WEB_SEARCH,
     DEFAULT_X_SEARCH,
     DOMAIN,
@@ -172,7 +176,7 @@ async def test_full_flow(
     assert result["result"].unique_id == ACCOUNT_ID
     assert result["data"]["token"]["access_token"] == ACCESS_TOKEN
     subentries = list(result["result"].subentries.values())
-    assert len(subentries) == 2
+    assert len(subentries) == 4
     conversation = next(
         subentry for subentry in subentries if subentry.subentry_type == "conversation"
     )
@@ -459,7 +463,7 @@ async def test_subentry_add_and_reconfigure(
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert len(mock_config_entry.subentries) == 3
+    assert len(mock_config_entry.subentries) == 5
     added_subentry = next(
         subentry
         for subentry in mock_config_entry.subentries.values()
@@ -948,3 +952,88 @@ async def test_device_code_denied_retry(hass: HomeAssistant) -> None:
         result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
         assert result["type"] is FlowResultType.SHOW_PROGRESS
         assert result["description_placeholders"]["user_code"] == "BBBB-2222"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_stt_subentry_add_and_reconfigure(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+) -> None:
+    """Add and reconfigure a speech-to-text subentry."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "stt"),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.FORM
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == DEFAULT_STT_NAME
+
+    existing = next(
+        subentry
+        for subentry in mock_config_entry.subentries.values()
+        if subentry.subentry_type == "stt"
+    )
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "stt"),
+        context={"source": "reconfigure", "subentry_id": existing.subentry_id},
+    )
+    assert result["type"] is FlowResultType.FORM
+    result = await hass.config_entries.subentries.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_tts_subentry_add_and_reconfigure(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+) -> None:
+    """Add and reconfigure a text-to-speech subentry."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "tts"),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.FORM
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {CONF_VOICE: "rex", CONF_TTS_SPEED: 1.2}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"] == {CONF_VOICE: "rex", CONF_TTS_SPEED: 1.2}
+
+    existing = next(
+        subentry
+        for subentry in mock_config_entry.subentries.values()
+        if subentry.subentry_type == "tts"
+        and subentry.data.get(CONF_VOICE) == DEFAULT_VOICE
+    )
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "tts"),
+        context={"source": "reconfigure", "subentry_id": existing.subentry_id},
+    )
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {CONF_VOICE: "luna", CONF_TTS_SPEED: 0.9}
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert existing.data == {CONF_VOICE: "luna", CONF_TTS_SPEED: 0.9}
+
+
+@pytest.mark.parametrize("subentry_type", ["stt", "tts"])
+@pytest.mark.usefixtures("setup_credentials")
+async def test_speech_subentry_requires_loaded_entry(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    subentry_type: str,
+) -> None:
+    """Abort speech subentry changes while the parent entry is not loaded."""
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, subentry_type),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "entry_not_loaded"

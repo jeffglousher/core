@@ -29,6 +29,8 @@ from homeassistant.components.spacexai.client import (
 from homeassistant.components.spacexai.const import (
     IMAGES_URL,
     REVOCATION_URL,
+    STT_URL,
+    TTS_URL,
     USERINFO_URL,
 )
 from homeassistant.components.spacexai.errors import (
@@ -810,4 +812,109 @@ async def test_generate_image_connection_failure(
     with pytest.raises(ConnectionFailureError):
         await _client(hass).async_generate_image(
             model="grok-imagine-image-quality", prompt="a red bicycle"
+        )
+
+
+async def test_transcribe_success(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Return the transcript from the STT endpoint."""
+    aioclient_mock.post(STT_URL, json={"text": "hello world"})
+    text = await _client(hass).async_transcribe(
+        audio=b"audio",
+        filename="speech.wav",
+        content_type="audio/wav",
+        language="en-US",
+    )
+    assert text == "hello world"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param("not-an-object", id="not-an-object"),
+        pytest.param({}, id="missing-text"),
+        pytest.param({"text": ""}, id="empty-text"),
+    ],
+)
+async def test_transcribe_malformed(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, payload: object
+) -> None:
+    """Reject malformed STT responses."""
+    aioclient_mock.post(STT_URL, json=payload)
+    with pytest.raises(MalformedProviderResponseError):
+        await _client(hass).async_transcribe(
+            audio=b"audio", filename="speech.wav", content_type="audio/wav"
+        )
+
+
+async def test_transcribe_invalid_json(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Reject a non-JSON STT response."""
+    aioclient_mock.post(
+        STT_URL, text="not json", headers={"Content-Type": "application/json"}
+    )
+    with pytest.raises(MalformedProviderResponseError):
+        await _client(hass).async_transcribe(
+            audio=b"audio", filename="speech.wav", content_type="audio/wav"
+        )
+
+
+async def test_transcribe_status_error(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Classify an STT endpoint status failure."""
+    aioclient_mock.post(STT_URL, json={"error": {"code": "quota"}}, status=402)
+    with pytest.raises(QuotaLimitedError):
+        await _client(hass).async_transcribe(
+            audio=b"audio", filename="speech.wav", content_type="audio/wav"
+        )
+
+
+async def test_transcribe_connection_failure(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Surface a transport failure from the STT endpoint."""
+    aioclient_mock.post(STT_URL, exc=ClientConnectionError("offline"))
+    with pytest.raises(ConnectionFailureError):
+        await _client(hass).async_transcribe(
+            audio=b"audio", filename="speech.wav", content_type="audio/wav"
+        )
+
+
+async def test_synthesize_speech_success(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Return audio bytes from the TTS endpoint."""
+    aioclient_mock.post(TTS_URL, content=b"audio-bytes")
+    audio = await _client(hass).async_synthesize_speech(
+        text="hello", voice_id="eve", language="en", speed=1.1, codec="mp3"
+    )
+    assert audio == b"audio-bytes"
+    request = aioclient_mock.mock_calls[0][2]
+    assert request["voice_id"] == "eve"
+    assert request["speed"] == 1.1
+    assert request["output_format"] == {"codec": "mp3"}
+
+
+async def test_synthesize_speech_status_error(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Classify a TTS endpoint status failure."""
+    aioclient_mock.post(TTS_URL, json={"error": {"code": "rate_limited"}}, status=429)
+    with pytest.raises(RateLimitedError):
+        await _client(hass).async_synthesize_speech(
+            text="hello", voice_id="eve", language="en"
+        )
+
+
+async def test_synthesize_speech_connection_failure(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Surface a transport failure from the TTS endpoint."""
+    aioclient_mock.post(TTS_URL, exc=ClientConnectionError("offline"))
+    with pytest.raises(ConnectionFailureError):
+        await _client(hass).async_synthesize_speech(
+            text="hello", voice_id="eve", language="en"
         )

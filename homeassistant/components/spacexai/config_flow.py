@@ -41,6 +41,8 @@ from .const import (
     CONF_CODE_INTERPRETER,
     CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
+    CONF_TTS_SPEED,
+    CONF_VOICE,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
     DEFAULT_AI_TASK_NAME,
@@ -49,12 +51,17 @@ from .const import (
     DEFAULT_IMAGE_MODEL,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
+    DEFAULT_STT_NAME,
+    DEFAULT_TTS_NAME,
+    DEFAULT_TTS_SPEED,
+    DEFAULT_VOICE,
     DEFAULT_WEB_SEARCH,
     DEFAULT_X_SEARCH,
     DOMAIN,
     GROK_CLI_OAUTH_CLIENT_ID,
     IMAGE_MODELS,
     LOGGER,
+    TTS_VOICES,
 )
 from .errors import (
     AuthenticationRejectedError,
@@ -131,8 +138,6 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Authorize with SpaceXAI using the RFC 8628 device code grant."""
-        if err := await self._async_ensure_oauth_implementation():
-            return err
         assert isinstance(self.flow_impl, LocalOAuth2Implementation)
 
         if self._device_authorization is None:
@@ -384,6 +389,21 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
                         "title": DEFAULT_AI_TASK_NAME,
                         "unique_id": None,
                     },
+                    {
+                        "subentry_type": "stt",
+                        "data": {},
+                        "title": DEFAULT_STT_NAME,
+                        "unique_id": None,
+                    },
+                    {
+                        "subentry_type": "tts",
+                        "data": {
+                            CONF_VOICE: DEFAULT_VOICE,
+                            CONF_TTS_SPEED: DEFAULT_TTS_SPEED,
+                        },
+                        "title": DEFAULT_TTS_NAME,
+                        "unique_id": None,
+                    },
                 ],
             )
 
@@ -406,6 +426,8 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         return {
             "conversation": SpaceXAIConversationSubentryFlow,
             "ai_task_data": SpaceXAIAITaskSubentryFlow,
+            "stt": SpaceXAISTTSubentryFlow,
+            "tts": SpaceXAITTSSubentryFlow,
         }
 
 
@@ -502,6 +524,93 @@ class SpaceXAIAITaskSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(
             step_id="user" if is_new else "reconfigure",
             data_schema=_ai_task_schema(snapshot, user_input or suggested),
+        )
+
+
+class SpaceXAISTTSubentryFlow(ConfigSubentryFlow):
+    """Add or reconfigure a SpaceXAI STT entity."""
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Add an STT subentry."""
+        return await self._async_configure(user_input, is_new=True)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Reconfigure an STT subentry."""
+        return await self._async_configure(user_input, is_new=False)
+
+    async def _async_configure(
+        self,
+        user_input: dict[str, Any] | None,
+        *,
+        is_new: bool,
+    ) -> SubentryFlowResult:
+        """Create or update an STT subentry."""
+        entry = self._get_entry()
+        if entry.state is not ConfigEntryState.LOADED:
+            return self.async_abort(reason="entry_not_loaded")
+
+        if user_input is not None:
+            if is_new:
+                return self.async_create_entry(title=DEFAULT_STT_NAME, data={})
+            return self.async_update_and_abort(
+                entry,
+                self._get_reconfigure_subentry(),
+                data={},
+            )
+
+        return self.async_show_form(
+            step_id="user" if is_new else "reconfigure",
+            data_schema=vol.Schema({}),
+        )
+
+
+class SpaceXAITTSSubentryFlow(ConfigSubentryFlow):
+    """Add or reconfigure a SpaceXAI TTS entity."""
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Add a TTS subentry."""
+        return await self._async_configure(user_input, is_new=True)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Reconfigure a TTS subentry."""
+        return await self._async_configure(user_input, is_new=False)
+
+    async def _async_configure(
+        self,
+        user_input: dict[str, Any] | None,
+        *,
+        is_new: bool,
+    ) -> SubentryFlowResult:
+        """Create or update a TTS subentry."""
+        entry = self._get_entry()
+        if entry.state is not ConfigEntryState.LOADED:
+            return self.async_abort(reason="entry_not_loaded")
+
+        suggested = {} if is_new else dict(self._get_reconfigure_subentry().data)
+        if user_input is not None:
+            data = {
+                CONF_VOICE: user_input[CONF_VOICE],
+                CONF_TTS_SPEED: user_input[CONF_TTS_SPEED],
+            }
+            if is_new:
+                return self.async_create_entry(title=DEFAULT_TTS_NAME, data=data)
+            return self.async_update_and_abort(
+                entry,
+                self._get_reconfigure_subentry(),
+                data=data,
+            )
+
+        return self.async_show_form(
+            step_id="user" if is_new else "reconfigure",
+            data_schema=_tts_schema(suggested),
         )
 
 
@@ -619,6 +728,36 @@ def _ai_task_schema(
                 )
             ),
             **_max_output_tokens_schema(suggested_max_tokens),
+        }
+    )
+
+
+def _tts_schema(suggested: Mapping[str, Any]) -> vol.Schema:
+    """Build the TTS configuration schema."""
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_VOICE,
+                default=suggested.get(CONF_VOICE, DEFAULT_VOICE),
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=[
+                        SelectOptionDict(value=voice_id, label=name)
+                        for voice_id, name in TTS_VOICES
+                    ]
+                )
+            ),
+            vol.Required(
+                CONF_TTS_SPEED,
+                default=float(suggested.get(CONF_TTS_SPEED, DEFAULT_TTS_SPEED)),
+            ): NumberSelector(
+                NumberSelectorConfig(
+                    min=0.7,
+                    max=1.5,
+                    step=0.1,
+                    mode=NumberSelectorMode.SLIDER,
+                )
+            ),
         }
     )
 
