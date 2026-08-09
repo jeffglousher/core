@@ -9,6 +9,7 @@ AUTHORIZE_URL = "https://auth.x.ai/oauth2/authorize"
 TOKEN_URL = "https://auth.x.ai/oauth2/token"
 USERINFO_URL = "https://auth.x.ai/oauth2/userinfo"
 REVOCATION_URL = "https://auth.x.ai/oauth2/revoke"
+DEVICE_CODE_URL = "https://auth.x.ai/oauth2/device/code"
 API_BASE_URL = "https://api.x.ai/v1"
 
 # SpaceXAI currently requires both scopes for subscription-backed api.x.ai

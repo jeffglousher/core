@@ -1,5 +1,6 @@
 """Tests for the SpaceXAI config flow."""
 
+import asyncio
 from http import HTTPStatus
 from unittest.mock import AsyncMock, patch
 from urllib.parse import parse_qs, urlparse
@@ -38,8 +39,10 @@ from homeassistant.components.spacexai.errors import (
     Operation,
     PermanentProviderError,
     QuotaLimitedError,
+    RequestTimeoutError,
     SubscriptionNotEntitledError,
 )
+from homeassistant.components.spacexai.oauth_device import DeviceAuthorization
 from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -75,8 +78,13 @@ async def _start_flow(hass: HomeAssistant) -> config_entries.ConfigFlowResult:
 
 
 async def _start_browser_flow(hass: HomeAssistant) -> config_entries.ConfigFlowResult:
-    """Start the Authorization Code + PKCE path."""
-    return await _start_flow(hass)
+    """Start the browser Authorization Code path from the auth menu."""
+    result = await _start_flow(hass)
+    assert result["type"] is FlowResultType.MENU
+    assert result["menu_options"] == ["device", "browser"]
+    return await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "browser"}
+    )
 
 
 async def _complete_oauth(
@@ -352,6 +360,10 @@ async def test_reauth(
     assert result["step_id"] == "reauth_confirm"
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    assert result["type"] is FlowResultType.MENU
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "browser"}
+    )
     assert result["type"] is FlowResultType.EXTERNAL_STEP
     result = await _complete_oauth(hass, result, hass_client_no_auth, aioclient_mock)
     assert result["type"] is FlowResultType.ABORT
@@ -377,6 +389,9 @@ async def test_reauth_account_mismatch(
     )
     result = await mock_config_entry.start_reauth_flow(hass)
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "browser"}
+    )
     result = await _complete_oauth(hass, result, hass_client_no_auth, aioclient_mock)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "account_mismatch"
@@ -402,6 +417,9 @@ async def test_reauth_with_withdrawn_model(
     )
     result = await mock_config_entry.start_reauth_flow(hass)
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "browser"}
+    )
     result = await _complete_oauth(hass, result, hass_client_no_auth, aioclient_mock)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reauth_successful"
@@ -614,3 +632,311 @@ async def test_ai_task_subentry_reconfigure(
     assert result["reason"] == "reconfigure_successful"
     assert subentry.data[CONF_MODEL] == "grok-4.3"
     assert subentry.data[CONF_MAX_OUTPUT_TOKENS] == 1024
+
+
+@pytest.mark.usefixtures("setup_credentials", "mock_setup_entry")
+async def test_device_code_flow(
+    hass: HomeAssistant,
+    mock_validate: AsyncMock,
+) -> None:
+    """Complete the recommended RFC 8628 device-code login path."""
+
+    async def _poll(*args: object, **kwargs: object) -> dict[str, object]:
+        await asyncio.sleep(0.05)
+        return {
+            "access_token": ACCESS_TOKEN,
+            "refresh_token": "refresh-token",
+            "expires_in": 3600,
+            "expires_at": 9999999999,
+            "token_type": "Bearer",
+            "scope": " ".join(OAUTH_SCOPES),
+        }
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_request_device_authorization",
+            new_callable=AsyncMock,
+            return_value=DeviceAuthorization(
+                device_code="device-code-value",
+                user_code="ABCD-1234",
+                verification_uri="https://accounts.x.ai/oauth2/device",
+                verification_uri_complete=(
+                    "https://accounts.x.ai/oauth2/device?user_code=ABCD-1234"
+                ),
+                expires_in=1800,
+                interval=5,
+            ),
+        ),
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_poll_device_token",
+            new=_poll,
+        ),
+    ):
+        result = await _start_flow(hass)
+        assert result["type"] is FlowResultType.MENU
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "device"}
+        )
+        assert result["type"] is FlowResultType.SHOW_PROGRESS
+        assert result["progress_action"] == "wait_for_device"
+        assert result["description_placeholders"] == {
+            "user_code": "ABCD-1234",
+            "verification_uri": (
+                "https://accounts.x.ai/oauth2/device?user_code=ABCD-1234"
+            ),
+            "expires_minutes": "30",
+        }
+
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "conversation"
+
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], CONVERSATION_DATA
+        )
+        assert result["type"] is FlowResultType.CREATE_ENTRY
+        assert result["result"].unique_id == ACCOUNT_ID
+        assert result["data"]["token"]["access_token"] == ACCESS_TOKEN
+        assert result["data"]["token"]["refresh_token"] == "refresh-token"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_device_code_denied(hass: HomeAssistant) -> None:
+    """Allow retry after the account denies device authorization."""
+
+    async def _poll(*args: object, **kwargs: object) -> dict[str, object]:
+        await asyncio.sleep(0.05)
+        raise AuthenticationRejectedError(
+            "denied",
+            context=ErrorContext(operation=Operation.DEVICE_AUTH),
+        )
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_request_device_authorization",
+            new_callable=AsyncMock,
+            return_value=DeviceAuthorization(
+                device_code="device-code-value",
+                user_code="ABCD-1234",
+                verification_uri="https://accounts.x.ai/oauth2/device",
+                verification_uri_complete=(
+                    "https://accounts.x.ai/oauth2/device?user_code=ABCD-1234"
+                ),
+                expires_in=60,
+                interval=5,
+            ),
+        ),
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_poll_device_token",
+            new=_poll,
+        ),
+    ):
+        result = await _start_flow(hass)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "device"}
+        )
+        assert result["type"] is FlowResultType.SHOW_PROGRESS
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["type"] is FlowResultType.FORM
+        assert result["step_id"] == "device_denied"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_device_code_invalid_client(hass: HomeAssistant) -> None:
+    """Abort when SpaceXAI rejects the Application Credentials client ID."""
+    with patch(
+        "homeassistant.components.spacexai.config_flow.async_request_device_authorization",
+        new_callable=AsyncMock,
+        side_effect=AuthenticationRejectedError(
+            "invalid client",
+            context=ErrorContext(operation=Operation.DEVICE_AUTH),
+        ),
+    ):
+        result = await _start_flow(hass)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "device"}
+        )
+        assert result["type"] is FlowResultType.ABORT
+        assert result["reason"] == "oauth_unauthorized"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+@pytest.mark.parametrize(
+    ("error", "abort_reason"),
+    [
+        (
+            ConnectionFailureError(
+                "offline",
+                context=ErrorContext(operation=Operation.DEVICE_AUTH),
+            ),
+            "cannot_connect",
+        ),
+        (
+            MalformedProviderResponseError(
+                "bad",
+                context=ErrorContext(operation=Operation.DEVICE_AUTH),
+            ),
+            "malformed_provider_response",
+        ),
+        (
+            PermanentProviderError(
+                "rejected",
+                context=ErrorContext(operation=Operation.DEVICE_AUTH),
+            ),
+            "oauth_error",
+        ),
+    ],
+)
+async def test_device_code_start_failures(
+    hass: HomeAssistant,
+    error: Exception,
+    abort_reason: str,
+) -> None:
+    """Abort when device authorization cannot be started."""
+    with patch(
+        "homeassistant.components.spacexai.config_flow.async_request_device_authorization",
+        new_callable=AsyncMock,
+        side_effect=error,
+    ):
+        result = await _start_flow(hass)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "device"}
+        )
+        assert result["type"] is FlowResultType.ABORT
+        assert result["reason"] == abort_reason
+
+
+@pytest.mark.usefixtures("setup_credentials")
+@pytest.mark.parametrize(
+    ("error", "step_id"),
+    [
+        (
+            RequestTimeoutError(
+                "expired",
+                context=ErrorContext(operation=Operation.DEVICE_AUTH),
+            ),
+            "device_timeout",
+        ),
+        (
+            ConnectionFailureError(
+                "offline",
+                context=ErrorContext(operation=Operation.DEVICE_AUTH),
+            ),
+            "device_connection_error",
+        ),
+        (
+            PermanentProviderError(
+                "rejected",
+                context=ErrorContext(operation=Operation.DEVICE_AUTH),
+            ),
+            "device_failed",
+        ),
+    ],
+)
+async def test_device_code_poll_failures(
+    hass: HomeAssistant,
+    error: Exception,
+    step_id: str,
+) -> None:
+    """Map device polling failures to retry or abort steps."""
+
+    async def _poll(*args: object, **kwargs: object) -> dict[str, object]:
+        await asyncio.sleep(0.05)
+        raise error
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_request_device_authorization",
+            new_callable=AsyncMock,
+            return_value=DeviceAuthorization(
+                device_code="device-code-value",
+                user_code="ABCD-1234",
+                verification_uri="https://accounts.x.ai/oauth2/device",
+                verification_uri_complete=(
+                    "https://accounts.x.ai/oauth2/device?user_code=ABCD-1234"
+                ),
+                expires_in=60,
+                interval=5,
+            ),
+        ),
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_poll_device_token",
+            new=_poll,
+        ),
+    ):
+        result = await _start_flow(hass)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "device"}
+        )
+        assert result["type"] is FlowResultType.SHOW_PROGRESS
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        if step_id == "device_failed":
+            assert result["type"] is FlowResultType.ABORT
+            assert result["reason"] == "oauth_error"
+        else:
+            assert result["type"] is FlowResultType.FORM
+            assert result["step_id"] == step_id
+            result = await hass.config_entries.flow.async_configure(
+                result["flow_id"], {}
+            )
+            assert result["type"] is FlowResultType.SHOW_PROGRESS
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_device_code_denied_retry(hass: HomeAssistant) -> None:
+    """Restart device authorization after denial."""
+    requests = AsyncMock(
+        side_effect=[
+            DeviceAuthorization(
+                device_code="device-code-1",
+                user_code="AAAA-1111",
+                verification_uri="https://accounts.x.ai/oauth2/device",
+                verification_uri_complete=(
+                    "https://accounts.x.ai/oauth2/device?user_code=AAAA-1111"
+                ),
+                expires_in=60,
+                interval=5,
+            ),
+            DeviceAuthorization(
+                device_code="device-code-2",
+                user_code="BBBB-2222",
+                verification_uri="https://accounts.x.ai/oauth2/device",
+                verification_uri_complete=(
+                    "https://accounts.x.ai/oauth2/device?user_code=BBBB-2222"
+                ),
+                expires_in=60,
+                interval=5,
+            ),
+        ]
+    )
+
+    async def _poll(*args: object, **kwargs: object) -> dict[str, object]:
+        await asyncio.sleep(0.05)
+        raise AuthenticationRejectedError(
+            "denied",
+            context=ErrorContext(operation=Operation.DEVICE_AUTH),
+        )
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_request_device_authorization",
+            new=requests,
+        ),
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_poll_device_token",
+            new=_poll,
+        ),
+    ):
+        result = await _start_flow(hass)
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"next_step_id": "device"}
+        )
+        await hass.async_block_till_done()
+        result = await hass.config_entries.flow.async_configure(result["flow_id"])
+        assert result["step_id"] == "device_denied"
+        result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
+        assert result["type"] is FlowResultType.SHOW_PROGRESS
+        assert result["description_placeholders"]["user_code"] == "BBBB-2222"

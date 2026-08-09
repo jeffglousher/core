@@ -38,6 +38,7 @@ class Operation(StrEnum):
     REFRESH = "refresh"
     REVOCATION = "revocation"
     TOOL = "tool"
+    DEVICE_AUTH = "device_auth"
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

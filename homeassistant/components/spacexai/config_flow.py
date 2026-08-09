@@ -1,8 +1,9 @@
 """Config flow for SpaceXAI."""
 
+import asyncio
 from collections.abc import Mapping
 from logging import Logger
-from typing import Any, override
+from typing import Any, cast, override
 
 import voluptuous as vol
 
@@ -19,6 +20,7 @@ from homeassistant.helpers import llm
 from homeassistant.helpers.config_entry_oauth2_flow import (
     AbstractOAuth2FlowHandler,
     ImplementationUnavailableError,
+    LocalOAuth2Implementation,
     async_get_implementations,
 )
 from homeassistant.helpers.selector import (
@@ -55,12 +57,18 @@ from .errors import (
     ConnectionFailureError,
     MalformedProviderResponseError,
     ModelNotEntitledError,
+    PermanentProviderError,
     QuotaLimitedError,
     RateLimitedError,
     RequestTimeoutError,
     SpaceXAIError,
     SubscriptionNotEntitledError,
     TransientProviderError,
+)
+from .oauth_device import (
+    DeviceAuthorization,
+    async_poll_device_token,
+    async_request_device_authorization,
 )
 
 
@@ -74,6 +82,8 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         super().__init__()
         self._oauth_data: dict[str, Any] | None = None
         self._snapshot: ProviderSnapshot | None = None
+        self._device_authorization: DeviceAuthorization | None = None
+        self._device_login_task: asyncio.Task[dict[str, Any]] | None = None
 
     @property
     @override
@@ -85,10 +95,142 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Start Authorization Code + PKCE once Application Credentials exist."""
+        """Choose device-code or browser OAuth after Application Credentials exist."""
         if err := await self._async_ensure_oauth_implementation():
             return err
+        return self.async_show_menu(
+            step_id="user",
+            menu_options=["device", "browser"],
+        )
+
+    async def async_step_browser(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Use Authorization Code + PKCE through the Home Assistant redirect."""
         return await self.async_step_pick_implementation(user_input)
+
+    async def async_step_device(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Authorize with SpaceXAI using the RFC 8628 device code grant."""
+        assert isinstance(self.flow_impl, LocalOAuth2Implementation)
+
+        if self._device_authorization is None:
+            try:
+                self._device_authorization = await async_request_device_authorization(
+                    self.hass,
+                    client_id=self.flow_impl.client_id,
+                )
+            except AuthenticationRejectedError:
+                return self.async_abort(reason="oauth_unauthorized")
+            except (
+                ConnectionFailureError,
+                RateLimitedError,
+                RequestTimeoutError,
+                TransientProviderError,
+            ):
+                return self.async_abort(reason="cannot_connect")
+            except MalformedProviderResponseError:
+                return self.async_abort(reason="malformed_provider_response")
+            except PermanentProviderError, SpaceXAIError:
+                LOGGER.exception("SpaceXAI device authorization failed to start")
+                return self.async_abort(reason="oauth_error")
+
+        authorization = self._device_authorization
+
+        async def _wait_for_device_approval() -> dict[str, Any]:
+            return await async_poll_device_token(
+                self.hass,
+                client_id=cast(LocalOAuth2Implementation, self.flow_impl).client_id,
+                device_code=authorization.device_code,
+                expires_in=authorization.expires_in,
+                interval=authorization.interval,
+            )
+
+        if self._device_login_task is None:
+            self._device_login_task = self.hass.async_create_task(
+                _wait_for_device_approval()
+            )
+
+        if self._device_login_task.done():
+            if exception := self._device_login_task.exception():
+                self._device_login_task = None
+                self._device_authorization = None
+                if isinstance(exception, AuthenticationRejectedError):
+                    return self.async_show_progress_done(next_step_id="device_denied")
+                if isinstance(
+                    exception,
+                    (
+                        ConnectionFailureError,
+                        RateLimitedError,
+                        TransientProviderError,
+                    ),
+                ):
+                    return self.async_show_progress_done(
+                        next_step_id="device_connection_error"
+                    )
+                if isinstance(exception, RequestTimeoutError):
+                    return self.async_show_progress_done(next_step_id="device_timeout")
+                LOGGER.exception("SpaceXAI device authorization polling failed")
+                return self.async_show_progress_done(next_step_id="device_failed")
+            return self.async_show_progress_done(next_step_id="device_finish")
+
+        return self.async_show_progress(
+            step_id="device",
+            progress_action="wait_for_device",
+            description_placeholders={
+                "user_code": authorization.user_code,
+                "verification_uri": authorization.verification_uri_complete,
+                "expires_minutes": str(max(1, authorization.expires_in // 60)),
+            },
+            progress_task=self._device_login_task,
+        )
+
+    async def async_step_device_finish(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Create the OAuth entry after device approval."""
+        assert self._device_login_task is not None
+        assert isinstance(self.flow_impl, LocalOAuth2Implementation)
+        token = self._device_login_task.result()
+        self._device_login_task = None
+        self._device_authorization = None
+        return await self.async_oauth_create_entry(
+            {
+                "auth_implementation": self.flow_impl.domain,
+                "token": token,
+            }
+        )
+
+    async def async_step_device_timeout(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Retry after the device code expired."""
+        if user_input is None:
+            return self.async_show_form(step_id="device_timeout")
+        return await self.async_step_device()
+
+    async def async_step_device_denied(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Retry after the user denied device authorization."""
+        if user_input is None:
+            return self.async_show_form(step_id="device_denied")
+        return await self.async_step_device()
+
+    async def async_step_device_connection_error(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Retry after a transient device-authorization failure."""
+        if user_input is None:
+            return self.async_show_form(step_id="device_connection_error")
+        return await self.async_step_device()
+
+    async def async_step_device_failed(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Abort when device authorization failed unexpectedly."""
+        return self.async_abort(reason="oauth_error")
 
     async def _async_ensure_oauth_implementation(self) -> ConfigFlowResult | None:
         """Resolve Application Credentials into the active OAuth implementation."""
