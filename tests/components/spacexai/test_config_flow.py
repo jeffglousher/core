@@ -16,9 +16,15 @@ from homeassistant.components.spacexai.client import (
     ProviderSnapshot,
 )
 from homeassistant.components.spacexai.const import (
+    CONF_CODE_INTERPRETER,
     CONF_MAX_OUTPUT_TOKENS,
+    CONF_WEB_SEARCH,
+    CONF_X_SEARCH,
+    DEFAULT_CODE_INTERPRETER,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
+    DEFAULT_WEB_SEARCH,
+    DEFAULT_X_SEARCH,
     DOMAIN,
     OAUTH_SCOPES,
     TOKEN_URL,
@@ -54,6 +60,9 @@ CONVERSATION_DATA = {
     CONF_MODEL: DEFAULT_MODEL,
     CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
     CONF_PROMPT: "Be concise.",
+    CONF_WEB_SEARCH: DEFAULT_WEB_SEARCH,
+    CONF_X_SEARCH: DEFAULT_X_SEARCH,
+    CONF_CODE_INTERPRETER: DEFAULT_CODE_INTERPRETER,
     CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
 }
 
@@ -439,6 +448,9 @@ async def test_subentry_add_and_reconfigure(
         CONF_MODEL: "grok-4.3",
         CONF_MAX_OUTPUT_TOKENS: 1024,
         CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
+        CONF_WEB_SEARCH: False,
+        CONF_X_SEARCH: False,
+        CONF_CODE_INTERPRETER: False,
     }
     await hass.async_block_till_done()
     assert {

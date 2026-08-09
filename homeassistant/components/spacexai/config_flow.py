@@ -22,6 +22,7 @@ from homeassistant.helpers.config_entry_oauth2_flow import (
     async_get_implementations,
 )
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
@@ -35,11 +36,17 @@ from homeassistant.loader import async_get_application_credentials
 from . import SpaceXAIConfigEntry
 from .client import ProviderSnapshot, SpaceXAIClient, StaticAccessTokenProvider
 from .const import (
+    CONF_CODE_INTERPRETER,
     CONF_MAX_OUTPUT_TOKENS,
+    CONF_WEB_SEARCH,
+    CONF_X_SEARCH,
     DEFAULT_AI_TASK_NAME,
+    DEFAULT_CODE_INTERPRETER,
     DEFAULT_CONVERSATION_NAME,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
+    DEFAULT_WEB_SEARCH,
+    DEFAULT_X_SEARCH,
     DOMAIN,
     LOGGER,
 )
@@ -378,9 +385,17 @@ def _conversation_schema(
     if suggested is not None:
         suggested_apis = suggested.get(CONF_LLM_HASS_API, [llm.LLM_API_ASSIST])
         suggested_prompt = suggested.get(CONF_PROMPT)
+        suggested_web_search = bool(suggested.get(CONF_WEB_SEARCH, DEFAULT_WEB_SEARCH))
+        suggested_x_search = bool(suggested.get(CONF_X_SEARCH, DEFAULT_X_SEARCH))
+        suggested_code_interpreter = bool(
+            suggested.get(CONF_CODE_INTERPRETER, DEFAULT_CODE_INTERPRETER)
+        )
     else:
         suggested_apis = [llm.LLM_API_ASSIST]
         suggested_prompt = None
+        suggested_web_search = DEFAULT_WEB_SEARCH
+        suggested_x_search = DEFAULT_X_SEARCH
+        suggested_code_interpreter = DEFAULT_CODE_INTERPRETER
 
     return vol.Schema(
         {
@@ -395,6 +410,18 @@ def _conversation_schema(
                 CONF_PROMPT,
                 description={"suggested_value": suggested_prompt},
             ): TemplateSelector(),
+            vol.Required(
+                CONF_WEB_SEARCH,
+                default=suggested_web_search,
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_X_SEARCH,
+                default=suggested_x_search,
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_CODE_INTERPRETER,
+                default=suggested_code_interpreter,
+            ): BooleanSelector(),
             **_max_output_tokens_schema(suggested_max_tokens),
         }
     )
