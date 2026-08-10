@@ -153,6 +153,8 @@ async def test_full_flow(
     assert query["client_id"] == "home-assistant-client"
     assert query["redirect_uri"] == REDIRECT_URI
     assert query["scope"] == " ".join(OAUTH_SCOPES)
+    assert query["plan"] == "generic"
+    assert query["referrer"] == "home-assistant"
     assert query["code_challenge_method"] == "S256"
     assert "code_challenge" in query
 

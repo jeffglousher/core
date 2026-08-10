@@ -10,7 +10,13 @@ from aiohttp import ClientError, ClientResponse, ClientTimeout
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import DEVICE_CODE_URL, HTTP_TIMEOUT_SECONDS, OAUTH_SCOPES, TOKEN_URL
+from .const import (
+    DEVICE_CODE_MAX_POLL_SECONDS,
+    DEVICE_CODE_URL,
+    HTTP_TIMEOUT_SECONDS,
+    OAUTH_SCOPES,
+    TOKEN_URL,
+)
 from .errors import (
     AuthenticationRejectedError,
     ConnectionFailureError,
@@ -103,7 +109,7 @@ async def async_poll_device_token(
     """Poll the token endpoint until the user approves the device code."""
     session = async_get_clientsession(hass)
     context = ErrorContext(operation=Operation.DEVICE_AUTH)
-    deadline = time.monotonic() + max(1, expires_in)
+    deadline = time.monotonic() + max(1, min(expires_in, DEVICE_CODE_MAX_POLL_SECONDS))
     poll_interval = max(_MIN_POLL_INTERVAL, interval)
 
     while time.monotonic() < deadline:

@@ -122,7 +122,7 @@ async def test_account_invalid_json(
     [
         pytest.param(401, AuthenticationRejectedError, id="authentication"),
         pytest.param(402, QuotaLimitedError, id="quota"),
-        pytest.param(403, PermanentProviderError, id="permission"),
+        pytest.param(403, SubscriptionNotEntitledError, id="subscription-tier"),
         pytest.param(429, RateLimitedError, id="rate-limit"),
     ],
 )
@@ -192,17 +192,15 @@ async def test_model_discovery_and_filtering(hass: HomeAssistant) -> None:
     assert not snapshot.has_model("grok-imagine-1")
 
 
-async def test_no_entitled_models(hass: HomeAssistant) -> None:
-    """Treat an empty Grok model catalog as missing subscription access."""
-    with (
-        patch(
-            "openai.resources.models.AsyncModels.list",
-            new_callable=AsyncMock,
-            return_value=MagicMock(data=[]),
-        ),
-        pytest.raises(SubscriptionNotEntitledError),
+async def test_empty_model_catalog_is_allowed(hass: HomeAssistant) -> None:
+    """Allow an empty catalog; setup falls back to the default chat model."""
+    with patch(
+        "openai.resources.models.AsyncModels.list",
+        new_callable=AsyncMock,
+        return_value=MagicMock(data=[]),
     ):
-        await _client(hass).async_get_models()
+        models = await _client(hass).async_get_models()
+    assert models == ()
 
 
 async def test_sdk_error_classification(hass: HomeAssistant) -> None:
@@ -342,12 +340,12 @@ def test_error_category_values_match_translation_keys() -> None:
 
 
 def test_permission_status_classification(hass: HomeAssistant) -> None:
-    """Do not infer consumer subscription state from permission denial."""
+    """Treat HTTP 403 as a subscription tier gate for CLI-proxy OAuth."""
     provider_error = PermissionDeniedError(
         message="Permission denied",
         response=httpx.Response(
             status_code=403,
-            request=httpx.Request("GET", "https://api.x.ai/v1/models"),
+            request=httpx.Request("GET", "https://cli-chat-proxy.grok.com/v1/models"),
         ),
         body={"error": {"code": "permission_denied"}},
     )
@@ -355,7 +353,7 @@ def test_permission_status_classification(hass: HomeAssistant) -> None:
         provider_error,
         ErrorContext(operation=Operation.RESPONSE, model="grok-4.5"),
     )
-    assert isinstance(classified, PermanentProviderError)
+    assert isinstance(classified, SubscriptionNotEntitledError)
     assert classified.context.provider_code == "permission_denied"
 
 

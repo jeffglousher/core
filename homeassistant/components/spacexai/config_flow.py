@@ -50,6 +50,7 @@ from .const import (
     DEFAULT_WEB_SEARCH,
     DEFAULT_X_SEARCH,
     DOMAIN,
+    GROK_CLI_OAUTH_CLIENT_ID,
     LOGGER,
 )
 from .errors import (
@@ -95,9 +96,17 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Choose device-code or browser OAuth after Application Credentials exist."""
+        """Start device-code OAuth after Application Credentials exist.
+
+        Device code is the supported path for the public Grok CLI OAuth client
+        (Hermes/OpenCode). Browser redirect is kept for HA-owned clients that
+        register a Home Assistant redirect URI.
+        """
         if err := await self._async_ensure_oauth_implementation():
             return err
+        assert isinstance(self.flow_impl, LocalOAuth2Implementation)
+        if self.flow_impl.client_id == GROK_CLI_OAUTH_CLIENT_ID:
+            return await self.async_step_device()
         return self.async_show_menu(
             step_id="user",
             menu_options=["device", "browser"],
@@ -107,6 +116,12 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Use Authorization Code + PKCE through the Home Assistant redirect."""
+        if err := await self._async_ensure_oauth_implementation():
+            return err
+        assert isinstance(self.flow_impl, LocalOAuth2Implementation)
+        if self.flow_impl.client_id == GROK_CLI_OAUTH_CLIENT_ID:
+            # Public Grok CLI client has no HA redirect URI registered.
+            return await self.async_step_device()
         return await self.async_step_pick_implementation(user_input)
 
     async def async_step_device(
@@ -492,16 +507,16 @@ def _model_selector_defaults(
     model_ids = {
         model_id for model in snapshot.models for model_id in model.selectable_ids
     }
-    default_model = (
-        DEFAULT_MODEL
-        if DEFAULT_MODEL in model_ids
-        else snapshot.models[0].selectable_ids[0]
-    )
+    # Subscription OAuth often returns a sparse /models catalog; keep grok-4.5
+    # as a selectable fallback so setup can finish without discovery metadata.
+    default_model = DEFAULT_MODEL
+    if DEFAULT_MODEL not in model_ids and snapshot.models:
+        default_model = snapshot.models[0].selectable_ids[0]
     suggested_max_tokens = DEFAULT_MAX_OUTPUT_TOKENS
     if suggested is not None:
         if (
             isinstance(suggested_model := suggested.get(CONF_MODEL), str)
-            and suggested_model in model_ids
+            and (suggested_model in model_ids or suggested_model == DEFAULT_MODEL)
         ):
             default_model = suggested_model
         suggested_max_tokens = int(
@@ -512,6 +527,8 @@ def _model_selector_defaults(
         for model in snapshot.models
         for model_id in model.selectable_ids
     ]
+    if DEFAULT_MODEL not in model_ids:
+        options.append(SelectOptionDict(value=DEFAULT_MODEL, label=DEFAULT_MODEL))
     return default_model, suggested_max_tokens, options
 
 

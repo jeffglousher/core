@@ -25,7 +25,10 @@ from homeassistant.helpers.httpx_client import get_async_client
 
 from .const import (
     API_BASE_URL,
+    DEFAULT_MODEL,
+    GROK_CLI_REQUEST_HEADERS,
     HTTP_TIMEOUT_SECONDS,
+    LOGGER,
     RESPONSE_TIMEOUT,
     REVOCATION_URL,
     USERINFO_URL,
@@ -217,7 +220,11 @@ class SpaceXAIClient:
         return AccountInfo(subject=subject, name=name, email=email)
 
     async def async_get_models(self) -> tuple[ModelInfo, ...]:
-        """Return the OAuth-entitled Grok language models."""
+        """Return the OAuth-entitled Grok language models.
+
+        An empty catalog is valid for subscription OAuth where /models is
+        sparse; callers should fall back to the configured default model.
+        """
         token = await self._token_provider.async_get_access_token()
         context = ErrorContext(operation=Operation.MODELS)
         try:
@@ -227,31 +234,38 @@ class SpaceXAIClient:
         except (openai.OpenAIError, ValidationError) as err:
             raise self.translate_sdk_error(err, context) from err
 
-        models = tuple(
-            sorted(
-                (
-                    ModelInfo(
-                        id=model.id,
-                        owner=model.owned_by,
-                        aliases=_model_aliases(model),
-                    )
-                    for model in page.data
-                    if _is_conversation_model(model)
-                ),
-                key=lambda model: model.id,
-            )
-        )
-        if not models:
-            raise SubscriptionNotEntitledError(
-                "The account has no available language models",
-                context=ErrorContext(operation=Operation.MODELS),
-            )
-        return models
+        return _conversation_models_from_page(page.data)
 
     async def async_validate(self) -> ProviderSnapshot:
         """Validate identity and discover entitled language models."""
         account = await self.async_get_account()
-        models = await self.async_get_models()
+        models: tuple[ModelInfo, ...] = ()
+        try:
+            models = await self.async_get_models()
+        except (
+            PermanentProviderError,
+            QuotaLimitedError,
+            RateLimitedError,
+            RequestTimeoutError,
+            TransientProviderError,
+            SubscriptionNotEntitledError,
+            MalformedProviderResponseError,
+        ) as err:
+            # Sparse or unavailable /models catalogs are normal for subscription
+            # OAuth. Keep discovery empty and fall back to grok-4.5 in the UI.
+            LOGGER.warning(
+                "SpaceXAI model discovery failed during setup; continuing with "
+                "empty discovered catalog: category=%s status=%s provider_code=%s",
+                err.category,
+                err.context.status,
+                err.context.provider_code,
+            )
+        if not models:
+            LOGGER.info(
+                "SpaceXAI model catalog had no chat metadata; leaving discovered "
+                "chat models empty (fallback %s remains available in the UI)",
+                DEFAULT_MODEL,
+            )
         return ProviderSnapshot(account=account, models=models)
 
     async def async_stream_response(
@@ -336,6 +350,7 @@ class SpaceXAIClient:
             self._sdk_client = openai.AsyncOpenAI(
                 api_key=access_token,
                 base_url=API_BASE_URL,
+                default_headers=GROK_CLI_REQUEST_HEADERS,
                 http_client=get_async_client(self._hass),
             )
             await self._hass.async_add_executor_job(self._sdk_client.platform_headers)
@@ -395,12 +410,31 @@ class SpaceXAIClient:
             )
             return error_type("Provider rejected authentication", context=context)
         if status == 402:
+            message = (_provider_error_message(body) or "").lower()
+            code = (context.provider_code or "").lower()
+            if (
+                "personal-team-blocked" in code
+                or "spending-limit" in code
+                or "subscription" in message
+                or "upgrade" in message
+            ):
+                return SubscriptionNotEntitledError(
+                    "Provider rejected the subscription OAuth surface",
+                    context=context,
+                )
             return QuotaLimitedError(
                 "Provider reported a quota or billing limitation", context=context
             )
         if status == 403:
+            # Hermes treats refresh/inference 403 as a tier gate, not bad credentials.
+            return SubscriptionNotEntitledError(
+                "Provider denied subscription-backed access for this account",
+                context=context,
+            )
+        if status == 426:
             return PermanentProviderError(
-                "Provider denied permission for the operation", context=context
+                "Provider rejected the Grok CLI client identity headers",
+                context=context,
             )
         if status == 404 and context.model is not None:
             return ModelNotEntitledError(
@@ -483,11 +517,43 @@ def _model_aliases(model: OpenAIModel) -> tuple[str, ...]:
 
 def _is_conversation_model(model: OpenAIModel) -> bool:
     """Return whether xAI model metadata identifies text output."""
+    if model.id.startswith("grok-imagine-"):
+        return False
     extra = model.model_extra or {}
     output_modalities = extra.get("output_modalities")
     if isinstance(output_modalities, list):
         return "text" in output_modalities
-    return isinstance(extra.get("completion_text_token_price"), int)
+    if isinstance(extra.get("completion_text_token_price"), int):
+        return True
+    # CLI proxy catalogs are often sparse; accept grok chat ids by name.
+    return _is_sparse_chat_model_id(model.id)
+
+
+def _is_sparse_chat_model_id(model_id: str) -> bool:
+    """Return whether a model id looks like a Grok chat model without metadata."""
+    if not model_id.startswith("grok-"):
+        return False
+    return not model_id.startswith("grok-imagine-")
+
+
+def _conversation_models_from_page(
+    models: Sequence[OpenAIModel],
+) -> tuple[ModelInfo, ...]:
+    """Extract chat models, tolerating sparse CLI-proxy metadata."""
+    return tuple(
+        sorted(
+            (
+                ModelInfo(
+                    id=model.id,
+                    owner=model.owned_by,
+                    aliases=_model_aliases(model),
+                )
+                for model in models
+                if _is_conversation_model(model)
+            ),
+            key=lambda model: model.id,
+        )
+    )
 
 
 async def _safe_json(response: Any) -> object | None:

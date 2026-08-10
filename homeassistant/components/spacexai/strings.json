@@ -81,9 +81,9 @@
         "title": "[%key:common::config_flow::title::reauth%]"
       },
       "user": {
-        "description": "Sign in with a SpaceXAI subscription account. Device code works without a browser redirect and is recommended. Browser redirect uses Authorization Code + PKCE through My Home Assistant.",
+        "description": "Sign in with a SpaceXAI subscription account. Device code is recommended (same approach as Grok CLI / Hermes) and works on phones. Browser redirect only works with an OAuth client that registers the Home Assistant redirect URI.",
         "menu_options": {
-          "browser": "Sign in with browser redirect",
+          "browser": "Sign in with browser redirect (requires HA redirect URI)",
           "device": "Sign in with device code (recommended)"
         }
       },
