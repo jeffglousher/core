@@ -39,6 +39,7 @@ from . import SpaceXAIConfigEntry
 from .client import ProviderSnapshot, SpaceXAIClient, StaticAccessTokenProvider
 from .const import (
     CONF_CODE_INTERPRETER,
+    CONF_DEFAULT_ASSIST,
     CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
     CONF_TTS_SPEED,
@@ -48,6 +49,7 @@ from .const import (
     DEFAULT_AI_TASK_NAME,
     DEFAULT_CODE_INTERPRETER,
     DEFAULT_CONVERSATION_NAME,
+    DEFAULT_DEFAULT_ASSIST,
     DEFAULT_IMAGE_MODEL,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
@@ -371,7 +373,10 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         if user_input is not None:
             return self.async_create_entry(
                 title=self._snapshot.account.display_name,
-                data=self._oauth_data,
+                data={
+                    **self._oauth_data,
+                    CONF_DEFAULT_ASSIST: DEFAULT_DEFAULT_ASSIST,
+                },
                 subentries=[
                     {
                         "subentry_type": "conversation",

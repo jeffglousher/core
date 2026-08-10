@@ -10,6 +10,7 @@ from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryError,
     ConfigEntryNotReady,
+    HomeAssistantError,
 )
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.config_entry_oauth2_flow import (
@@ -26,7 +27,7 @@ from .client import (
     SpaceXAIClient,
     StaticAccessTokenProvider,
 )
-from .const import DEFAULT_MODEL_PLACEHOLDER, DOMAIN, LOGGER
+from .const import CONF_DEFAULT_ASSIST, DEFAULT_MODEL_PLACEHOLDER, DOMAIN, LOGGER
 from .errors import (
     AccountMismatchError,
     AuthenticationRejectedError,
@@ -177,6 +178,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
     entry.async_on_unload(entry.add_update_listener(_async_update_entry))
     ir.async_delete_issue(hass, DOMAIN, _subscription_issue_id(entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    # Install-time Assist wiring only. Clearing the flag after success means reloads
+    # keep re-forcing the preferred Assist pipeline.
+    if entry.data.get(CONF_DEFAULT_ASSIST) is True:
+        from .assist import async_setup_assist_pipeline
+
+        try:
+            applied = await async_setup_assist_pipeline(
+                hass, entry, set_preferred=True
+            )
+        except HomeAssistantError:
+            LOGGER.exception("Unable to configure Assist pipeline for SpaceXAI")
+        else:
+            if applied:
+                new_data = {
+                    key: value
+                    for key, value in entry.data.items()
+                    if key != CONF_DEFAULT_ASSIST
+                }
+                hass.config_entries.async_update_entry(entry, data=new_data)
     return True
 
 

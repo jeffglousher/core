@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import SpaceXAIConfigEntry
-from .const import STT_LANGUAGES
+from .const import LOGGER, MAX_STT_AUDIO_BYTES, STT_LANGUAGES
 from .entity import SpaceXAIBaseLLMEntity
 from .errors import SpaceXAIError
 
@@ -92,6 +92,13 @@ class SpaceXAISTTEntity(stt.SpeechToTextEntity, SpaceXAIBaseLLMEntity):
         audio_bytes = bytearray()
         async for chunk in stream:
             audio_bytes.extend(chunk)
+            if len(audio_bytes) > MAX_STT_AUDIO_BYTES:
+                LOGGER.error(
+                    "SpaceXAI STT rejected oversized audio: bytes=%s max=%s",
+                    len(audio_bytes),
+                    MAX_STT_AUDIO_BYTES,
+                )
+                return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
         audio_data = bytes(audio_bytes)
         content_type = "audio/ogg"
         filename = "audio.ogg"
@@ -102,6 +109,13 @@ class SpaceXAISTTEntity(stt.SpeechToTextEntity, SpaceXAIBaseLLMEntity):
             )
             content_type = "audio/wav"
             filename = "audio.wav"
+            if len(audio_data) > MAX_STT_AUDIO_BYTES:
+                LOGGER.error(
+                    "SpaceXAI STT rejected oversized WAV container: bytes=%s max=%s",
+                    len(audio_data),
+                    MAX_STT_AUDIO_BYTES,
+                )
+                return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
 
         try:
             text = await self.entry.runtime_data.client.async_transcribe(
@@ -114,6 +128,7 @@ class SpaceXAISTTEntity(stt.SpeechToTextEntity, SpaceXAIBaseLLMEntity):
             self._handle_provider_error(err)
             return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
         except Exception:  # noqa: BLE001
+            LOGGER.exception("Unexpected SpaceXAI STT failure")
             return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
 
         self._mark_available()
