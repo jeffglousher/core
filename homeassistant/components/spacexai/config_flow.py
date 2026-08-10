@@ -1002,11 +1002,11 @@ def _finalize_conversation_input(
     user_input: dict[str, Any],
     snapshot: ProviderSnapshot,
 ) -> dict[str, str]:
-    """Resolve model selection and validate conversation options."""
-    # Install-only toggles must never persist on conversation subentries.
-    user_input.pop(CONF_CREATE_STT, None)
-    user_input.pop(CONF_CREATE_TTS, None)
-    user_input.pop(CONF_DEFAULT_ASSIST, None)
+    """Resolve model selection and validate conversation options.
+
+    Install-only toggles (STT/TTS/Assist) stay on user_input until
+    ``_async_create_conversation_entry`` pops them into entry data.
+    """
     if errors := _finalize_model_input(user_input, snapshot):
         return errors
     return _validate_conversation_input(user_input)

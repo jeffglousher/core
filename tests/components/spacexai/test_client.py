@@ -63,7 +63,7 @@ from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session
 
 from . import EventStream
 
-from tests.test_util.aiohttp import AiohttpClientMocker
+from tests.test_util.aiohttp import AiohttpClientMocker, AiohttpClientMockResponse, AiohttpClientMockResponse
 
 
 def _client(hass: HomeAssistant, *, runtime: bool = False) -> SpaceXAIClient:
@@ -1003,11 +1003,23 @@ async def test_generate_video_refreshes_token_while_polling(
 
     aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
     status_url = f"{DEVELOPER_API_BASE_URL}/videos/req-1"
-    aioclient_mock.get(status_url, json={"status": "pending"})
-    aioclient_mock.get(
-        status_url,
-        json={"status": "done", "video": {"url": "https://vidgen.example/v.mp4"}},
+    status_payloads = iter(
+        [
+            {"status": "pending"},
+            {"status": "done", "video": {"url": "https://vidgen.example/v.mp4"}},
+        ]
     )
+
+    async def status_side_effect(
+        method: str, url: object, data: object
+    ) -> AiohttpClientMockResponse:
+        return AiohttpClientMockResponse(
+            method=method,
+            url=url,
+            json=next(status_payloads),
+        )
+
+    aioclient_mock.get(status_url, side_effect=status_side_effect)
 
     with patch(
         "homeassistant.components.spacexai.client.asyncio.sleep",
