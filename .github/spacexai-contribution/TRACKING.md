@@ -65,3 +65,13 @@ Fat tip PR #8 content redistributed and tip branch aligned to wave 7
 
 Backup: tag `backup/spacexai-tip-pre-rebuild` (`963d538f`).
 
+Post-rebuild live smoke on HAOS overlay (entry `01KZNWZ4M5NPYCS51ADZBDVBKS`):
+
+| Surface | Result |
+| --- | --- |
+| Conversation | OK (`stack rebuild ok`) |
+| AI Task `generate_data` | OK structured `{ok:true,n:1}` |
+| Diagnostics defaults | Assist `3000`/`priority`; AI Task `8192`/`default` |
+| OAuth scopes | Includes `conversations:read` / `conversations:write` |
+| Platforms loaded | conversation + ai_task + stt + tts |
+
