@@ -1,8 +1,6 @@
 rules:
   # Bronze
-  action-setup:
-    status: exempt
-    comment: No service actions are registered by this integration.
+  action-setup: done
   appropriate-polling:
     status: exempt
     comment: Integration does not poll periodically; it validates on setup and responds to user requests.
@@ -14,8 +12,8 @@ rules:
   config-flow: done
   dependency-transparency: done
   docs-actions:
-    status: exempt
-    comment: Integration does not provide service actions.
+    status: todo
+    comment: Document spacexai.generate_video in contribution docs; mark done after home-assistant.io PR merges.
   docs-conditions:
     status: exempt
     comment: Integration does not provide conditions.
@@ -43,8 +41,8 @@ rules:
 
   # Silver
   action-exceptions:
-    status: exempt
-    comment: No service actions are registered by this integration.
+    status: done
+    comment: spacexai.generate_video raises ServiceValidationError/HomeAssistantError with translation keys.
   config-entry-unloading: done
   docs-configuration-parameters:
     status: todo

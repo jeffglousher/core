@@ -1,6 +1,8 @@
 """AI Task platform for SpaceXAI."""
 
+import base64
 from json import JSONDecodeError
+from pathlib import Path
 from typing import override
 
 from homeassistant.components import ai_task, conversation
@@ -10,9 +12,20 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util.json import json_loads
 
 from . import SpaceXAIConfigEntry
-from .const import CONF_IMAGE_MODEL, DEFAULT_IMAGE_MODEL, DOMAIN, LOGGER
+from .const import (
+    CONF_IMAGE_ASPECT_RATIO,
+    CONF_IMAGE_MODEL,
+    CONF_IMAGE_RESOLUTION,
+    DEFAULT_IMAGE_ASPECT_RATIO,
+    DEFAULT_IMAGE_MODEL,
+    DEFAULT_IMAGE_RESOLUTION,
+    DOMAIN,
+    LOGGER,
+    MAX_AI_TASK_TOOL_ITERATIONS,
+    MAX_IMAGE_BYTES,
+)
 from .entity import SpaceXAIBaseLLMEntity
-from .errors import SpaceXAIError
+from .errors import ErrorContext, ModelNotEntitledError, Operation, SpaceXAIError
 
 PARALLEL_UPDATES = 0
 
@@ -50,7 +63,12 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
     ) -> ai_task.GenDataTaskResult:
         """Handle a generate data task."""
         try:
-            await self._async_handle_chat_log(chat_log, task.name, task.structure)
+            await self._async_handle_chat_log(
+                chat_log,
+                task.name,
+                task.structure,
+                max_iterations=MAX_AI_TASK_TOOL_ITERATIONS,
+            )
         except SpaceXAIError as err:
             self._raise_provider_home_assistant_error(err)
         except HomeAssistantError:
@@ -94,16 +112,51 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
         task: ai_task.GenImageTask,
         chat_log: conversation.ChatLog,
     ) -> ai_task.GenImageTaskResult:
-        """Handle a generate image task via the Imagine API."""
+        """Handle a generate or edit image task via the Imagine API."""
         user_message = chat_log.content[-1]
         assert isinstance(user_message, conversation.UserContent)
         image_model = self.subentry.data.get(CONF_IMAGE_MODEL, DEFAULT_IMAGE_MODEL)
+        snapshot = self.entry.runtime_data.snapshot
+        if not snapshot.has_image_model(image_model):
+            self._raise_provider_home_assistant_error(
+                ModelNotEntitledError(
+                    "The account is not entitled to the configured image model",
+                    context=ErrorContext(operation=Operation.IMAGE, model=image_model),
+                )
+            )
+
+        aspect_ratio = self.subentry.data.get(
+            CONF_IMAGE_ASPECT_RATIO, DEFAULT_IMAGE_ASPECT_RATIO
+        )
+        resolution = self.subentry.data.get(
+            CONF_IMAGE_RESOLUTION, DEFAULT_IMAGE_RESOLUTION
+        )
+        image_attachments = [
+            attachment
+            for attachment in (user_message.attachments or ())
+            if attachment.mime_type and attachment.mime_type.startswith("image/")
+        ]
+        reference_uris = [
+            await self.hass.async_add_executor_job(
+                _attachment_data_uri, attachment.path, attachment.mime_type
+            )
+            for attachment in image_attachments[:3]
+        ]
 
         try:
-            generated = await self.entry.runtime_data.client.async_generate_image(
-                model=image_model,
-                prompt=user_message.content,
-            )
+            if reference_uris:
+                generated = await self.entry.runtime_data.client.async_edit_image(
+                    model=image_model,
+                    prompt=user_message.content,
+                    images=reference_uris[:3],
+                )
+            else:
+                generated = await self.entry.runtime_data.client.async_generate_image(
+                    model=image_model,
+                    prompt=user_message.content,
+                    aspect_ratio=aspect_ratio,
+                    resolution=resolution,
+                )
         except SpaceXAIError as err:
             self._raise_provider_home_assistant_error(err)
         except HomeAssistantError:
@@ -126,3 +179,19 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
             model=generated.model,
             revised_prompt=generated.revised_prompt,
         )
+
+
+def _attachment_data_uri(path: Path, mime_type: str) -> str:
+    """Encode a local image attachment as a data URI."""
+    size = path.stat().st_size
+    if size > MAX_IMAGE_BYTES:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="attachment_too_large",
+            translation_placeholders={
+                "path": path.name,
+                "max_mb": str(MAX_IMAGE_BYTES // (1024 * 1024)),
+            },
+        )
+    encoded = base64.b64encode(path.read_bytes()).decode("utf-8")
+    return f"data:{mime_type};base64,{encoded}"

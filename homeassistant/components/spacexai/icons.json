@@ -20,5 +20,10 @@
         "default": "mdi:speaker-message"
       }
     }
+  },
+  "services": {
+    "generate_video": {
+      "service": "mdi:movie-open-outline"
+    }
   }
 }

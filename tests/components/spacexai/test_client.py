@@ -27,11 +27,13 @@ from homeassistant.components.spacexai.client import (
     StaticAccessTokenProvider,
 )
 from homeassistant.components.spacexai.const import (
+    DEVELOPER_API_BASE_URL,
     IMAGES_URL,
     REVOCATION_URL,
     STT_URL,
     TTS_URL,
     USERINFO_URL,
+    VIDEOS_URL,
 )
 from homeassistant.components.spacexai.errors import (
     AuthenticationRejectedError,
@@ -129,7 +131,7 @@ async def test_account_invalid_json(
     [
         pytest.param(401, AuthenticationRejectedError, id="authentication"),
         pytest.param(402, QuotaLimitedError, id="quota"),
-        pytest.param(403, SubscriptionNotEntitledError, id="subscription-tier"),
+        pytest.param(403, PermanentProviderError, id="permission"),
         pytest.param(429, RateLimitedError, id="rate-limit"),
     ],
 )
@@ -268,12 +270,18 @@ async def test_stream_request_options(hass: HomeAssistant) -> None:
             model="grok-4.5",
             input=[],
             tools=[],
-            max_output_tokens=2048,
+            max_output_tokens=3000,
             prompt_cache_key="conversation-id",
+            temperature=1.0,
+            top_p=1.0,
+            service_tier="priority",
         )
     assert returned is stream
     assert create.call_args.kwargs["stream"] is True
     assert create.call_args.kwargs["store"] is False
+    assert create.call_args.kwargs["temperature"] == 1.0
+    assert create.call_args.kwargs["top_p"] == 1.0
+    assert create.call_args.kwargs["service_tier"] == "priority"
     assert create.call_args.kwargs["include"] == ["reasoning.encrypted_content"]
     assert create.call_args.kwargs["parallel_tool_calls"] is True
     assert create.call_args.kwargs["prompt_cache_key"] == "conversation-id"
@@ -374,12 +382,12 @@ def test_error_category_values_match_translation_keys() -> None:
 
 
 def test_permission_status_classification(hass: HomeAssistant) -> None:
-    """Treat HTTP 403 as a subscription tier gate for CLI-proxy OAuth."""
+    """Do not infer consumer subscription state from permission denial."""
     provider_error = PermissionDeniedError(
         message="Permission denied",
         response=httpx.Response(
             status_code=403,
-            request=httpx.Request("GET", "https://cli-chat-proxy.grok.com/v1/models"),
+            request=httpx.Request("GET", "https://api.x.ai/v1/models"),
         ),
         body={"error": {"code": "permission_denied"}},
     )
@@ -387,7 +395,7 @@ def test_permission_status_classification(hass: HomeAssistant) -> None:
         provider_error,
         ErrorContext(operation=Operation.RESPONSE, model="grok-4.5"),
     )
-    assert isinstance(classified, SubscriptionNotEntitledError)
+    assert isinstance(classified, PermanentProviderError)
     assert classified.context.provider_code == "permission_denied"
 
 
@@ -460,7 +468,58 @@ async def test_account_connection_error(
 
 
 async def test_validate_combines_account_and_models(hass: HomeAssistant) -> None:
-    """Return a narrow provider snapshot from both validation operations."""
+    """Return a provider snapshot from account identity and model discovery."""
+    client = _client(hass)
+    models = [
+        Model(
+            id="grok-4.5",
+            created=1,
+            object="model",
+            owned_by="xai",
+            output_modalities=["text"],
+        ),
+        Model(
+            id="grok-imagine-image-quality",
+            created=1,
+            object="model",
+            owned_by="xai",
+            output_modalities=["image"],
+        ),
+        Model(
+            id="grok-imagine-video-1.5",
+            created=1,
+            object="model",
+            owned_by="xai",
+            output_modalities=["video"],
+        ),
+    ]
+    with (
+        patch.object(
+            client,
+            "async_get_account",
+            new_callable=AsyncMock,
+            return_value=MagicMock(subject="account"),
+        ),
+        patch.object(
+            client,
+            "_async_list_provider_models",
+            new_callable=AsyncMock,
+            return_value=models,
+        ),
+    ):
+        snapshot = await client.async_validate()
+    assert snapshot.account.subject == "account"
+    assert [model.id for model in snapshot.models] == ["grok-4.5"]
+    assert [model.id for model in snapshot.image_models] == [
+        "grok-imagine-image-quality"
+    ]
+    assert [model.id for model in snapshot.video_models] == ["grok-imagine-video-1.5"]
+
+
+async def test_validate_propagates_model_list_auth_failures(
+    hass: HomeAssistant,
+) -> None:
+    """Do not treat chat-proxy auth failures as an empty optional catalog."""
     client = _client(hass)
     with (
         patch.object(
@@ -471,14 +530,16 @@ async def test_validate_combines_account_and_models(hass: HomeAssistant) -> None
         ),
         patch.object(
             client,
-            "async_get_models",
+            "_async_list_provider_models",
             new_callable=AsyncMock,
-            return_value=(),
+            side_effect=AuthenticationRejectedError(
+                "auth rejected",
+                context=ErrorContext(operation=Operation.MODELS, status=401),
+            ),
         ),
+        pytest.raises(AuthenticationRejectedError),
     ):
-        snapshot = await client.async_validate()
-    assert snapshot.account.subject == "account"
-    assert snapshot.models == ()
+        await client.async_validate()
 
 
 @pytest.mark.parametrize(
@@ -730,16 +791,26 @@ async def test_http_400_with_non_object_body(
         await _client(hass).async_get_account()
 
 
+@pytest.mark.parametrize(
+    ("image_bytes", "mime_type"),
+    [
+        pytest.param(b"\xff\xd8\xff" + b"jpeg-padding", "image/jpeg", id="jpeg"),
+        pytest.param(b"\x89PNG" + b"png-padding", "image/png", id="png"),
+    ],
+)
 async def test_generate_image_success(
-    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+    hass: HomeAssistant,
+    aioclient_mock: AiohttpClientMocker,
+    image_bytes: bytes,
+    mime_type: str,
 ) -> None:
-    """Return decoded image bytes from the Imagine endpoint."""
+    """Return decoded image bytes and sniffed MIME type from the Imagine endpoint."""
     aioclient_mock.post(
         IMAGES_URL,
         json={
             "data": [
                 {
-                    "b64_json": base64.b64encode(b"image-bytes").decode(),
+                    "b64_json": base64.b64encode(image_bytes).decode(),
                     "revised_prompt": "a red bicycle at sunset",
                 }
             ]
@@ -748,8 +819,8 @@ async def test_generate_image_success(
     generated = await _client(hass).async_generate_image(
         model="grok-imagine-image-quality", prompt="a red bicycle"
     )
-    assert generated.image_data == b"image-bytes"
-    assert generated.mime_type == "image/jpeg"
+    assert generated.image_data == image_bytes
+    assert generated.mime_type == mime_type
     assert generated.model == "grok-imagine-image-quality"
     assert generated.revised_prompt == "a red bicycle at sunset"
     request = aioclient_mock.mock_calls[0][2]
@@ -918,3 +989,37 @@ async def test_synthesize_speech_connection_failure(
         await _client(hass).async_synthesize_speech(
             text="hello", voice_id="eve", language="en"
         )
+
+
+async def test_generate_video_refreshes_token_while_polling(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Refresh the OAuth access token on each video status poll."""
+    tokens = iter(["token-start", "token-poll-1", "token-poll-2"])
+    provider = AsyncMock()
+    provider.async_get_access_token = AsyncMock(side_effect=lambda: next(tokens))
+    client = SpaceXAIClient(hass, provider, runtime_session=False)
+
+    aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
+    status_url = f"{DEVELOPER_API_BASE_URL}/videos/req-1"
+    aioclient_mock.get(status_url, json={"status": "pending"})
+    aioclient_mock.get(
+        status_url,
+        json={"status": "done", "video": {"url": "https://vidgen.example/v.mp4"}},
+    )
+
+    with patch(
+        "homeassistant.components.spacexai.client.asyncio.sleep",
+        new_callable=AsyncMock,
+    ):
+        generated = await client.async_generate_video(
+            model="grok-imagine-video-1.5",
+            prompt="ball",
+            duration=3,
+        )
+
+    assert generated.url == "https://vidgen.example/v.mp4"
+    assert provider.async_get_access_token.await_count == 3
+    assert aioclient_mock.mock_calls[0][3]["Authorization"] == "Bearer token-start"
+    assert aioclient_mock.mock_calls[1][3]["Authorization"] == "Bearer token-poll-1"
+    assert aioclient_mock.mock_calls[2][3]["Authorization"] == "Bearer token-poll-2"

@@ -2,6 +2,7 @@
 
 import asyncio
 from http import HTTPStatus
+from typing import Any
 from unittest.mock import AsyncMock, patch
 from urllib.parse import parse_qs, urlparse
 
@@ -17,21 +18,56 @@ from homeassistant.components.spacexai.client import (
     ProviderSnapshot,
 )
 from homeassistant.components.spacexai.const import (
+    CONF_ALLOW_CONTROL_WITH_PROVIDER_TOOLS,
     CONF_CODE_INTERPRETER,
+    CONF_CREATE_STT,
+    CONF_CREATE_TTS,
+    CONF_DEFAULT_ASSIST,
+    CONF_IMAGE_ASPECT_RATIO,
+    CONF_IMAGE_GENERATION,
+    CONF_IMAGE_GENERATION_ACTION,
     CONF_IMAGE_MODEL,
+    CONF_IMAGE_RESOLUTION,
     CONF_MAX_OUTPUT_TOKENS,
+    CONF_RECOMMENDED,
+    CONF_SERVICE_TIER,
+    CONF_STORE_RESPONSES,
+    CONF_TEMPERATURE,
+    CONF_TOP_P,
     CONF_TTS_SPEED,
     CONF_VOICE,
     CONF_WEB_SEARCH,
+    CONF_WEB_SEARCH_ALLOWED_DOMAINS,
+    CONF_WEB_SEARCH_EXCLUDED_DOMAINS,
+    CONF_WEB_SEARCH_IMAGE_SEARCH,
+    CONF_WEB_SEARCH_IMAGE_UNDERSTANDING,
     CONF_X_SEARCH,
+    CONF_X_SEARCH_ALLOWED_HANDLES,
+    CONF_X_SEARCH_EXCLUDED_HANDLES,
+    CONF_X_SEARCH_IMAGE_UNDERSTANDING,
+    CONF_X_SEARCH_VIDEO_UNDERSTANDING,
+    DEFAULT_AI_TASK_MAX_OUTPUT_TOKENS,
+    DEFAULT_AI_TASK_SERVICE_TIER,
+    DEFAULT_ALLOW_CONTROL_WITH_PROVIDER_TOOLS,
     DEFAULT_CODE_INTERPRETER,
+    DEFAULT_IMAGE_ASPECT_RATIO,
+    DEFAULT_IMAGE_GENERATION,
+    DEFAULT_IMAGE_GENERATION_ACTION,
     DEFAULT_IMAGE_MODEL,
+    DEFAULT_IMAGE_RESOLUTION,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
+    DEFAULT_SERVICE_TIER,
+    DEFAULT_STORE_RESPONSES,
     DEFAULT_STT_NAME,
+    DEFAULT_TEMPERATURE,
+    DEFAULT_TOP_P,
+    DEFAULT_TTS_NAME,
     DEFAULT_VOICE,
     DEFAULT_WEB_SEARCH,
+    DEFAULT_WEB_SEARCH_IMAGE_SEARCH,
     DEFAULT_X_SEARCH,
+    DEFAULT_X_SEARCH_VIDEO_UNDERSTANDING,
     DOMAIN,
     OAUTH_SCOPES,
     TOKEN_URL,
@@ -66,13 +102,78 @@ from tests.typing import ClientSessionGenerator
 
 REDIRECT_URI = "https://example.com/auth/external/callback"
 CONVERSATION_DATA = {
+    CONF_RECOMMENDED: False,
     CONF_MODEL: DEFAULT_MODEL,
     CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
     CONF_PROMPT: "Be concise.",
     CONF_WEB_SEARCH: DEFAULT_WEB_SEARCH,
+    CONF_WEB_SEARCH_IMAGE_UNDERSTANDING: False,
+    CONF_WEB_SEARCH_IMAGE_SEARCH: DEFAULT_WEB_SEARCH_IMAGE_SEARCH,
     CONF_X_SEARCH: DEFAULT_X_SEARCH,
+    CONF_X_SEARCH_IMAGE_UNDERSTANDING: False,
+    CONF_X_SEARCH_VIDEO_UNDERSTANDING: DEFAULT_X_SEARCH_VIDEO_UNDERSTANDING,
     CONF_CODE_INTERPRETER: DEFAULT_CODE_INTERPRETER,
+    CONF_IMAGE_GENERATION: DEFAULT_IMAGE_GENERATION,
+    CONF_IMAGE_GENERATION_ACTION: DEFAULT_IMAGE_GENERATION_ACTION,
+    CONF_ALLOW_CONTROL_WITH_PROVIDER_TOOLS: DEFAULT_ALLOW_CONTROL_WITH_PROVIDER_TOOLS,
     CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
+    CONF_TEMPERATURE: DEFAULT_TEMPERATURE,
+    CONF_TOP_P: DEFAULT_TOP_P,
+    CONF_SERVICE_TIER: DEFAULT_SERVICE_TIER,
+    CONF_STORE_RESPONSES: DEFAULT_STORE_RESPONSES,
+    CONF_CREATE_STT: False,
+    CONF_CREATE_TTS: False,
+    CONF_DEFAULT_ASSIST: False,
+}
+
+
+async def _choose_customize(
+    hass: HomeAssistant, result: dict[str, Any]
+) -> dict[str, Any]:
+    """Select the customize path from the setup-mode menu."""
+    assert result["type"] is FlowResultType.MENU
+    assert result["step_id"] == "setup_mode"
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "customize"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "conversation"
+    return result
+
+
+async def _configure_custom_conversation(
+    hass: HomeAssistant,
+    result: dict[str, Any],
+    user_input: dict[str, Any],
+) -> dict[str, Any]:
+    """Open customize and submit conversation options."""
+    result = await _choose_customize(hass, result)
+    return await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_RECOMMENDED: False, **user_input}
+    )
+
+
+async def _configure_custom_conversation_subentry(
+    hass: HomeAssistant,
+    result: dict[str, Any],
+    user_input: dict[str, Any],
+    *,
+    expand: bool = True,
+) -> dict[str, Any]:
+    """Optionally expand recommended settings, then submit subentry options."""
+    if expand:
+        result = await hass.config_entries.subentries.async_configure(
+            result["flow_id"], {CONF_RECOMMENDED: False}
+        )
+        assert result["type"] is FlowResultType.FORM
+    return await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {CONF_RECOMMENDED: False, **user_input}
+    )
+CONVERSATION_STORED_DEFAULTS = {
+    CONF_WEB_SEARCH_ALLOWED_DOMAINS: [],
+    CONF_WEB_SEARCH_EXCLUDED_DOMAINS: [],
+    CONF_X_SEARCH_ALLOWED_HANDLES: [],
+    CONF_X_SEARCH_EXCLUDED_HANDLES: [],
 }
 
 
@@ -159,36 +260,134 @@ async def test_full_flow(
     assert query["client_id"] == "home-assistant-client"
     assert query["redirect_uri"] == REDIRECT_URI
     assert query["scope"] == " ".join(OAUTH_SCOPES)
-    assert query["plan"] == "generic"
-    assert query["referrer"] == "home-assistant"
     assert query["code_challenge_method"] == "S256"
     assert "code_challenge" in query
 
     result = await _complete_oauth(hass, result, hass_client_no_auth, aioclient_mock)
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "conversation"
+    assert result["type"] is FlowResultType.MENU
+    assert result["step_id"] == "setup_mode"
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], CONVERSATION_DATA
-    )
+    result = await _configure_custom_conversation(hass, result, CONVERSATION_DATA)
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Home User"
     assert result["result"].unique_id == ACCOUNT_ID
     assert result["data"]["token"]["access_token"] == ACCESS_TOKEN
+    assert result["data"][CONF_DEFAULT_ASSIST] is False
     subentries = list(result["result"].subentries.values())
-    assert len(subentries) == 4
+    assert len(subentries) == 2
     conversation = next(
         subentry for subentry in subentries if subentry.subentry_type == "conversation"
     )
     ai_task = next(
         subentry for subentry in subentries if subentry.subentry_type == "ai_task_data"
     )
-    assert conversation.data == CONVERSATION_DATA
+    expected_conversation = {
+        key: value
+        for key, value in {**CONVERSATION_DATA, **CONVERSATION_STORED_DEFAULTS}.items()
+        if key not in {CONF_CREATE_STT, CONF_CREATE_TTS, CONF_DEFAULT_ASSIST}
+    }
+    assert conversation.data == expected_conversation
     assert ai_task.data == {
         CONF_MODEL: CONVERSATION_DATA[CONF_MODEL],
-        CONF_MAX_OUTPUT_TOKENS: CONVERSATION_DATA[CONF_MAX_OUTPUT_TOKENS],
+        CONF_MAX_OUTPUT_TOKENS: DEFAULT_AI_TASK_MAX_OUTPUT_TOKENS,
+        CONF_TEMPERATURE: DEFAULT_TEMPERATURE,
+        CONF_TOP_P: DEFAULT_TOP_P,
+        CONF_SERVICE_TIER: DEFAULT_AI_TASK_SERVICE_TIER,
+        CONF_STORE_RESPONSES: DEFAULT_STORE_RESPONSES,
         CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
+        CONF_IMAGE_ASPECT_RATIO: DEFAULT_IMAGE_ASPECT_RATIO,
+        CONF_IMAGE_RESOLUTION: DEFAULT_IMAGE_RESOLUTION,
     }
+    mock_validate.assert_awaited_once()
+
+
+@pytest.mark.usefixtures(
+    "current_request_with_host", "setup_credentials", "mock_setup_entry"
+)
+async def test_full_flow_recommended_settings(
+    hass: HomeAssistant,
+    hass_client_no_auth: ClientSessionGenerator,
+    aioclient_mock: AiohttpClientMocker,
+    mock_validate: AsyncMock,
+) -> None:
+    """Recommended path creates conversation, AI task, STT, and TTS."""
+    result = await _start_browser_flow(hass)
+    result = await _complete_oauth(hass, result, hass_client_no_auth, aioclient_mock)
+    assert result["type"] is FlowResultType.MENU
+    assert result["step_id"] == "setup_mode"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "recommended"}
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "recommended"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_DEFAULT_ASSIST: True}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["data"][CONF_DEFAULT_ASSIST] is True
+    subentry_types = {
+        subentry.subentry_type for subentry in result["result"].subentries.values()
+    }
+    assert subentry_types == {
+        "conversation",
+        "ai_task_data",
+        "stt",
+        "tts",
+    }
+    conversation = next(
+        subentry
+        for subentry in result["result"].subentries.values()
+        if subentry.subentry_type == "conversation"
+    )
+    assert conversation.data[CONF_RECOMMENDED] is True
+    assert conversation.data[CONF_MODEL] == DEFAULT_MODEL
+    assert conversation.data[CONF_LLM_HASS_API] == [llm.LLM_API_ASSIST]
+    assert conversation.data[CONF_MAX_OUTPUT_TOKENS] == DEFAULT_MAX_OUTPUT_TOKENS
+    assert conversation.data[CONF_TEMPERATURE] == DEFAULT_TEMPERATURE
+    assert conversation.data[CONF_TOP_P] == DEFAULT_TOP_P
+    assert conversation.data[CONF_SERVICE_TIER] == DEFAULT_SERVICE_TIER
+    assert conversation.data[CONF_STORE_RESPONSES] is DEFAULT_STORE_RESPONSES
+    assert conversation.data[CONF_PROMPT] == llm.DEFAULT_INSTRUCTIONS_PROMPT
+    mock_validate.assert_awaited_once()
+
+
+@pytest.mark.usefixtures(
+    "current_request_with_host", "setup_credentials", "mock_setup_entry"
+)
+async def test_full_flow_creates_speech_subentries_when_requested(
+    hass: HomeAssistant,
+    hass_client_no_auth: ClientSessionGenerator,
+    aioclient_mock: AiohttpClientMocker,
+    mock_validate: AsyncMock,
+) -> None:
+    """Create STT/TTS subentries when the install options are enabled."""
+    result = await _start_browser_flow(hass)
+    result = await _complete_oauth(hass, result, hass_client_no_auth, aioclient_mock)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {"next_step_id": "recommended"}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_DEFAULT_ASSIST: False}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    subentries = list(result["result"].subentries.values())
+    assert {subentry.subentry_type for subentry in subentries} == {
+        "conversation",
+        "ai_task_data",
+        "stt",
+        "tts",
+    }
+    assert len(subentries) == 4
+    assert any(
+        subentry.subentry_type == "stt" and subentry.title == DEFAULT_STT_NAME
+        for subentry in subentries
+    )
+    assert any(
+        subentry.subentry_type == "tts" and subentry.title == DEFAULT_TTS_NAME
+        for subentry in subentries
+    )
     mock_validate.assert_awaited_once()
 
 
@@ -349,8 +548,8 @@ async def test_validation_recovers(
     assert result["errors"] == {"base": "cannot_connect"}
 
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "conversation"
+    assert result["type"] is FlowResultType.MENU
+    assert result["step_id"] == "setup_mode"
 
 
 @pytest.mark.usefixtures(
@@ -363,7 +562,11 @@ async def test_reauth(
     mock_validate: AsyncMock,
     mock_config_entry: MockConfigEntry,
 ) -> None:
-    """Update OAuth tokens after reauthentication."""
+    """Update OAuth tokens after reauthentication without wiping entry data."""
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        data={**mock_config_entry.data, CONF_DEFAULT_ASSIST: True},
+    )
     result = await mock_config_entry.start_reauth_flow(hass)
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "reauth_confirm"
@@ -378,6 +581,7 @@ async def test_reauth(
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reauth_successful"
     assert mock_config_entry.data["token"]["access_token"] == ACCESS_TOKEN
+    assert mock_config_entry.data[CONF_DEFAULT_ASSIST] is True
 
 
 @pytest.mark.usefixtures(
@@ -455,8 +659,10 @@ async def test_subentry_add_and_reconfigure(
         context={"source": config_entries.SOURCE_USER},
     )
     assert result["type"] is FlowResultType.FORM
-    result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"],
+    assert len(result["data_schema"].schema) == 1
+    result = await _configure_custom_conversation_subentry(
+        hass,
+        result,
         {
             CONF_MODEL: "grok-4.3",
             CONF_MAX_OUTPUT_TOKENS: 1024,
@@ -472,12 +678,19 @@ async def test_subentry_add_and_reconfigure(
     )
     assert added_subentry.title == "Grok"
     assert added_subentry.data == {
+        CONF_RECOMMENDED: False,
         CONF_MODEL: "grok-4.3",
         CONF_MAX_OUTPUT_TOKENS: 1024,
         CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
         CONF_WEB_SEARCH: False,
+        CONF_WEB_SEARCH_IMAGE_UNDERSTANDING: False,
         CONF_X_SEARCH: False,
+        CONF_X_SEARCH_IMAGE_UNDERSTANDING: False,
         CONF_CODE_INTERPRETER: False,
+        CONF_IMAGE_GENERATION: False,
+        CONF_IMAGE_GENERATION_ACTION: DEFAULT_IMAGE_GENERATION_ACTION,
+        CONF_ALLOW_CONTROL_WITH_PROVIDER_TOOLS: False,
+        **CONVERSATION_STORED_DEFAULTS,
     }
     await hass.async_block_till_done()
     assert {
@@ -494,16 +707,47 @@ async def test_subentry_add_and_reconfigure(
             "subentry_id": original_subentry.subentry_id,
         },
     )
-    result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"],
+    result = await _configure_custom_conversation_subentry(
+        hass,
+        result,
         {
             CONF_MODEL: "grok-4.3",
             CONF_MAX_OUTPUT_TOKENS: 4096,
         },
+        expand=False,
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert original_subentry.data[CONF_MAX_OUTPUT_TOKENS] == 4096
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_conversation_subentry_requires_allow_control_with_provider_tools(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+) -> None:
+    """Reject Assist control plus provider tools without the explicit override."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "conversation"),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    result = await _configure_custom_conversation_subentry(
+        hass,
+        result,
+        {
+            CONF_MODEL: "grok-4.3",
+            CONF_MAX_OUTPUT_TOKENS: 1024,
+            CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
+            CONF_WEB_SEARCH: True,
+            CONF_ALLOW_CONTROL_WITH_PROVIDER_TOOLS: False,
+        },
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"] == {
+        CONF_ALLOW_CONTROL_WITH_PROVIDER_TOOLS: "control_with_provider_tools"
+    }
 
 
 @pytest.mark.usefixtures("setup_credentials")
@@ -528,12 +772,14 @@ async def test_reconfigure_withdrawn_model(
         (mock_config_entry.entry_id, "conversation"),
         context={"source": "reconfigure", "subentry_id": subentry.subentry_id},
     )
-    result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"],
+    result = await _configure_custom_conversation_subentry(
+        hass,
+        result,
         {
             CONF_MODEL: "grok-other",
             CONF_MAX_OUTPUT_TOKENS: 2048,
         },
+        expand=False,
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
@@ -701,12 +947,10 @@ async def test_device_code_flow(
 
         await hass.async_block_till_done()
         result = await hass.config_entries.flow.async_configure(result["flow_id"])
-        assert result["type"] is FlowResultType.FORM
-        assert result["step_id"] == "conversation"
+        assert result["type"] is FlowResultType.MENU
+        assert result["step_id"] == "setup_mode"
 
-        result = await hass.config_entries.flow.async_configure(
-            result["flow_id"], CONVERSATION_DATA
-        )
+        result = await _configure_custom_conversation(hass, result, CONVERSATION_DATA)
         assert result["type"] is FlowResultType.CREATE_ENTRY
         assert result["result"].unique_id == ACCOUNT_ID
         assert result["data"]["token"]["access_token"] == ACCESS_TOKEN

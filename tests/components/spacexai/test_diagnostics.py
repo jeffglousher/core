@@ -47,11 +47,19 @@ async def test_diagnostics_are_sanitized(
     assert "access_token" not in diagnostics["oauth"]
     assert "refresh_token" not in diagnostics["oauth"]
     assert diagnostics["available_models"] == ["grok-4.5", "grok-4.3"]
+    assert diagnostics["platforms"] == {
+        "conversation": True,
+        "ai_task": True,
+        "stt": True,
+        "tts": True,
+    }
     assert diagnostics["conversation"][0]["model"] == "grok-4.5"
     assert diagnostics["conversation"][0]["model_entitled"] is True
     assert diagnostics["conversation"][0][CONF_PROMPT] == REDACTED
     assert diagnostics["ai_task"][0]["model"] == "grok-4.5"
     assert diagnostics["ai_task"][0]["model_entitled"] is True
+    assert diagnostics["stt"][0]["title"] == "Grok STT"
+    assert diagnostics["tts"][0]["title"] == "Grok TTS"
     serialized = json.dumps(diagnostics)
     assert ACCESS_TOKEN not in serialized
     assert REFRESH_TOKEN not in serialized

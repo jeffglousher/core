@@ -208,32 +208,34 @@ Runtime credential rejection (`runtime_session=True`) → `ReauthenticationRequi
 
 ---
 
-## 5. Weak areas (ranked)
+## 5. Weak areas (ranked) — remediation status
+
+Addressed on `cursor/spacexai-optimized-surface-0109` unless noted.
 
 ### Tier S — Security / privacy / safety
 
-1. **Capability aggregation** — One conversation subentry can enable Assist CONTROL **and** web/X search **and** code interpreter. Blast radius if prompt injection or tool policy is weak.  
-2. **Broad OAuth scopes** — `grok-cli:access` + profile/email until HA-specific scopes exist (`const.OAUTH_SCOPES`).  
-3. **Attachment filename = host path** — `ResponseInputFileParam(filename=str(file_path))` leaks local paths to the provider.  
-4. **Device-code polling lifetime** — Abandoned flows can keep posting `device_code` until expiry.
+1. **Capability aggregation** — **Addressed:** explicit `allow_control_with_provider_tools` opt-in required when Assist APIs combine with provider tools.  
+2. **Broad OAuth scopes** — **Addressed:** scopes reduced to `openid offline_access api:access`.  
+3. **Attachment filename = host path** — **Addressed:** basename only via `files.py`.  
+4. **Device-code polling lifetime** — **Addressed:** cancel on retry paths + `DEVICE_CODE_MAX_POLL_SECONDS` ceiling.
 
 ### Tier A — Reliability / correctness
 
-5. **Stale entitlement snapshot** — Catalog validated at setup/reload; image models never snapshotted.  
-6. **Hardcoded Imagine MIME = JPEG** — `client._parse_generated_image`.  
-7. **SDK lock + unlimited platform concurrency** — Assist/AI Task serialize behind `_sdk_lock`.  
-8. **Per-event stream timeout** — `RESPONSE_TIMEOUT` applied between events, not wall-clock per turn.  
-9. **STT silent `except Exception`** — Returns ERROR without the logging discipline used elsewhere.  
-10. **Bare code_interpreter tool shape** — Spec fragility vs OpenAI container form.
+5. **Stale entitlement snapshot** — **Addressed:** image/video models partitioned into `ProviderSnapshot`.  
+6. **Hardcoded Imagine MIME = JPEG** — **Addressed:** magic-byte MIME sniff + size cap.  
+7. **SDK lock + unlimited platform concurrency** — **Addressed:** lock narrowed to SDK client construct/mutate.  
+8. **Per-event stream timeout** — **Addressed:** wall-clock + idle timeouts in `stream.py`.  
+9. **STT silent `except Exception`** — **Addressed:** `_LOGGER.exception` + audio size cap.  
+10. **Bare code_interpreter tool shape** — **Won't-fix / docs-correct:** official xAI Responses form is bare `{"type":"code_interpreter"}`.
 
 ### Tier B — Product / HA-fit
 
-11. **AI Task tool-loop cap = 10** — Likely too low vs OpenAI AI Task.  
-12. **Unavailable-on-429** — Easy to strand Assist after transient rate limits.  
-13. **No media size limits** — Full STT buffer, full base64 attachments, full image decode → memory pressure.  
-14. **`entity.py` concentration** — Stream state machine + schema + files + availability in one module (~900 LOC).  
-15. **Forced four subentries** — Install surface larger than many users need.  
-16. **Entry-level agent registration** — `async_set_agent` keyed by `entry_id` is a footgun with multiple conversation subentries (shared with OpenAI).
+11. **AI Task tool-loop cap = 10** — **Addressed:** AI Task uses `MAX_AI_TASK_TOOL_ITERATIONS = 1000`.  
+12. **Unavailable-on-429** — **Addressed:** rate limits no longer mark entities unavailable.  
+13. **No media size limits** — **Addressed:** attachment/STT/image byte caps.  
+14. **`entity.py` concentration** — **Addressed:** split into `stream.py` + `files.py`.  
+15. **Forced four subentries** — **Addressed:** install creates conversation + AI Task; STT/TTS opt-in.  
+16. **Entry-level agent registration** — **Documented:** Core API is entry-keyed (OpenAI parity); noted on conversation entity.
 
 ---
 
