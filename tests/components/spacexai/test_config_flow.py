@@ -148,9 +148,11 @@ async def _configure_custom_conversation(
 ) -> dict[str, Any]:
     """Open customize and submit conversation options."""
     result = await _choose_customize(hass, result)
-    return await hass.config_entries.flow.async_configure(
-        result["flow_id"], {CONF_RECOMMENDED: False, **user_input}
-    )
+    # Install customize uses force_custom (no recommended toggle in the schema).
+    payload = {
+        key: value for key, value in user_input.items() if key != CONF_RECOMMENDED
+    }
+    return await hass.config_entries.flow.async_configure(result["flow_id"], payload)
 
 
 async def _configure_custom_conversation_subentry(
@@ -686,12 +688,18 @@ async def test_subentry_add_and_reconfigure(
         CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
         CONF_WEB_SEARCH: False,
         CONF_WEB_SEARCH_IMAGE_UNDERSTANDING: False,
+        CONF_WEB_SEARCH_IMAGE_SEARCH: DEFAULT_WEB_SEARCH_IMAGE_SEARCH,
         CONF_X_SEARCH: False,
         CONF_X_SEARCH_IMAGE_UNDERSTANDING: False,
+        CONF_X_SEARCH_VIDEO_UNDERSTANDING: DEFAULT_X_SEARCH_VIDEO_UNDERSTANDING,
         CONF_CODE_INTERPRETER: False,
         CONF_IMAGE_GENERATION: False,
         CONF_IMAGE_GENERATION_ACTION: DEFAULT_IMAGE_GENERATION_ACTION,
         CONF_ALLOW_CONTROL_WITH_PROVIDER_TOOLS: False,
+        CONF_TEMPERATURE: DEFAULT_TEMPERATURE,
+        CONF_TOP_P: DEFAULT_TOP_P,
+        CONF_SERVICE_TIER: DEFAULT_SERVICE_TIER,
+        CONF_STORE_RESPONSES: DEFAULT_STORE_RESPONSES,
         **CONVERSATION_STORED_DEFAULTS,
     }
     await hass.async_block_till_done()

@@ -214,16 +214,22 @@ async def test_setup_model_not_entitled(
         account=AccountInfo(ACCOUNT_ID, "Home User", None),
         models=(ModelInfo("grok-other", "xai"),),
     )
-    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
-    assert mock_config_entry.state is ConfigEntryState.LOADED
-    state = hass.states.get("conversation.grok")
-    assert state is not None
-    assert state.state == STATE_UNAVAILABLE
     subentry = next(
         entry
         for entry in mock_config_entry.subentries.values()
         if entry.subentry_type == "conversation"
     )
+    # DEFAULT_MODEL and other grok-* chat ids stay entitled without catalog hits.
+    hass.config_entries.async_update_subentry(
+        mock_config_entry,
+        subentry,
+        data={**subentry.data, CONF_MODEL: "provider-exclusive-model"},
+    )
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    state = hass.states.get("conversation.grok")
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
     assert issue_registry.async_get_issue(
         "spacexai", f"model_not_entitled_{subentry.subentry_id}"
     )

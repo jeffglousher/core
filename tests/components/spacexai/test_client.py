@@ -50,6 +50,7 @@ from homeassistant.components.spacexai.errors import (
     RefreshRejectedError,
     RequestTimeoutError,
     SpaceXAIError,
+    SubscriptionNotEntitledError,
     TransientProviderError,
 )
 from homeassistant.core import HomeAssistant
@@ -130,7 +131,7 @@ async def test_account_invalid_json(
     [
         pytest.param(401, AuthenticationRejectedError, id="authentication"),
         pytest.param(402, QuotaLimitedError, id="quota"),
-        pytest.param(403, PermanentProviderError, id="permission"),
+        pytest.param(403, SubscriptionNotEntitledError, id="subscription-tier"),
         pytest.param(429, RateLimitedError, id="rate-limit"),
     ],
 )
@@ -381,12 +382,12 @@ def test_error_category_values_match_translation_keys() -> None:
 
 
 def test_permission_status_classification(hass: HomeAssistant) -> None:
-    """Do not infer consumer subscription state from permission denial."""
+    """Treat HTTP 403 as a subscription tier gate for CLI-proxy OAuth."""
     provider_error = PermissionDeniedError(
         message="Permission denied",
         response=httpx.Response(
             status_code=403,
-            request=httpx.Request("GET", "https://api.x.ai/v1/models"),
+            request=httpx.Request("GET", "https://cli-chat-proxy.grok.com/v1/models"),
         ),
         body={"error": {"code": "permission_denied"}},
     )
@@ -394,7 +395,7 @@ def test_permission_status_classification(hass: HomeAssistant) -> None:
         provider_error,
         ErrorContext(operation=Operation.RESPONSE, model="grok-4.5"),
     )
-    assert isinstance(classified, PermanentProviderError)
+    assert isinstance(classified, SubscriptionNotEntitledError)
     assert classified.context.provider_code == "permission_denied"
 
 
@@ -994,9 +995,10 @@ async def test_generate_video_refreshes_token_while_polling(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:
     """Refresh the OAuth access token on each video status poll."""
-    tokens = iter(["token-start", "token-poll-1", "token-poll-2"])
     provider = AsyncMock()
-    provider.async_get_access_token = AsyncMock(side_effect=lambda: next(tokens))
+    provider.async_get_access_token = AsyncMock(
+        side_effect=["token-start", "token-poll-1", "token-poll-2"]
+    )
     client = SpaceXAIClient(hass, provider, runtime_session=False)
 
     aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
