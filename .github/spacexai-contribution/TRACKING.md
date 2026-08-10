@@ -52,7 +52,8 @@ Speech/Imagine repair copy only fires when `api.x.ai` actually rejects the sessi
 
 ## Stack rebuild (2026-08-10)
 
-Fat tip PR #8 content redistributed and tip branch aligned to wave 7 (cursor/spacexai-optimized-surface-0109 @ 4d72a4a3).
+Fat tip PR #8 content redistributed and tip branch aligned to wave 7
+(`cursor/spacexai-optimized-surface-0109`).
 
 | Wave | Branch tip ownership after rebuild |
 | --- | --- |
@@ -62,5 +63,5 @@ Fat tip PR #8 content redistributed and tip branch aligned to wave 7 (cursor/spa
 | 7 | Optimized surface (defaults, UI, brands, video, adversarial) |
 | tip #8 | Closed; empty vs wave 7 |
 
-Backup: tag ackup/spacexai-tip-pre-rebuild (963d538f).
+Backup: tag `backup/spacexai-tip-pre-rebuild` (`963d538f`).
 
