@@ -169,6 +169,8 @@ async def _configure_custom_conversation_subentry(
     return await hass.config_entries.subentries.async_configure(
         result["flow_id"], {CONF_RECOMMENDED: False, **user_input}
     )
+
+
 CONVERSATION_STORED_DEFAULTS = {
     CONF_WEB_SEARCH_ALLOWED_DOMAINS: [],
     CONF_WEB_SEARCH_EXCLUDED_DOMAINS: [],

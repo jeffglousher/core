@@ -198,6 +198,8 @@ async def test_assist_does_not_hijack_foreign_pipeline_named_grok(
 
     assert applied is True
     create_pipeline.assert_awaited_once()
-    assert update_pipeline.await_args.kwargs["conversation_engine"] == conversation_entity
+    assert (
+        update_pipeline.await_args.kwargs["conversation_engine"] == conversation_entity
+    )
     # Foreign pipeline must not be the update target.
     assert update_pipeline.await_args.args[1] is created

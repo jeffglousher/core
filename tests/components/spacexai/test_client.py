@@ -50,7 +50,6 @@ from homeassistant.components.spacexai.errors import (
     RefreshRejectedError,
     RequestTimeoutError,
     SpaceXAIError,
-    SubscriptionNotEntitledError,
     TransientProviderError,
 )
 from homeassistant.core import HomeAssistant

@@ -1,5 +1,6 @@
 """Tests for SpaceXAI setup and lifecycle."""
 
+import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -9,6 +10,15 @@ from homeassistant.components.spacexai.client import (
     AccountInfo,
     ModelInfo,
     ProviderSnapshot,
+)
+from homeassistant.components.spacexai.const import (
+    CONF_IMAGE_MODEL,
+    CONF_MAX_OUTPUT_TOKENS,
+    DEFAULT_IMAGE_MODEL,
+    DEFAULT_MAX_OUTPUT_TOKENS,
+    DEFAULT_MODEL,
+    DEFAULT_STT_NAME,
+    DEFAULT_TTS_NAME,
 )
 from homeassistant.components.spacexai.errors import (
     AuthenticationRejectedError,
@@ -26,12 +36,12 @@ from homeassistant.components.spacexai.errors import (
     SubscriptionNotEntitledError,
     TransientProviderError,
 )
-from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import STATE_UNAVAILABLE
+from homeassistant.config_entries import ConfigEntryState, ConfigSubentryData
+from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import issue_registry as ir, llm
 
-from .conftest import ACCOUNT_ID
+from .conftest import ACCESS_TOKEN, ACCOUNT_ID, REFRESH_TOKEN
 
 from tests.common import MockConfigEntry
 
@@ -438,23 +448,6 @@ async def test_migrate_adds_missing_speech_subentries(
     mock_validate: AsyncMock,
 ) -> None:
     """Migrate v1.1 entries that only had conversation + AI Task."""
-    import time
-
-    from homeassistant.components.spacexai.const import (
-        CONF_IMAGE_MODEL,
-        CONF_MAX_OUTPUT_TOKENS,
-        DEFAULT_IMAGE_MODEL,
-        DEFAULT_MAX_OUTPUT_TOKENS,
-        DEFAULT_MODEL,
-        DEFAULT_STT_NAME,
-        DEFAULT_TTS_NAME,
-    )
-    from homeassistant.config_entries import ConfigSubentryData
-    from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL
-    from homeassistant.helpers import llm
-
-    from .conftest import ACCOUNT_ID, ACCESS_TOKEN, REFRESH_TOKEN
-
     entry = MockConfigEntry(
         domain="spacexai",
         title="Home User",

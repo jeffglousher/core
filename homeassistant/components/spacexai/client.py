@@ -28,6 +28,7 @@ from homeassistant.helpers.httpx_client import get_async_client
 
 from .const import (
     API_BASE_URL,
+    DEFAULT_MODEL,
     DEVELOPER_API_BASE_URL,
     GROK_CLI_REQUEST_HEADERS,
     HTTP_TIMEOUT_SECONDS,
@@ -35,7 +36,6 @@ from .const import (
     IMAGE_TIMEOUT_SECONDS,
     IMAGES_EDIT_URL,
     IMAGES_URL,
-    DEFAULT_MODEL,
     LOGGER,
     MAX_IMAGE_BYTES,
     MAX_IMAGE_COUNT,

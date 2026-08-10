@@ -16,9 +16,7 @@ async def async_get_config_entry_diagnostics(
 ) -> dict[str, Any]:
     """Return sanitized diagnostics for a SpaceXAI account."""
     runtime = entry.runtime_data
-    subentry_types = {
-        subentry.subentry_type for subentry in entry.subentries.values()
-    }
+    subentry_types = {subentry.subentry_type for subentry in entry.subentries.values()}
     return {
         "account": async_redact_data(
             {
@@ -34,12 +32,8 @@ async def async_get_config_entry_diagnostics(
             "scope": entry.data["token"].get("scope"),
         },
         "available_models": [model.id for model in runtime.snapshot.models],
-        "available_image_models": [
-            model.id for model in runtime.snapshot.image_models
-        ],
-        "available_video_models": [
-            model.id for model in runtime.snapshot.video_models
-        ],
+        "available_image_models": [model.id for model in runtime.snapshot.image_models],
+        "available_video_models": [model.id for model in runtime.snapshot.video_models],
         "platforms": {
             "conversation": "conversation" in subentry_types,
             "ai_task": "ai_task_data" in subentry_types,

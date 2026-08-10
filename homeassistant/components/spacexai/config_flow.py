@@ -95,7 +95,6 @@ from .const import (
     DEFAULT_STT_NAME,
     DEFAULT_TEMPERATURE,
     DEFAULT_TOP_P,
-    SERVICE_TIERS,
     DEFAULT_TTS_NAME,
     DEFAULT_TTS_SPEED,
     DEFAULT_VOICE,
@@ -106,11 +105,12 @@ from .const import (
     DOMAIN,
     GROK_CLI_OAUTH_CLIENT_ID,
     IMAGE_ASPECT_RATIOS,
-    MODEL_CUSTOM_OPTION,
     IMAGE_GENERATION_ACTIONS,
     IMAGE_MODELS,
     IMAGE_RESOLUTIONS,
     LOGGER,
+    MODEL_CUSTOM_OPTION,
+    SERVICE_TIERS,
     TTS_VOICES,
 )
 from .errors import (
@@ -636,18 +636,19 @@ class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
             options.setdefault(CONF_RECOMMENDED, is_new)
             self._last_rendered_recommended = bool(options[CONF_RECOMMENDED])
             current_model = options.get(CONF_MODEL)
-            self._last_rendered_custom_model = (
-                current_model == MODEL_CUSTOM_OPTION
-                or (
-                    isinstance(current_model, str)
-                    and current_model not in {
-                        *_discovered_model_ids(snapshot),
-                        DEFAULT_MODEL,
-                    }
-                    and bool(current_model)
-                )
+            self._last_rendered_custom_model = current_model == MODEL_CUSTOM_OPTION or (
+                isinstance(current_model, str)
+                and current_model
+                not in {
+                    *_discovered_model_ids(snapshot),
+                    DEFAULT_MODEL,
+                }
+                and bool(current_model)
             )
-            if self._last_rendered_custom_model and current_model != MODEL_CUSTOM_OPTION:
+            if (
+                self._last_rendered_custom_model
+                and current_model != MODEL_CUSTOM_OPTION
+            ):
                 options[CONF_MODEL_CUSTOM] = current_model
                 options[CONF_MODEL] = MODEL_CUSTOM_OPTION
         else:
@@ -739,16 +740,16 @@ class SpaceXAIAITaskSubentryFlow(ConfigSubentryFlow):
                 else dict(self._get_reconfigure_subentry().data)
             )
             current_model = options.get(CONF_MODEL)
-            self._last_rendered_custom_model = (
-                current_model == MODEL_CUSTOM_OPTION
-                or (
-                    isinstance(current_model, str)
-                    and current_model
-                    not in {*_discovered_model_ids(snapshot), DEFAULT_MODEL}
-                    and bool(current_model)
-                )
+            self._last_rendered_custom_model = current_model == MODEL_CUSTOM_OPTION or (
+                isinstance(current_model, str)
+                and current_model
+                not in {*_discovered_model_ids(snapshot), DEFAULT_MODEL}
+                and bool(current_model)
             )
-            if self._last_rendered_custom_model and current_model != MODEL_CUSTOM_OPTION:
+            if (
+                self._last_rendered_custom_model
+                and current_model != MODEL_CUSTOM_OPTION
+            ):
                 options[CONF_MODEL_CUSTOM] = current_model
                 options[CONF_MODEL] = MODEL_CUSTOM_OPTION
         else:
@@ -867,11 +868,7 @@ class SpaceXAITTSSubentryFlow(ConfigSubentryFlow):
 
 def _discovered_model_ids(snapshot: ProviderSnapshot) -> list[str]:
     """Return discovered chat model ids in display order."""
-    return [
-        model_id
-        for model in snapshot.models
-        for model_id in model.selectable_ids
-    ]
+    return [model_id for model in snapshot.models for model_id in model.selectable_ids]
 
 
 def _default_chat_model(_snapshot: ProviderSnapshot) -> str:
@@ -895,10 +892,7 @@ def _model_selector_defaults(
     custom_model: str | None = None
     if suggested is not None:
         if isinstance(suggested_model := suggested.get(CONF_MODEL), str):
-            if (
-                suggested_model in discovered_set
-                or suggested_model == DEFAULT_MODEL
-            ):
+            if suggested_model in discovered_set or suggested_model == DEFAULT_MODEL:
                 default_model = suggested_model
             elif suggested_model:
                 default_model = MODEL_CUSTOM_OPTION
@@ -996,9 +990,10 @@ def _finalize_model_input(
         user_input[CONF_TOP_P] = DEFAULT_TOP_P
     if CONF_STORE_RESPONSES not in user_input:
         user_input[CONF_STORE_RESPONSES] = DEFAULT_STORE_RESPONSES
-    if CONF_SERVICE_TIER not in user_input:
-        user_input[CONF_SERVICE_TIER] = DEFAULT_SERVICE_TIER
-    elif user_input[CONF_SERVICE_TIER] not in SERVICE_TIERS:
+    if (
+        CONF_SERVICE_TIER not in user_input
+        or user_input[CONF_SERVICE_TIER] not in SERVICE_TIERS
+    ):
         user_input[CONF_SERVICE_TIER] = DEFAULT_SERVICE_TIER
     return {}
 
@@ -1263,9 +1258,9 @@ def _conversation_schema(
         suggested_default_assist = bool(
             defaults.get(CONF_DEFAULT_ASSIST, DEFAULT_DEFAULT_ASSIST)
         )
-        schema[
-            vol.Required(CONF_DEFAULT_ASSIST, default=suggested_default_assist)
-        ] = BooleanSelector()
+        schema[vol.Required(CONF_DEFAULT_ASSIST, default=suggested_default_assist)] = (
+            BooleanSelector()
+        )
     return vol.Schema(schema)
 
 

@@ -308,9 +308,7 @@ async def async_migrate_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -
     return True
 
 
-def _ensure_speech_subentries(
-    hass: HomeAssistant, entry: SpaceXAIConfigEntry
-) -> None:
+def _ensure_speech_subentries(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> None:
     """Add STT/TTS subentries when an older install omitted them."""
     existing = {subentry.subentry_type for subentry in entry.subentries.values()}
     if "stt" not in existing:

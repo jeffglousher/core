@@ -519,14 +519,10 @@ class SpaceXAIBaseLLMEntity(Entity):
             self._mark_unavailable(err)
             return
 
-        if (
-            err.category
-            in (
-                ErrorCategory.SUBSCRIPTION_NOT_ENTITLED,
-                ErrorCategory.QUOTA_LIMITED,
-            )
-            and err.context.operation in (Operation.STT, Operation.TTS, Operation.IMAGE)
-        ):
+        if err.category in (
+            ErrorCategory.SUBSCRIPTION_NOT_ENTITLED,
+            ErrorCategory.QUOTA_LIMITED,
+        ) and err.context.operation in (Operation.STT, Operation.TTS, Operation.IMAGE):
             # Raised only when api.x.ai rejects this session for STT/TTS/Imagine.
             ir.async_create_issue(
                 self.hass,
