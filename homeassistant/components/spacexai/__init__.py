@@ -1,18 +1,27 @@
 """The SpaceXAI integration."""
 
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import cast
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_MODEL, Platform
-from homeassistant.core import HomeAssistant
+import voluptuous as vol
+
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
+from homeassistant.const import CONF_MODEL, CONF_PROMPT, Platform
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+)
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryError,
     ConfigEntryNotReady,
     HomeAssistantError,
+    ServiceValidationError,
 )
-from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers import config_validation as cv, issue_registry as ir
 from homeassistant.helpers.config_entry_oauth2_flow import (
     ImplementationUnavailableError,
     LocalOAuth2Implementation,
@@ -20,6 +29,8 @@ from homeassistant.helpers.config_entry_oauth2_flow import (
     async_get_config_entry_implementation,
 )
 from homeassistant.helpers.json import json_dumps
+from homeassistant.helpers.service import async_register_admin_service
+from homeassistant.helpers.typing import ConfigType
 
 from .client import (
     OAuthAccessTokenProvider,
@@ -27,7 +38,20 @@ from .client import (
     SpaceXAIClient,
     StaticAccessTokenProvider,
 )
-from .const import CONF_DEFAULT_ASSIST, DEFAULT_MODEL_PLACEHOLDER, DOMAIN, LOGGER
+from .const import (
+    CONF_DEFAULT_ASSIST,
+    CONF_TTS_SPEED,
+    CONF_VOICE,
+    DEFAULT_MODEL_PLACEHOLDER,
+    DEFAULT_STT_NAME,
+    DEFAULT_TTS_NAME,
+    DEFAULT_TTS_SPEED,
+    DEFAULT_VIDEO_MODEL,
+    DEFAULT_VOICE,
+    DOMAIN,
+    LOGGER,
+    SERVICE_GENERATE_VIDEO,
+)
 from .errors import (
     AccountMismatchError,
     AuthenticationRejectedError,
@@ -47,8 +71,75 @@ from .errors import (
 )
 
 PLATFORMS = (Platform.AI_TASK, Platform.CONVERSATION, Platform.STT, Platform.TTS)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 ISSUE_SUBSCRIPTION_NOT_ENTITLED = "subscription_not_entitled"
 ISSUE_MODEL_NOT_ENTITLED = "model_not_entitled"
+
+SERVICE_GENERATE_VIDEO_SCHEMA = vol.Schema(
+    {
+        vol.Required("config_entry"): cv.string,
+        vol.Required(CONF_PROMPT): cv.string,
+        vol.Optional(CONF_MODEL, default=DEFAULT_VIDEO_MODEL): cv.string,
+        vol.Optional("image_url"): cv.string,
+        vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1, max=15)),
+    }
+)
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up SpaceXAI services."""
+
+    async def async_generate_video(call: ServiceCall) -> ServiceResponse:
+        """Generate a video with Imagine and return the provider URL."""
+        entry_id = call.data["config_entry"]
+        entry = hass.config_entries.async_get_entry(entry_id)
+        if (
+            entry is None
+            or entry.domain != DOMAIN
+            or not isinstance(entry.runtime_data, SpaceXAIData)
+        ):
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="invalid_config_entry",
+                translation_placeholders={"config_entry": entry_id},
+            )
+
+        model = cast(str, call.data[CONF_MODEL])
+        if not entry.runtime_data.snapshot.has_video_model(model):
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="model_not_entitled",
+                translation_placeholders={"model": model},
+            )
+
+        try:
+            generated = await entry.runtime_data.client.async_generate_video(
+                model=model,
+                prompt=call.data[CONF_PROMPT],
+                image_url=call.data.get("image_url"),
+                duration=call.data.get("duration"),
+            )
+        except SpaceXAIError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key=err.category.value,
+                translation_placeholders={"model": err.context.model or model},
+            ) from err
+
+        return {
+            "url": generated.url,
+            "model": generated.model,
+        }
+
+    async_register_admin_service(
+        hass,
+        DOMAIN,
+        SERVICE_GENERATE_VIDEO,
+        async_generate_video,
+        schema=SERVICE_GENERATE_VIDEO_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    return True
 
 
 @dataclass(slots=True)
@@ -179,7 +270,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
     ir.async_delete_issue(hass, DOMAIN, _subscription_issue_id(entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Install-time Assist wiring only. Clearing the flag after success means reloads
+    # Install-time flag only. Clear after a successful apply so reloads do not
     # keep re-forcing the preferred Assist pipeline.
     if entry.data.get(CONF_DEFAULT_ASSIST) is True:
         from .assist import async_setup_assist_pipeline  # noqa: PLC0415
@@ -196,7 +287,57 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
                     if key != CONF_DEFAULT_ASSIST
                 }
                 hass.config_entries.async_update_entry(entry, data=new_data)
+
     return True
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> bool:
+    """Migrate older SpaceXAI config entries."""
+    LOGGER.debug("Migrating from version %s:%s", entry.version, entry.minor_version)
+
+    if entry.version > 1:
+        return False
+
+    if entry.version == 1 and entry.minor_version < 2:
+        _ensure_speech_subentries(hass, entry)
+        hass.config_entries.async_update_entry(entry, minor_version=2)
+
+    LOGGER.debug(
+        "Migration to version %s:%s successful", entry.version, entry.minor_version
+    )
+    return True
+
+
+def _ensure_speech_subentries(
+    hass: HomeAssistant, entry: SpaceXAIConfigEntry
+) -> None:
+    """Add STT/TTS subentries when an older install omitted them."""
+    existing = {subentry.subentry_type for subentry in entry.subentries.values()}
+    if "stt" not in existing:
+        hass.config_entries.async_add_subentry(
+            entry,
+            ConfigSubentry(
+                data=MappingProxyType({}),
+                subentry_type="stt",
+                title=DEFAULT_STT_NAME,
+                unique_id=None,
+            ),
+        )
+    if "tts" not in existing:
+        hass.config_entries.async_add_subentry(
+            entry,
+            ConfigSubentry(
+                data=MappingProxyType(
+                    {
+                        CONF_VOICE: DEFAULT_VOICE,
+                        CONF_TTS_SPEED: DEFAULT_TTS_SPEED,
+                    }
+                ),
+                subentry_type="tts",
+                title=DEFAULT_TTS_NAME,
+                unique_id=None,
+            ),
+        )
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> bool:

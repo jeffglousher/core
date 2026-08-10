@@ -6,7 +6,11 @@ from unittest.mock import AsyncMock, patch
 from aiohttp import ClientError
 import pytest
 
-from homeassistant.components.spacexai.const import DEVICE_CODE_URL, TOKEN_URL
+from homeassistant.components.spacexai.const import (
+    DEVICE_CODE_URL,
+    OAUTH_SCOPES,
+    TOKEN_URL,
+)
 from homeassistant.components.spacexai.errors import (
     AuthenticationRejectedError,
     ConnectionFailureError,
@@ -49,7 +53,7 @@ async def test_request_device_authorization(
     assert authorization.interval == 5
     assert aioclient_mock.mock_calls[0][2] == {
         "client_id": "home-assistant-client",
-        "scope": "openid profile email offline_access grok-cli:access api:access",
+        "scope": " ".join(OAUTH_SCOPES),
     }
 
 

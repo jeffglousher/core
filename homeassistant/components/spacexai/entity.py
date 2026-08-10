@@ -1,11 +1,6 @@
 """Shared SpaceXAI LLM entity helpers."""
 
-import asyncio
-import base64
-from collections.abc import AsyncGenerator, AsyncIterable, Callable, Iterable
-import json
-from mimetypes import guess_type as guess_file_type
-from pathlib import Path
+from collections.abc import Callable, Iterable, Mapping
 import traceback
 from typing import Any, Literal, NoReturn, cast
 
@@ -13,43 +8,10 @@ import openai
 from openai.types.responses import (
     EasyInputMessageParam,
     FunctionToolParam,
-    ResponseCodeInterpreterToolCall,
-    ResponseCompletedEvent,
-    ResponseContentPartAddedEvent,
-    ResponseContentPartDoneEvent,
-    ResponseCreatedEvent,
-    ResponseErrorEvent,
-    ResponseFailedEvent,
-    ResponseFunctionCallArgumentsDeltaEvent,
-    ResponseFunctionCallArgumentsDoneEvent,
-    ResponseFunctionToolCall,
     ResponseFunctionToolCallParam,
-    ResponseFunctionWebSearch,
-    ResponseIncompleteEvent,
-    ResponseInProgressEvent,
     ResponseInputParam,
-    ResponseOutputItemAddedEvent,
-    ResponseOutputItemDoneEvent,
-    ResponseOutputMessage,
-    ResponseOutputTextAnnotationAddedEvent,
-    ResponseQueuedEvent,
     ResponseReasoningItem,
     ResponseReasoningItemParam,
-    ResponseReasoningSummaryPartAddedEvent,
-    ResponseReasoningSummaryPartDoneEvent,
-    ResponseReasoningSummaryTextDeltaEvent,
-    ResponseReasoningSummaryTextDoneEvent,
-    ResponseReasoningTextDeltaEvent,
-    ResponseReasoningTextDoneEvent,
-    ResponseRefusalDeltaEvent,
-    ResponseRefusalDoneEvent,
-    ResponseStreamEvent,
-    ResponseTextDeltaEvent,
-    ResponseTextDoneEvent,
-    ResponseWebSearchCallCompletedEvent,
-    ResponseWebSearchCallInProgressEvent,
-    ResponseWebSearchCallSearchingEvent,
-    WebSearchToolParam,
 )
 from openai.types.responses.response_code_interpreter_tool_call_param import (
     ResponseCodeInterpreterToolCallParam,
@@ -57,12 +19,11 @@ from openai.types.responses.response_code_interpreter_tool_call_param import (
 from openai.types.responses.response_function_web_search_param import (
     ResponseFunctionWebSearchParam,
 )
-from openai.types.responses.response_input_file_param import ResponseInputFileParam
-from openai.types.responses.response_input_image_param import ResponseInputImageParam
-from openai.types.responses.response_input_message_content_list_param import (
-    ResponseInputMessageContentListParam,
+from openai.types.responses.response_input_param import (
+    FunctionCallOutput,
+    ImageGenerationCall as ImageGenerationCallParam,
 )
-from openai.types.responses.response_input_param import FunctionCallOutput
+from openai.types.responses.response_output_item import ImageGenerationCall
 from openai.types.responses.response_text_config_param import ResponseTextConfigParam
 import voluptuous as vol
 from voluptuous_openapi import convert
@@ -70,9 +31,8 @@ from voluptuous_openapi import convert
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.const import CONF_MODEL
-from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import device_registry as dr, llm
+from homeassistant.helpers import device_registry as dr, issue_registry as ir, llm
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.json import json_dumps
 from homeassistant.util import slugify
@@ -80,11 +40,35 @@ from homeassistant.util import slugify
 from . import SpaceXAIConfigEntry
 from .const import (
     CONF_CODE_INTERPRETER,
+    CONF_IMAGE_GENERATION,
+    CONF_IMAGE_GENERATION_ACTION,
     CONF_MAX_OUTPUT_TOKENS,
+    CONF_SERVICE_TIER,
+    CONF_STORE_RESPONSES,
+    CONF_TEMPERATURE,
+    CONF_TOP_P,
     CONF_WEB_SEARCH,
+    CONF_WEB_SEARCH_ALLOWED_DOMAINS,
+    CONF_WEB_SEARCH_EXCLUDED_DOMAINS,
+    CONF_WEB_SEARCH_IMAGE_SEARCH,
+    CONF_WEB_SEARCH_IMAGE_UNDERSTANDING,
     CONF_X_SEARCH,
+    CONF_X_SEARCH_ALLOWED_HANDLES,
+    CONF_X_SEARCH_EXCLUDED_HANDLES,
+    CONF_X_SEARCH_FROM_DATE,
+    CONF_X_SEARCH_IMAGE_UNDERSTANDING,
+    CONF_X_SEARCH_TO_DATE,
+    CONF_X_SEARCH_VIDEO_UNDERSTANDING,
+    DEFAULT_AI_TASK_SERVICE_TIER,
     DEFAULT_CODE_INTERPRETER,
+    DEFAULT_IMAGE_GENERATION,
+    DEFAULT_IMAGE_GENERATION_ACTION,
+    DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL_PLACEHOLDER,
+    DEFAULT_SERVICE_TIER,
+    DEFAULT_STORE_RESPONSES,
+    DEFAULT_TEMPERATURE,
+    DEFAULT_TOP_P,
     DEFAULT_WEB_SEARCH,
     DEFAULT_X_SEARCH,
     DOMAIN,
@@ -92,30 +76,18 @@ from .const import (
     MAX_TOOL_ITERATIONS,
     PROVIDER_CODE_INTERPRETER_TOOL,
     PROVIDER_SEARCH_TOOLS,
-    PROVIDER_WEB_SEARCH_TOOL,
-    PROVIDER_X_SEARCH_TOOL,
-    RESPONSE_TIMEOUT,
 )
 from .errors import (
     ErrorCategory,
     ErrorContext,
-    InvalidModelToolRequestError,
-    MalformedProviderResponseError,
     Operation,
-    OutputLimitError,
-    PermanentProviderError,
     RateLimitedError,
     RequestTimeoutError,
     SpaceXAIError,
     ToolLoopLimitError,
-    TransientProviderError,
 )
-
-_IGNORED_STREAM_EVENT_PREFIXES = (
-    "response.web_search_call.",
-    "response.x_search_call.",
-    "response.code_interpreter_call.",
-)
+from .files import async_prepare_files_for_prompt
+from .stream import _transform_stream
 
 
 def _adjust_schema(schema: dict[str, Any]) -> None:
@@ -169,6 +141,58 @@ def _format_tool(
     )
 
 
+def _provider_tools_from_subentry(data: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Build server-side provider tools from conversation subentry options."""
+    tools: list[dict[str, Any]] = []
+
+    if data.get(CONF_WEB_SEARCH, DEFAULT_WEB_SEARCH):
+        web_search: dict[str, Any] = {"type": "web_search"}
+        allowed_domains = list(data.get(CONF_WEB_SEARCH_ALLOWED_DOMAINS) or [])[:5]
+        excluded_domains = list(data.get(CONF_WEB_SEARCH_EXCLUDED_DOMAINS) or [])[:5]
+        if allowed_domains:
+            web_search["filters"] = {"allowed_domains": allowed_domains}
+        elif excluded_domains:
+            web_search["filters"] = {"excluded_domains": excluded_domains}
+        if data.get(CONF_WEB_SEARCH_IMAGE_UNDERSTANDING):
+            web_search["enable_image_understanding"] = True
+        if data.get(CONF_WEB_SEARCH_IMAGE_SEARCH):
+            web_search["enable_image_search"] = True
+        tools.append(web_search)
+
+    if data.get(CONF_X_SEARCH, DEFAULT_X_SEARCH):
+        x_search: dict[str, Any] = {"type": "x_search"}
+        allowed_handles = list(data.get(CONF_X_SEARCH_ALLOWED_HANDLES) or [])[:20]
+        excluded_handles = list(data.get(CONF_X_SEARCH_EXCLUDED_HANDLES) or [])[:20]
+        if allowed_handles:
+            x_search["allowed_x_handles"] = allowed_handles
+        elif excluded_handles:
+            x_search["excluded_x_handles"] = excluded_handles
+        if from_date := data.get(CONF_X_SEARCH_FROM_DATE):
+            x_search["from_date"] = from_date
+        if to_date := data.get(CONF_X_SEARCH_TO_DATE):
+            x_search["to_date"] = to_date
+        if data.get(CONF_X_SEARCH_IMAGE_UNDERSTANDING):
+            x_search["enable_image_understanding"] = True
+        if data.get(CONF_X_SEARCH_VIDEO_UNDERSTANDING):
+            x_search["enable_video_understanding"] = True
+        tools.append(x_search)
+
+    if data.get(CONF_CODE_INTERPRETER, DEFAULT_CODE_INTERPRETER):
+        tools.append({"type": "code_interpreter"})
+
+    if data.get(CONF_IMAGE_GENERATION, DEFAULT_IMAGE_GENERATION):
+        tools.append(
+            {
+                "type": "image_generation",
+                "action": data.get(
+                    CONF_IMAGE_GENERATION_ACTION, DEFAULT_IMAGE_GENERATION_ACTION
+                ),
+            }
+        )
+
+    return tools
+
+
 def _convert_content(
     chat_content: Iterable[conversation.Content],
 ) -> ResponseInputParam:
@@ -208,6 +232,13 @@ def _convert_content(
             if isinstance(content.native, ResponseReasoningItem):
                 messages.append(
                     cast(ResponseReasoningItemParam, content.native.to_dict())
+                )
+            elif isinstance(content.native, ImageGenerationCall) or (
+                content.native is not None
+                and getattr(content.native, "type", None) == "image_generation_call"
+            ):
+                messages.append(
+                    cast(ImageGenerationCallParam, content.native.to_dict())
                 )
             if content.content:
                 messages.append(
@@ -259,396 +290,6 @@ def _convert_content(
     return messages
 
 
-def _stream_failure(
-    code: str | None,
-    *,
-    model: str,
-    request_id: str | None = None,
-) -> SpaceXAIError:
-    """Classify a valid provider failure event."""
-    context = ErrorContext(
-        operation=Operation.RESPONSE,
-        model=model,
-        provider_code=code,
-        request_id=request_id,
-    )
-    if code == "rate_limit_exceeded":
-        return RateLimitedError("Provider rate limit reached", context=context)
-    if code == "max_output_tokens":
-        return OutputLimitError(
-            "Provider reached the configured output limit", context=context
-        )
-    if code in ("server_error", "vector_store_timeout"):
-        return TransientProviderError(
-            "Provider reported a transient failure", context=context
-        )
-    return PermanentProviderError("Provider rejected the response", context=context)
-
-
-def _item_type(item: object) -> str | None:
-    """Return a Responses output item type when available."""
-    item_type = getattr(item, "type", None)
-    return item_type if isinstance(item_type, str) else None
-
-
-def _external_search_deltas(
-    item: object,
-    tool_name: str,
-) -> list[
-    conversation.AssistantContentDeltaDict | conversation.ToolResultContentDeltaDict
-]:
-    """Emit chat-log deltas for a completed server-side search tool."""
-    action = getattr(item, "action", None)
-    if action is not None and hasattr(action, "to_dict"):
-        action = action.to_dict()
-    item_id = getattr(item, "id", None)
-    status = getattr(item, "status", "completed")
-    if not isinstance(item_id, str) or not item_id:
-        raise MalformedProviderResponseError(
-            "Provider search tool omitted its item ID",
-            context=ErrorContext(operation=Operation.RESPONSE),
-        )
-    return [
-        {
-            "tool_calls": [
-                llm.ToolInput(
-                    id=item_id,
-                    tool_name=tool_name,
-                    tool_args={"action": action},
-                    external=True,
-                )
-            ]
-        },
-        {
-            "role": "tool_result",
-            "tool_call_id": item_id,
-            "tool_name": tool_name,
-            "tool_result": {"status": status},
-        },
-    ]
-
-
-async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
-    chat_log: conversation.ChatLog,
-    stream: AsyncIterable[ResponseStreamEvent],
-    *,
-    model: str,
-) -> AsyncGenerator[
-    conversation.AssistantContentDeltaDict | conversation.ToolResultContentDeltaDict
-]:
-    """Transform a Responses API stream into Home Assistant chat deltas."""
-    assistant_open = False
-    assistant_has_tool_calls = False
-    reasoning_native_set = False
-    announced_tool_calls: dict[str, tuple[str, str]] = {}
-    call_ids: set[str] = set()
-    terminal = False
-
-    stream_iterator = aiter(stream)
-    while True:
-        try:
-            async with asyncio.timeout(RESPONSE_TIMEOUT):
-                event = await anext(stream_iterator)
-        except StopAsyncIteration:
-            break
-
-        if terminal:
-            raise MalformedProviderResponseError(
-                "Provider emitted data after the terminal event",
-                context=ErrorContext(operation=Operation.RESPONSE, model=model),
-            )
-
-        if isinstance(event, ResponseOutputItemAddedEvent):
-            if isinstance(event.item, ResponseFunctionToolCall):
-                if not assistant_open:
-                    yield {"role": "assistant"}
-                    assistant_open = True
-                if event.item.id is None:
-                    raise MalformedProviderResponseError(
-                        "Provider tool call omitted its item ID",
-                        context=ErrorContext(operation=Operation.RESPONSE, model=model),
-                    )
-                if (
-                    event.item.id in announced_tool_calls
-                    or event.item.call_id in call_ids
-                ):
-                    raise InvalidModelToolRequestError(
-                        "Provider emitted a duplicate tool-call identifier",
-                        context=ErrorContext(operation=Operation.TOOL, model=model),
-                    )
-                announced_tool_calls[event.item.id] = (
-                    event.item.call_id,
-                    event.item.name,
-                )
-                call_ids.add(event.item.call_id)
-                continue
-            if isinstance(event.item, ResponseOutputMessage):
-                if not assistant_open or assistant_has_tool_calls:
-                    yield {"role": "assistant"}
-                assistant_open = True
-                assistant_has_tool_calls = False
-                continue
-            if isinstance(event.item, ResponseReasoningItem):
-                if not assistant_open:
-                    yield {"role": "assistant"}
-                    assistant_open = True
-                continue
-            if isinstance(
-                event.item, (ResponseFunctionWebSearch, ResponseCodeInterpreterToolCall)
-            ) or _item_type(event.item) in (
-                PROVIDER_WEB_SEARCH_TOOL,
-                PROVIDER_X_SEARCH_TOOL,
-                "code_interpreter_call",
-            ):
-                continue
-            raise MalformedProviderResponseError(
-                f"Unexpected output item type {_item_type(event.item) or type(event.item)!r}",
-                context=ErrorContext(operation=Operation.RESPONSE, model=model),
-            )
-
-        if isinstance(event, ResponseFunctionCallArgumentsDoneEvent):
-            announced = announced_tool_calls.pop(event.item_id, None)
-            if announced is None:
-                raise MalformedProviderResponseError(
-                    "Tool arguments did not match an announced tool call",
-                    context=ErrorContext(operation=Operation.RESPONSE, model=model),
-                )
-            call_id, tool_name = announced
-            # xAI omits name on function_call_arguments.done (SDK leaves it
-            # None); the announced output_item.added name is authoritative.
-            if event.name and event.name != tool_name:
-                raise InvalidModelToolRequestError(
-                    "Provider changed the announced tool name",
-                    context=ErrorContext(operation=Operation.TOOL, model=model),
-                )
-            try:
-                tool_args = json.loads(event.arguments)
-            except json.JSONDecodeError as err:
-                raise InvalidModelToolRequestError(
-                    "Model emitted malformed tool arguments",
-                    context=ErrorContext(operation=Operation.TOOL, model=model),
-                ) from err
-            if not isinstance(tool_args, dict):
-                raise InvalidModelToolRequestError(
-                    "Model tool arguments were not an object",
-                    context=ErrorContext(operation=Operation.TOOL, model=model),
-                )
-            yield {
-                "tool_calls": [
-                    llm.ToolInput(
-                        id=call_id,
-                        tool_name=tool_name,
-                        tool_args=tool_args,
-                    )
-                ]
-            }
-            assistant_has_tool_calls = True
-            continue
-
-        if isinstance(event, ResponseTextDeltaEvent):
-            if not assistant_open:
-                yield {"role": "assistant"}
-                assistant_open = True
-            if event.delta:
-                yield {"content": event.delta}
-            continue
-
-        if isinstance(event, ResponseReasoningSummaryTextDeltaEvent):
-            if not assistant_open:
-                yield {"role": "assistant"}
-                assistant_open = True
-            if event.delta:
-                yield {"thinking_content": event.delta}
-            continue
-
-        if isinstance(event, ResponseOutputItemDoneEvent):
-            if isinstance(event.item, ResponseReasoningItem):
-                if reasoning_native_set:
-                    yield {"role": "assistant"}
-                yield {"native": event.item}
-                reasoning_native_set = True
-            elif isinstance(event.item, ResponseFunctionWebSearch) or _item_type(
-                event.item
-            ) in (PROVIDER_WEB_SEARCH_TOOL, PROVIDER_X_SEARCH_TOOL):
-                tool_name = (
-                    PROVIDER_X_SEARCH_TOOL
-                    if _item_type(event.item) == PROVIDER_X_SEARCH_TOOL
-                    else PROVIDER_WEB_SEARCH_TOOL
-                )
-                if not assistant_open:
-                    yield {"role": "assistant"}
-                    assistant_open = True
-                for delta in _external_search_deltas(event.item, tool_name):
-                    yield delta
-                assistant_open = False
-                assistant_has_tool_calls = False
-            elif isinstance(event.item, ResponseCodeInterpreterToolCall):
-                if not assistant_open:
-                    yield {"role": "assistant"}
-                    assistant_open = True
-                yield {
-                    "tool_calls": [
-                        llm.ToolInput(
-                            id=event.item.id,
-                            tool_name=PROVIDER_CODE_INTERPRETER_TOOL,
-                            tool_args={
-                                "code": event.item.code,
-                                "container": event.item.container_id,
-                            },
-                            external=True,
-                        )
-                    ]
-                }
-                outputs: Any = None
-                if event.item.outputs is not None:
-                    outputs = [output.to_dict() for output in event.item.outputs]
-                yield {
-                    "role": "tool_result",
-                    "tool_call_id": event.item.id,
-                    "tool_name": PROVIDER_CODE_INTERPRETER_TOOL,
-                    "tool_result": {"output": outputs},
-                }
-                assistant_open = False
-                assistant_has_tool_calls = False
-            continue
-
-        if isinstance(event, ResponseCompletedEvent):
-            if announced_tool_calls:
-                raise InvalidModelToolRequestError(
-                    "Provider completed with unfinished tool calls",
-                    context=ErrorContext(operation=Operation.TOOL, model=model),
-                )
-            terminal = True
-            if event.response.usage is not None:
-                chat_log.async_trace(
-                    {
-                        "stats": {
-                            "input_tokens": event.response.usage.input_tokens,
-                            "cached_input_tokens": (
-                                event.response.usage.input_tokens_details.cached_tokens
-                            ),
-                            "output_tokens": event.response.usage.output_tokens,
-                        }
-                    }
-                )
-            continue
-
-        if isinstance(event, ResponseIncompleteEvent):
-            reason = (
-                event.response.incomplete_details.reason
-                if event.response.incomplete_details
-                else "unknown"
-            )
-            raise _stream_failure(
-                reason,
-                model=model,
-                request_id=event.response.id,
-            )
-
-        if isinstance(event, ResponseFailedEvent):
-            raise _stream_failure(
-                event.response.error.code if event.response.error else None,
-                model=model,
-                request_id=event.response.id,
-            )
-
-        if isinstance(event, ResponseErrorEvent):
-            raise _stream_failure(event.code, model=model)
-
-        if isinstance(event, (ResponseRefusalDeltaEvent, ResponseRefusalDoneEvent)):
-            raise PermanentProviderError(
-                "Provider refused the response",
-                context=ErrorContext(operation=Operation.RESPONSE, model=model),
-            )
-
-        if isinstance(
-            event,
-            (
-                ResponseContentPartAddedEvent,
-                ResponseContentPartDoneEvent,
-                ResponseCreatedEvent,
-                ResponseFunctionCallArgumentsDeltaEvent,
-                ResponseInProgressEvent,
-                ResponseOutputTextAnnotationAddedEvent,
-                ResponseQueuedEvent,
-                ResponseReasoningSummaryPartAddedEvent,
-                ResponseReasoningSummaryPartDoneEvent,
-                ResponseReasoningSummaryTextDoneEvent,
-                ResponseReasoningTextDeltaEvent,
-                ResponseReasoningTextDoneEvent,
-                ResponseTextDoneEvent,
-                ResponseWebSearchCallCompletedEvent,
-                ResponseWebSearchCallInProgressEvent,
-                ResponseWebSearchCallSearchingEvent,
-            ),
-        ) or any(
-            getattr(event, "type", "").startswith(prefix)
-            for prefix in _IGNORED_STREAM_EVENT_PREFIXES
-        ):
-            continue
-
-        raise MalformedProviderResponseError(
-            f"Unexpected stream event type {event.type}",
-            context=ErrorContext(operation=Operation.RESPONSE, model=model),
-        )
-
-    if not terminal:
-        raise MalformedProviderResponseError(
-            "Provider stream ended without a terminal event",
-            context=ErrorContext(operation=Operation.RESPONSE, model=model),
-        )
-
-
-async def async_prepare_files_for_prompt(
-    hass: HomeAssistant, files: list[tuple[Path, str | None]]
-) -> ResponseInputMessageContentListParam:
-    """Encode local attachments for a multimodal user message."""
-
-    def append_files_to_content() -> ResponseInputMessageContentListParam:
-        content: ResponseInputMessageContentListParam = []
-
-        for file_path, mime_type in files:
-            if not file_path.exists():
-                raise HomeAssistantError(
-                    translation_domain=DOMAIN,
-                    translation_key="attachment_not_found",
-                    translation_placeholders={"path": str(file_path)},
-                )
-
-            if mime_type is None:
-                mime_type = guess_file_type(file_path)[0]
-
-            if not mime_type or not mime_type.startswith(("image/", "application/pdf")):
-                raise HomeAssistantError(
-                    translation_domain=DOMAIN,
-                    translation_key="attachment_unsupported_type",
-                    translation_placeholders={"path": str(file_path)},
-                )
-
-            base64_file = base64.b64encode(file_path.read_bytes()).decode("utf-8")
-
-            if mime_type.startswith("image/"):
-                content.append(
-                    ResponseInputImageParam(
-                        type="input_image",
-                        image_url=f"data:{mime_type};base64,{base64_file}",
-                        detail="auto",
-                    )
-                )
-            elif mime_type.startswith("application/pdf"):
-                content.append(
-                    ResponseInputFileParam(
-                        type="input_file",
-                        filename=str(file_path),
-                        file_data=f"data:{mime_type};base64,{base64_file}",
-                    )
-                )
-
-        return content
-
-    return await hass.async_add_executor_job(append_files_to_content)
-
-
 class SpaceXAIBaseLLMEntity(Entity):
     """Shared SpaceXAI LLM entity behavior."""
 
@@ -684,7 +325,37 @@ class SpaceXAIBaseLLMEntity(Entity):
     @property
     def _max_output_tokens(self) -> int:
         """Return the configured model output limit."""
-        return cast(int, self.subentry.data[CONF_MAX_OUTPUT_TOKENS])
+        return cast(
+            int,
+            self.subentry.data.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS),
+        )
+
+    @property
+    def _temperature(self) -> float:
+        """Return the configured sampling temperature."""
+        return float(self.subentry.data.get(CONF_TEMPERATURE, DEFAULT_TEMPERATURE))
+
+    @property
+    def _top_p(self) -> float:
+        """Return the configured nucleus sampling threshold."""
+        return float(self.subentry.data.get(CONF_TOP_P, DEFAULT_TOP_P))
+
+    @property
+    def _store_responses(self) -> bool:
+        """Return whether provider-side response storage is enabled."""
+        return bool(
+            self.subentry.data.get(CONF_STORE_RESPONSES, DEFAULT_STORE_RESPONSES)
+        )
+
+    @property
+    def _service_tier(self) -> str:
+        """Return the configured xAI service tier (default or priority)."""
+        default = (
+            DEFAULT_AI_TASK_SERVICE_TIER
+            if self.subentry.subentry_type == "ai_task_data"
+            else DEFAULT_SERVICE_TIER
+        )
+        return cast(str, self.subentry.data.get(CONF_SERVICE_TIER, default))
 
     def _raise_provider_home_assistant_error(self, err: SpaceXAIError) -> NoReturn:
         """Apply runtime side effects and raise a translated Home Assistant error."""
@@ -726,12 +397,7 @@ class SpaceXAIBaseLLMEntity(Entity):
                 dict(_format_tool(tool, chat_log.llm_api.custom_serializer))
                 for tool in chat_log.llm_api.tools
             ]
-        if self.subentry.data.get(CONF_WEB_SEARCH, DEFAULT_WEB_SEARCH):
-            tools.append(dict(WebSearchToolParam(type="web_search")))
-        if self.subentry.data.get(CONF_X_SEARCH, DEFAULT_X_SEARCH):
-            tools.append({"type": "x_search"})
-        if self.subentry.data.get(CONF_CODE_INTERPRETER, DEFAULT_CODE_INTERPRETER):
-            tools.append({"type": "code_interpreter"})
+        tools.extend(_provider_tools_from_subentry(self.subentry.data))
         include = ["reasoning.encrypted_content"]
         if self.subentry.data.get(CONF_CODE_INTERPRETER, DEFAULT_CODE_INTERPRETER):
             include.append("code_interpreter_call.outputs")
@@ -775,6 +441,10 @@ class SpaceXAIBaseLLMEntity(Entity):
                     prompt_cache_key=chat_log.conversation_id,
                     text=text,
                     include=include,
+                    temperature=self._temperature,
+                    top_p=self._top_p,
+                    store=self._store_responses,
+                    service_tier=self._service_tier,
                 )
             except TimeoutError as err:
                 raise RequestTimeoutError(
@@ -847,6 +517,42 @@ class SpaceXAIBaseLLMEntity(Entity):
         ):
             self.entry.async_start_reauth(self.hass)
             self._mark_unavailable(err)
+            return
+
+        if (
+            err.category
+            in (
+                ErrorCategory.SUBSCRIPTION_NOT_ENTITLED,
+                ErrorCategory.QUOTA_LIMITED,
+            )
+            and err.context.operation in (Operation.STT, Operation.TTS, Operation.IMAGE)
+        ):
+            # Raised only when api.x.ai rejects this session for STT/TTS/Imagine.
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                f"speech_api_access_{self.entry.entry_id}",
+                is_fixable=False,
+                learn_more_url="https://console.x.ai/",
+                severity=ir.IssueSeverity.WARNING,
+                translation_key="speech_api_access",
+            )
+            self._mark_unavailable(err)
+            return
+
+        if (
+            isinstance(err, RateLimitedError)
+            or err.category is ErrorCategory.RATE_LIMITED
+        ):
+            LOGGER.warning(
+                "SpaceXAI rate limited: operation=%s model=%s status=%s "
+                "provider_code=%s request_id=%s",
+                err.context.operation,
+                err.context.model,
+                err.context.status,
+                err.context.provider_code,
+                err.context.request_id,
+            )
             return
 
         if err.retryable:

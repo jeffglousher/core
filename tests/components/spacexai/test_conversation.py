@@ -41,6 +41,7 @@ from homeassistant.components.spacexai.const import (
     MAX_TOOL_ITERATIONS,
 )
 from homeassistant.components.spacexai.errors import (
+    ConnectionFailureError,
     ErrorContext,
     Operation,
     RateLimitedError,
@@ -178,7 +179,11 @@ async def test_streaming_conversation_and_continuation(
         "assistant",
     ]
     assert mock_stream.call_args.kwargs["prompt_cache_key"] == first.conversation_id
-    assert mock_stream.call_args.kwargs["max_output_tokens"] == 2048
+    assert mock_stream.call_args.kwargs["max_output_tokens"] == 3000
+    assert mock_stream.call_args.kwargs["temperature"] == 1.0
+    assert mock_stream.call_args.kwargs["top_p"] == 1.0
+    assert mock_stream.call_args.kwargs["service_tier"] == "priority"
+    assert mock_stream.call_args.kwargs["store"] is False
 
 
 async def test_web_search_tool_is_server_side(
@@ -498,7 +503,8 @@ async def test_provider_errors(
     assert result.response.speech["plain"]["speech"] == expected
     state = hass.states.get("conversation.grok")
     assert state is not None
-    assert state.state == STATE_UNAVAILABLE
+    # Rate limits are surfaced to the user but do not flip the entity unavailable.
+    assert state.state != STATE_UNAVAILABLE
 
 
 async def test_auth_error_starts_reauthentication(
@@ -547,7 +553,7 @@ async def test_stalled_stream_times_out(
             raise StopAsyncIteration
 
     mock_stream.return_value = StalledStream()
-    with patch("homeassistant.components.spacexai.entity.RESPONSE_TIMEOUT", 0):
+    with patch("homeassistant.components.spacexai.stream.RESPONSE_IDLE_TIMEOUT", 0):
         result = await conversation.async_converse(
             hass,
             "Wait",
@@ -1223,8 +1229,8 @@ async def test_unavailable_and_recovery_logged_once(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Log one outage transition and one recovery transition."""
-    mock_stream.side_effect = RateLimitedError(
-        "limited",
+    mock_stream.side_effect = ConnectionFailureError(
+        "offline",
         context=ErrorContext(operation=Operation.RESPONSE, model=DEFAULT_MODEL),
     )
     with caplog.at_level(logging.INFO):

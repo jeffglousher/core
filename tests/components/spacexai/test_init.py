@@ -430,3 +430,77 @@ async def test_remove_skips_revocation_for_foreign_implementation(
         assert await hass.config_entries.async_remove(mock_config_entry.entry_id)
         await hass.async_block_till_done()
     revoke.assert_not_called()
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_migrate_adds_missing_speech_subentries(
+    hass: HomeAssistant,
+    mock_validate: AsyncMock,
+) -> None:
+    """Migrate v1.1 entries that only had conversation + AI Task."""
+    import time
+
+    from homeassistant.components.spacexai.const import (
+        CONF_IMAGE_MODEL,
+        CONF_MAX_OUTPUT_TOKENS,
+        DEFAULT_IMAGE_MODEL,
+        DEFAULT_MAX_OUTPUT_TOKENS,
+        DEFAULT_MODEL,
+        DEFAULT_STT_NAME,
+        DEFAULT_TTS_NAME,
+    )
+    from homeassistant.config_entries import ConfigSubentryData
+    from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL
+    from homeassistant.helpers import llm
+
+    from .conftest import ACCOUNT_ID, ACCESS_TOKEN, REFRESH_TOKEN
+
+    entry = MockConfigEntry(
+        domain="spacexai",
+        title="Home User",
+        unique_id=ACCOUNT_ID,
+        version=1,
+        minor_version=1,
+        data={
+            "auth_implementation": "spacexai",
+            "token": {
+                "access_token": ACCESS_TOKEN,
+                "refresh_token": REFRESH_TOKEN,
+                "expires_at": time.time() + 3600,
+                "expires_in": 3600,
+                "token_type": "Bearer",
+            },
+        },
+        subentries_data=[
+            ConfigSubentryData(
+                data={
+                    CONF_MODEL: DEFAULT_MODEL,
+                    CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
+                    CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
+                },
+                subentry_type="conversation",
+                title="Grok",
+                unique_id=None,
+            ),
+            ConfigSubentryData(
+                data={
+                    CONF_MODEL: DEFAULT_MODEL,
+                    CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
+                    CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
+                },
+                subentry_type="ai_task_data",
+                title="Grok AI Task",
+                unique_id=None,
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.minor_version == 2
+    types = {sub.subentry_type for sub in entry.subentries.values()}
+    assert types == {"conversation", "ai_task_data", "stt", "tts"}
+    assert hass.states.get("stt.grok_stt") is not None or any(
+        sub.title == DEFAULT_STT_NAME for sub in entry.subentries.values()
+    )
+    assert any(sub.title == DEFAULT_TTS_NAME for sub in entry.subentries.values())

@@ -13,6 +13,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import SpaceXAIConfigEntry
@@ -72,13 +73,17 @@ class SpaceXAIConversationEntity(
 
     @override
     async def async_added_to_hass(self) -> None:
-        """Register the conversation agent."""
+        """Register the conversation agent.
+
+        Core keys agents by parent entry_id, so multiple conversation
+        subentries share one agent slot (same constraint as OpenAI).
+        """
         await super().async_added_to_hass()
         conversation.async_set_agent(self.hass, self.entry, self)
 
     @override
     async def async_will_remove_from_hass(self) -> None:
-        """Unregister the conversation agent."""
+        """Unregister the conversation agent for this parent entry."""
         conversation.async_unset_agent(self.hass, self.entry)
         await super().async_will_remove_from_hass()
 
@@ -89,9 +94,11 @@ class SpaceXAIConversationEntity(
         chat_log: conversation.ChatLog,
     ) -> conversation.ConversationResult:
         """Process a message using Home Assistant-owned chat state."""
-        user_prompt = self.subentry.data.get(CONF_PROMPT)
+        user_prompt = (
+            self.subentry.data.get(CONF_PROMPT) or llm.DEFAULT_INSTRUCTIONS_PROMPT
+        )
         identity = _RUNTIME_IDENTITY_PROMPT.format(model=self.subentry.data[CONF_MODEL])
-        prompt = f"{user_prompt}\n\n{identity}" if user_prompt else identity
+        prompt = f"{user_prompt}\n\n{identity}"
 
         try:
             await chat_log.async_provide_llm_data(
