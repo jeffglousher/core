@@ -182,12 +182,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
     # Install-time Assist wiring only. Clearing the flag after success means reloads
     # keep re-forcing the preferred Assist pipeline.
     if entry.data.get(CONF_DEFAULT_ASSIST) is True:
-        from .assist import async_setup_assist_pipeline
+        from .assist import async_setup_assist_pipeline  # noqa: PLC0415
 
         try:
-            applied = await async_setup_assist_pipeline(
-                hass, entry, set_preferred=True
-            )
+            applied = await async_setup_assist_pipeline(hass, entry, set_preferred=True)
         except HomeAssistantError:
             LOGGER.exception("Unable to configure Assist pipeline for SpaceXAI")
         else:

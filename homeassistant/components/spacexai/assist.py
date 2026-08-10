@@ -1,7 +1,5 @@
 """Assist pipeline helpers for SpaceXAI."""
 
-from __future__ import annotations
-
 from homeassistant.components import conversation, stt, tts
 from homeassistant.components.assist_pipeline import (
     async_create_default_pipeline,
