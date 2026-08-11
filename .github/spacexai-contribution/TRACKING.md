@@ -85,6 +85,11 @@ Post-rebuild pytest (HAOS host Alpine clone `/mnt/data/pytest-spacexai/core`):
 
 Live Assist wiring (after tip `4ae2d711` + HA Core restart): preferred pipeline `GH` now uses `conversation.grok` + `stt.grok_stt` + `tts.grok_tts` (previously Cloud STT / Google Translate TTS). Overlay note: custom_components deploys need `"version"` in `manifest.json` or HA blocks the integration.
 
+## Human readiness
+
+Dedicated checklist for Core retarget: [`HUMAN_CHECKLIST.md`](HUMAN_CHECKLIST.md)  
+Retarget procedure: [`UPSTREAM.md`](UPSTREAM.md)
+
 ## Quality waves (2026-08-11)
 
 | Wave | Branch / Core PR | Change |
