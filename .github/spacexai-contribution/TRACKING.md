@@ -85,3 +85,12 @@ Post-rebuild pytest (HAOS host Alpine clone `/mnt/data/pytest-spacexai/core`):
 
 Live Assist wiring (after tip `4ae2d711` + HA Core restart): preferred pipeline `GH` now uses `conversation.grok` + `stt.grok_stt` + `tts.grok_tts` (previously Cloud STT / Google Translate TTS). Overlay note: custom_components deploys need `"version"` in `manifest.json` or HA blocks the integration.
 
+## Quality waves (2026-08-11)
+
+| Wave | Branch | Change |
+| --- | --- | --- |
+| 8 | `cursor/spacexai-quality-docs-brands-0109` | Flip `brands` + applicable `docs-*` to `done` in `quality_scale.yaml` |
+| 9 | `cursor/spacexai-quality-platinum-0109` | Declare `quality_scale: platinum` in manifest + docs front matter |
+
+External draft PRs (forks under `jeffglousher/`): brands + home-assistant.io docs — linked from wave 8/9 PR bodies once opened.
+

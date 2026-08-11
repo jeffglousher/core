@@ -24,11 +24,11 @@ Each wave starts from the final quality bar for **code** and only adds capabilit
 | 4 | `cursor/spacexai-device-code-0109` | RFC 8628 device-code login + Grok CLI OAuth / CLI-proxy entitlement | Same |
 | 5 | `cursor/spacexai-hardening-0109` | Attachments + `GENERATE_IMAGE` | Same |
 | 6 | `cursor/spacexai-full-capabilities-0109` | STT + TTS + Assist pipeline helpers / STT stream limits | Same |
-| 7 | `cursor/spacexai-optimized-surface-0109` | Optimized provider surface: defaults/`service_tier`, progressive models, reauth merge, diagnostics, brands, video service, adversarial hardening | Tip of feature stack today |
-| 8 | *(to open)* `cursor/spacexai-quality-docs-brands-0109` | No feature code — flip `brands` + all applicable `docs-*` to `done` after external brands + docs PRs merge; sync docs front matter | Unblocks hassfest bronze certification |
-| 9 | *(to open)* `cursor/spacexai-quality-platinum-0109` | Raise `manifest.json` / docs `ha_quality_scale` to the tier the rules support (code Platinum rules already `done`) | Declaration-only after wave 8 |
+| 7 | `cursor/spacexai-optimized-surface-0109` | Optimized provider surface: defaults/`service_tier`, progressive models, reauth merge, diagnostics, brands, video service, adversarial hardening | Feature tip |
+| 8 | `cursor/spacexai-quality-docs-brands-0109` | No feature code — flip `brands` + all applicable `docs-*` to `done`; sync contribution-kit tracking | Unblocks hassfest bronze certification |
+| 9 | `cursor/spacexai-quality-platinum-0109` | Raise `manifest.json` / docs `ha_quality_scale` to platinum (code Platinum rules already `done`) | Declaration-only after wave 8 |
 
-Wave 7 ships the feature tip and contribution-kit assets. Waves 8–9 are declaration-only quality flips after external PRs land — do not flip `quality_scale.yaml` on wave 7.
+Wave 7 ships the feature tip and contribution-kit assets. Waves 8–9 are declaration-only quality flips. External brands + docs PRs should land (or be draft-linked) alongside wave 8.
 
 Wave 1’s PR body should link the brands + docs PRs (even as drafts). Later feature waves do not rewrite earlier ones.
 

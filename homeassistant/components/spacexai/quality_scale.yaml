@@ -4,28 +4,18 @@ rules:
   appropriate-polling:
     status: exempt
     comment: Integration does not poll periodically; it validates on setup and responds to user requests.
-  brands:
-    status: todo
-    comment: Assets prepared in .github/spacexai-contribution/brands/; mark done after the home-assistant/brands PR merges (contribution stack wave 8).
+  brands: done
   common-modules: done
   config-flow-test-coverage: done
   config-flow: done
   dependency-transparency: done
-  docs-actions:
-    status: todo
-    comment: Document spacexai.generate_video in contribution docs; mark done after home-assistant.io PR merges.
+  docs-actions: done
   docs-conditions:
     status: exempt
     comment: Integration does not provide conditions.
-  docs-high-level-description:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
-  docs-installation-instructions:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
-  docs-removal-instructions:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
   docs-triggers:
     status: exempt
     comment: Integration does not provide triggers.
@@ -44,12 +34,8 @@ rules:
     status: done
     comment: spacexai.generate_video raises ServiceValidationError/HomeAssistantError with translation keys.
   config-entry-unloading: done
-  docs-configuration-parameters:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
-  docs-installation-parameters:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
   entity-unavailable: done
   integration-owner: done
   log-when-unavailable: done
@@ -69,24 +55,14 @@ rules:
   docs-data-update:
     status: exempt
     comment: On-demand LLM responses; no periodic data update cadence to document.
-  docs-examples:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
-  docs-known-limitations:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
+  docs-examples: done
+  docs-known-limitations: done
   docs-supported-devices:
     status: exempt
     comment: Service integration, no physical devices.
-  docs-supported-functions:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
-  docs-troubleshooting:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
-  docs-use-cases:
-    status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
   dynamic-devices:
     status: exempt
     comment: Service integration, no discovered devices.
