@@ -83,3 +83,5 @@ Post-rebuild pytest (HAOS host Alpine clone `/mnt/data/pytest-spacexai/core`):
 | Tip branch vs wave 7 | Identical empty tip (`cursor/spacexai-device-flow-fix-2f69` == wave 7) |
 | Follow-up fixes | Install Assist/STT/TTS toggles preserved through finalize; tip tests aligned to 403→subscription gate, video poll mock queue, model-entitlement setup; Assist reload syncs Grok STT/TTS onto owned pipelines without re-forcing preferred |
 
+Live Assist wiring (after tip `4ae2d711` + HA Core restart): preferred pipeline `GH` now uses `conversation.grok` + `stt.grok_stt` + `tts.grok_tts` (previously Cloud STT / Google Translate TTS). Overlay note: custom_components deploys need `"version"` in `manifest.json` or HA blocks the integration.
+

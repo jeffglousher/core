@@ -19,3 +19,7 @@ absent on other checkouts or mid-stack branches.
 
 Core implementation remains under `homeassistant/components/spacexai/` on the
 feature stack branches. Demo PR media stays under `.github/spacexai-pr-media/`.
+
+When deploying the Core tree as a HAOS `custom_components/spacexai` overlay for
+live smoke, the overlay `manifest.json` must include a `"version"` field
+(required for custom integrations). Upstream Core manifests omit it.
