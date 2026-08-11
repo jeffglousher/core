@@ -42,6 +42,74 @@ async def test_assist_setup_creates_pipeline_and_clears_flag(
 
 
 @pytest.mark.usefixtures("setup_credentials")
+async def test_reload_syncs_speech_engines_without_preferred_flag(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+    entity_registry: er.EntityRegistry,
+) -> None:
+    """Reload updates owned pipeline STT/TTS without recreating or preferring."""
+    assert await async_setup_component(hass, "assist_pipeline", {})
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    conversation_entity = next(
+        entity.entity_id
+        for entity in entity_registry.entities.values()
+        if entity.config_entry_id == mock_config_entry.entry_id
+        and entity.domain == "conversation"
+    )
+    stt_entity = next(
+        entity.entity_id
+        for entity in entity_registry.entities.values()
+        if entity.config_entry_id == mock_config_entry.entry_id
+        and entity.domain == "stt"
+    )
+    tts_entity = next(
+        entity.entity_id
+        for entity in entity_registry.entities.values()
+        if entity.config_entry_id == mock_config_entry.entry_id
+        and entity.domain == "tts"
+    )
+    existing = MagicMock()
+    existing.id = "pipeline-grok"
+    existing.name = "Grok"
+    existing.conversation_engine = conversation_entity
+    preferred_before = hass.data[
+        KEY_ASSIST_PIPELINE
+    ].pipeline_store.async_get_preferred_item()
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.assist.async_get_pipelines",
+            return_value=[existing],
+        ),
+        patch(
+            "homeassistant.components.spacexai.assist.async_update_pipeline",
+            new_callable=AsyncMock,
+        ) as update_pipeline,
+        patch(
+            "homeassistant.components.spacexai.assist.async_create_default_pipeline",
+            new_callable=AsyncMock,
+        ) as create_pipeline,
+    ):
+        assert await hass.config_entries.async_reload(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    create_pipeline.assert_not_called()
+    update_pipeline.assert_awaited()
+    kwargs = update_pipeline.await_args.kwargs
+    assert kwargs["conversation_engine"] == conversation_entity
+    assert kwargs["stt_engine"] == stt_entity
+    assert kwargs["tts_engine"] == tts_entity
+    preferred_after = hass.data[
+        KEY_ASSIST_PIPELINE
+    ].pipeline_store.async_get_preferred_item()
+    assert preferred_after == preferred_before
+    assert CONF_DEFAULT_ASSIST not in mock_config_entry.data
+
+
+@pytest.mark.usefixtures("setup_credentials")
 async def test_assist_never_mutates_unrelated_preferred_pipeline(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,

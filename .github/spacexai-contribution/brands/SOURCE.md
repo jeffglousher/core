@@ -41,4 +41,4 @@ Produced under `core_integrations/spacexai/`:
 
 - [ ] Open PR to `home-assistant/brands` against `master` with only `core_integrations/spacexai/*`
 - [ ] Link that PR from the `home-assistant.io` docs PR and from core wave 1
-- [ ] After merge, flip `brands: done` in core quality_scale (wave 7)
+- [ ] After merge, flip `brands: done` in core quality_scale (wave 8)

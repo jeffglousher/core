@@ -20,12 +20,16 @@ async def async_setup_assist_pipeline(
     entry: SpaceXAIConfigEntry,
     *,
     set_preferred: bool,
+    create_if_missing: bool = True,
 ) -> bool:
     """Create or update a Grok Assist pipeline after platforms are loaded.
 
     Returns True when a SpaceXAI-owned pipeline was created or updated.
     Never mutates an unrelated preferred pipeline or a foreign pipeline that
     only shares the "Grok" display name.
+
+    When ``create_if_missing`` is False, only refresh STT/TTS on an existing
+    owned pipeline (used on reload after the install-time preferred flag).
     """
     await async_setup_pipeline_store(hass)
 
@@ -70,6 +74,8 @@ async def async_setup_assist_pipeline(
         if tts_engine:
             kwargs["tts_engine"] = tts_engine
         await async_update_pipeline(hass, pipeline, **kwargs)  # type: ignore[arg-type]
+    elif not create_if_missing:
+        return False
     else:
         if not stt_engine or not tts_engine:
             LOGGER.warning(

@@ -6,7 +6,7 @@ rules:
     comment: Integration does not poll periodically; it validates on setup and responds to user requests.
   brands:
     status: todo
-    comment: Assets prepared in .github/spacexai-contribution/brands/; mark done after the home-assistant/brands PR merges (contribution stack wave 7).
+    comment: Assets prepared in .github/spacexai-contribution/brands/; mark done after the home-assistant/brands PR merges (contribution stack wave 8).
   common-modules: done
   config-flow-test-coverage: done
   config-flow: done
@@ -19,13 +19,13 @@ rules:
     comment: Integration does not provide conditions.
   docs-high-level-description:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   docs-installation-instructions:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   docs-removal-instructions:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   docs-triggers:
     status: exempt
     comment: Integration does not provide triggers.
@@ -46,10 +46,10 @@ rules:
   config-entry-unloading: done
   docs-configuration-parameters:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   docs-installation-parameters:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   entity-unavailable: done
   integration-owner: done
   log-when-unavailable: done
@@ -71,22 +71,22 @@ rules:
     comment: On-demand LLM responses; no periodic data update cadence to document.
   docs-examples:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   docs-known-limitations:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   docs-supported-devices:
     status: exempt
     comment: Service integration, no physical devices.
   docs-supported-functions:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   docs-troubleshooting:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   docs-use-cases:
     status: todo
-    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 7).
+    comment: Page drafted in .github/spacexai-contribution/docs/spacexai.markdown; mark done after the home-assistant.io PR merges (wave 8).
   dynamic-devices:
     status: exempt
     comment: Service integration, no discovered devices.

@@ -270,23 +270,28 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
     ir.async_delete_issue(hass, DOMAIN, _subscription_issue_id(entry))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Install-time flag only. Clear after a successful apply so reloads do not
-    # keep re-forcing the preferred Assist pipeline.
-    if entry.data.get(CONF_DEFAULT_ASSIST) is True:
-        from .assist import async_setup_assist_pipeline  # noqa: PLC0415
+    # Sync STT/TTS onto an owned Grok pipeline whenever speech entities exist.
+    # Creating a new pipeline / forcing preferred stays install-time only.
+    from .assist import async_setup_assist_pipeline  # noqa: PLC0415
 
-        try:
-            applied = await async_setup_assist_pipeline(hass, entry, set_preferred=True)
-        except HomeAssistantError:
-            LOGGER.exception("Unable to configure Assist pipeline for SpaceXAI")
-        else:
-            if applied:
-                new_data = {
-                    key: value
-                    for key, value in entry.data.items()
-                    if key != CONF_DEFAULT_ASSIST
-                }
-                hass.config_entries.async_update_entry(entry, data=new_data)
+    set_preferred = entry.data.get(CONF_DEFAULT_ASSIST) is True
+    try:
+        applied = await async_setup_assist_pipeline(
+            hass,
+            entry,
+            set_preferred=set_preferred,
+            create_if_missing=set_preferred,
+        )
+    except HomeAssistantError:
+        LOGGER.exception("Unable to configure Assist pipeline for SpaceXAI")
+    else:
+        if set_preferred and applied:
+            new_data = {
+                key: value
+                for key, value in entry.data.items()
+                if key != CONF_DEFAULT_ASSIST
+            }
+            hass.config_entries.async_update_entry(entry, data=new_data)
 
     return True
 

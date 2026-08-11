@@ -168,6 +168,20 @@ actions:
     response_variable: art
 ```
 
+Generate a short Imagine video (admin):
+
+```yaml
+actions:
+  - action: spacexai.generate_video
+    data:
+      prompt: A time-lapse of sunrise over a quiet street
+      duration: 5
+    response_variable: clip
+  - action: notify.persistent_notification
+    data:
+      message: "{{ clip.url }}"
+```
+
 ## Known limitations
 
 - Access depends on your SpaceXAI subscription. If your plan does not include API access,

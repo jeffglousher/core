@@ -75,11 +75,11 @@ Post-rebuild live smoke on HAOS overlay (entry `01KZNWZ4M5NPYCS51ADZBDVBKS`):
 | OAuth scopes | Includes `conversations:read` / `conversations:write` |
 | Platforms loaded | conversation + ai_task + stt + tts |
 
-Post-rebuild pytest (HAOS host Alpine clone `/mnt/data/pytest-spacexai/core` @ `6ba3a88b`):
+Post-rebuild pytest (HAOS host Alpine clone `/mnt/data/pytest-spacexai/core`):
 
 | Check | Result |
 | --- | --- |
-| `uv run --no-sync pytest tests/components/spacexai/ -q` | **240 passed** |
+| `uv run --no-sync pytest tests/components/spacexai/ -q` | **240 passed** @ `e6a4691e` (reconfirmed after tip test fixes) |
 | Tip branch vs wave 7 | Identical empty tip (`cursor/spacexai-device-flow-fix-2f69` == wave 7) |
-| Follow-up fixes | Install Assist/STT/TTS toggles preserved through finalize; tip tests aligned to 403→subscription gate, video poll mock queue, model-entitlement setup |
+| Follow-up fixes | Install Assist/STT/TTS toggles preserved through finalize; tip tests aligned to 403→subscription gate, video poll mock queue, model-entitlement setup; Assist reload syncs Grok STT/TTS onto owned pipelines without re-forcing preferred |
 

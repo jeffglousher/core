@@ -1,6 +1,6 @@
 # SpaceXAI individual contribution stack
 
-Domain: **`spacexai`**. Company name stays SpaceXAI; model IDs change over time and are **discovered** from the account (`models.list`), then presented in selectors. Image models are currently a curated Imagine list and should move to discovery in a follow-on when the API exposes stable image metadata.
+Domain: **`spacexai`**. Company name stays SpaceXAI; model IDs change over time and are **discovered** from the account (`models.list`), then presented in selectors. Chat, image, and video models are partitioned into `ProviderSnapshot` when the catalog exposes them; curated Imagine IDs remain as a fallback when discovery is sparse.
 
 This folder is the **human-facing contribution kit**. Core code still lives in `homeassistant/components/spacexai/` on the fork stack. Do **not** open against `home-assistant/core` until OAuth client, brands, docs, and AI-policy human review are ready.
 
@@ -25,8 +25,10 @@ Each wave starts from the final quality bar for **code** and only adds capabilit
 | 5 | `cursor/spacexai-hardening-0109` | Attachments + `GENERATE_IMAGE` | Same |
 | 6 | `cursor/spacexai-full-capabilities-0109` | STT + TTS + Assist pipeline helpers / STT stream limits | Same |
 | 7 | `cursor/spacexai-optimized-surface-0109` | Optimized provider surface: defaults/`service_tier`, progressive models, reauth merge, diagnostics, brands, video service, adversarial hardening | Tip of feature stack today |
-| 8 | *(to open)* `cursor/spacexai-quality-docs-brands-0109` | No feature code — flip `brands` + all applicable `docs-*` to `done` after external PRs merge; sync docs front matter | Unblocks hassfest bronze certification |
+| 8 | *(to open)* `cursor/spacexai-quality-docs-brands-0109` | No feature code — flip `brands` + all applicable `docs-*` to `done` after external brands + docs PRs merge; sync docs front matter | Unblocks hassfest bronze certification |
 | 9 | *(to open)* `cursor/spacexai-quality-platinum-0109` | Raise `manifest.json` / docs `ha_quality_scale` to the tier the rules support (code Platinum rules already `done`) | Declaration-only after wave 8 |
+
+Wave 7 ships the feature tip and contribution-kit assets. Waves 8–9 are declaration-only quality flips after external PRs land — do not flip `quality_scale.yaml` on wave 7.
 
 Wave 1’s PR body should link the brands + docs PRs (even as drafts). Later feature waves do not rewrite earlier ones.
 

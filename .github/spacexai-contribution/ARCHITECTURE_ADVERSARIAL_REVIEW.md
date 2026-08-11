@@ -1,7 +1,8 @@
 # SpaceXAI Core Architecture — Adversarial Review
 
 **Subject:** `homeassistant/components/spacexai`  
-**Tip:** `cursor/spacexai-full-capabilities-0109`  
+**Tip:** `cursor/spacexai-optimized-surface-0109` (feature stack wave 7)  
+
 **Stance:** Assume merge pressure. Prefer failure modes over compliments.  
 **Scope:** Architectural choices, application structure, code paths, decisions, trade-offs, weak areas. Not PR media or contribution process.
 
@@ -61,7 +62,7 @@ External trust boundary is **total**: prompts, tool schemas, attachments, audio,
 | --- | --- |
 | **Decision** | Application Credentials + Auth Code/PKCE **or** RFC 8628 device code. `unique_id = account.sub`. Tokens in `entry.data["token"]`. |
 | **Why it fits HA** | Matches “sign in with subscription” product; device code fits headless installs. |
-| **Trade-off** | Refresh, revoke, reauth, Application Credentials UX, and coarse scopes (`openid profile email offline_access grok-cli:access api:access` in `const.OAUTH_SCOPES`). |
+| **Trade-off** | Refresh, revoke, reauth, Application Credentials UX, and coarse scopes (`const.OAUTH_SCOPES`: openid/profile/email/offline_access/`grok-cli:access`/`api:access`/conversation read+write for CLI proxy). |
 | **Weakness** | `grok-cli:access` is product-borrowed until HA gets its own client/scopes. Over-scope is a privacy/compliance debt, not a temporary comment. |
 
 ### 2.2 Typed provider errors vs stringy failures
@@ -210,12 +211,12 @@ Runtime credential rejection (`runtime_session=True`) → `ReauthenticationRequi
 
 ## 5. Weak areas (ranked) — remediation status
 
-Addressed on `cursor/spacexai-optimized-surface-0109` unless noted.
+Addressed on tip `cursor/spacexai-optimized-surface-0109` (feature stack wave 7) unless noted.
 
 ### Tier S — Security / privacy / safety
 
 1. **Capability aggregation** — **Addressed:** explicit `allow_control_with_provider_tools` opt-in required when Assist APIs combine with provider tools.  
-2. **Broad OAuth scopes** — **Addressed:** scopes reduced to `openid offline_access api:access`.  
+2. **Broad OAuth scopes** — **Addressed for CLI entitlement:** Grok CLI / Hermes path keeps `openid profile email offline_access grok-cli:access api:access` plus conversation scopes required by `cli-chat-proxy`; further shrink waits on a dedicated HA OAuth client.  
 3. **Attachment filename = host path** — **Addressed:** basename only via `files.py`.  
 4. **Device-code polling lifetime** — **Addressed:** cancel on retry paths + `DEVICE_CODE_MAX_POLL_SECONDS` ceiling.
 

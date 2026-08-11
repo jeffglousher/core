@@ -44,9 +44,9 @@ During setup you choose how to sign in:
 - **Sign in with browser redirect**. Uses Authorization Code with PKCE through
   [My Home Assistant](/integrations/my/). Choose this if you prefer a single-browser flow.
 
-Setup creates four entities: a conversation agent, an AI Task entity, a speech-to-text
-entity, and a text-to-speech entity. You can add more of any type, and each is configured
-independently.
+Setup creates a conversation agent and an AI Task entity. During install you can also
+opt in to speech-to-text and text-to-speech entities, or add them later from the
+integration's subentry flows. Each entity is configured independently.
 
 ## Configuration options
 
@@ -60,13 +60,21 @@ description: Which Home Assistant LLM APIs the agent may use. Only entities you 
 Instructions:
 description: The system prompt that defines how the agent should respond. Supports templates.
 Enable web search:
-description: Allow Grok to search the web on SpaceXAI's servers before answering. Off by default.
+description: Allow Grok to search the web on SpaceXAI's servers before answering. Off by default. Optional domain allow/deny lists and image understanding/search flags are available.
 Enable X search:
-description: Allow Grok to search public posts on X before answering. Off by default.
+description: Allow Grok to search public posts on X before answering. Off by default. Optional handle filters and image/video understanding flags are available.
 Enable code interpreter:
 description: Allow Grok to run Python on SpaceXAI's servers to calculate and analyze data. Off by default.
+Enable image generation:
+description: Allow Grok to create or edit images in the conversation with the server-side image generation tool. Off by default.
+Allow Assist control with provider tools:
+description: Required opt-in before combining Home Assistant control APIs with outbound provider tools (web/X search, code interpreter, or image generation). Off by default.
+Processing speed:
+description: Standard or Priority (fast). Priority maps to SpaceXAI `service_tier=priority` and is the Assist default. Keep selectable either way.
 Maximum response tokens:
-description: The largest response the model may generate for one turn.
+description: Ceiling for one response (default 3000). Short Assist answers stay short.
+Temperature / Top P:
+description: Sampling controls (defaults 1.0 / 1.0, matching the SpaceXAI API).
 {% endconfiguration_basic %}
 
 ### AI Task
@@ -76,8 +84,14 @@ Model:
 description: The Grok model used for generating data.
 Image model:
 description: The Grok Imagine model used for generating images.
+Image aspect ratio:
+description: Aspect ratio for Imagine image generation (for example `1:1` or `16:9`).
+Image resolution:
+description: Imagine output resolution (`1k` or `2k`).
+Processing speed:
+description: Defaults to Standard for longer structured tasks; Priority remains selectable.
 Maximum response tokens:
-description: The largest response the model may generate for one task.
+description: Ceiling for one task response (default 8192).
 {% endconfiguration_basic %}
 
 ### Text-to-speech
@@ -107,9 +121,17 @@ structured output, and
 
 ### Speech-to-text and text-to-speech
 
-Both entities can be selected in an
-[Assist pipeline](/voice_control/voice_remote_local_assistant/), so a single SpaceXAI
-login covers the whole voice pipeline.
+Recommended setup creates STT and TTS entities and can wire them into a preferred Grok
+Assist pipeline. Change engines any time under
+**{% my voice_assistants title="Settings → Voice assistants" %}**. If a speech or Imagine
+media call is denied for the current session, a repair issue explains the failure while
+the entities remain selectable.
+
+### Generate video
+
+Administrators can call `spacexai.generate_video` to start an Imagine video job and
+receive the completed provider URL. Optional fields include model, a source image URL,
+and duration (seconds).
 
 ## Data updates
 
@@ -146,6 +168,20 @@ actions:
     response_variable: art
 ```
 
+Generate a short Imagine video (admin):
+
+```yaml
+actions:
+  - action: spacexai.generate_video
+    data:
+      prompt: A time-lapse of sunrise over a quiet street
+      duration: 5
+    response_variable: clip
+  - action: notify.persistent_notification
+    data:
+      message: "{{ clip.url }}"
+```
+
 ## Known limitations
 
 - Access depends on your SpaceXAI subscription. If your plan does not include API access,
@@ -154,9 +190,10 @@ actions:
   those requests leaves your network.
 - Conversation history is kept by Home Assistant. Requests are sent with storage disabled,
   so SpaceXAI does not retain the conversation for you.
-- Language models are discovered from your subscription and shown in the model selector.
-  Image generation currently uses curated Imagine model IDs; animated GIF _output_ is not
-  offered yet. GIF _attachments_ as input are supported.
+- Language and Imagine models are discovered from your subscription when the provider
+  catalog exposes them; curated Imagine IDs remain as a fallback. Animated GIF _output_
+  is not offered yet. GIF _attachments_ as input are supported.
+- Combining Assist control with outbound provider tools requires an explicit opt-in.
 - The conversation agent is told the Home Assistant Core version and the configured Grok
   model id so it can answer version questions. Other Assist agents do not get that context
   unless their integration adds it.
