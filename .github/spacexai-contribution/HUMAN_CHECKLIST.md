@@ -12,16 +12,17 @@ Canonical AI policy: [Open Home Foundation AI Policy](https://developers.home-as
 
 | Track | State |
 | --- | --- |
-| Upstream-ready stack | `cursor/spacexai-up-*-2f69` on `jeffglousher/core` (base = `upstream/dev`) |
+| Upstream-ready stack | `cursor/spacexai-up-*-2f69` on `jeffglousher/core` (base = current `upstream/dev`) |
 | Fork draft PRs | `#14`→`#18`→`#17`→`#16`→`#21`→`#19`→`#22`→`#20` (+ kit `#15`); legacy `#1`–`#7`/`#12`/`#13` closed |
-| Brands + CLA | Draft [home-assistant/brands#10947](https://github.com/home-assistant/brands/pull/10947) — **CLA is signed here** (first HA-org PR) |
+| Brands + CLA | [home-assistant/brands#10947](https://github.com/home-assistant/brands/pull/10947) ready-for-review — **sign CLA here** |
 | Docs | Draft [home-assistant.io#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
-| Rebase onto `upstream/dev` | **DONE** — `cursor/spacexai-up-base-2f69` == `upstream/dev` |
+| Rebase onto `upstream/dev` | **DONE** (rebuilt on tip; force-updated `up-*`) |
 | Strip fork-only paths | **DONE** on all `up-*` waves |
-| Wave rearrange (fold former wave 8 into wave 1) | **DONE** — wave 1 has `brands`/`docs-*` = `done` + `quality_scale: bronze` |
-| Dedicated HA OAuth client | **BLOCKER (A1)** — still using Grok CLI public client id |
+| Wave 1 bronze-first cleanup | **DONE** — honest bronze QS; clean `requirements_all` (+1 comment line); no Assist after-deps yet |
+| First Core PR | **Wave 1 only** (`up-conversation` / fork `#14`) — still larger than LiteLLM; optional test trim before Core undraft |
+| Dedicated HA OAuth client | **BLOCKER (A1)** for device-code / CLI-proxy waves — wave 1 uses Application Credentials |
 
-Do **not** open or undraft against `home-assistant/core` until **A1** and **A4** below are done (A2/A3 already cleared; **A5 CLA is part of the brands edition**).
+Do **not** undraft against `home-assistant/core` until **A4** (and **A1** before wave 4). Opening a **Core draft** of wave 1 for CLA is OK if brands CLA bot never fires; prefer signing on brands.
 
 ---
 

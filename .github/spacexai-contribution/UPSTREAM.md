@@ -7,12 +7,15 @@ Companion to [HUMAN_CHECKLIST.md](HUMAN_CHECKLIST.md). Agent prep notes; human o
 | Role | Branch |
 | --- | --- |
 | Base (= `upstream/dev`) | `cursor/spacexai-up-base-2f69` |
-| Wave 1 … 7 | `cursor/spacexai-up-conversation-2f69` … `cursor/spacexai-up-optimized-surface-2f69` |
+| Wave 1 (first Core PR) | `cursor/spacexai-up-conversation-2f69` |
+| Waves 2 … 7 | `cursor/spacexai-up-ai-task-2f69` … `cursor/spacexai-up-optimized-surface-2f69` |
 | Wave 8 platinum | `cursor/spacexai-up-platinum-2f69` |
 | Kit meta (not for Core) | `cursor/spacexai-contribution-kit-2f69` |
 
 Rebuild script (Windows): `agent-tools/build_upstream_stack.ps1`  
 Host validate: `agent-tools/validate_up_tip.sh`
+
+Wave 1 validate (2026-08-11): **133 passed** on conversation-only tip.
 
 ## Exclude from every Core branch
 

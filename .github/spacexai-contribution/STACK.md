@@ -14,7 +14,20 @@ This folder is the **human-facing contribution kit** (fork meta only). It is **n
 
 ## Upstream-ready Core stack (canonical)
 
-Rebuilt from `upstream/dev` (`cursor/spacexai-up-base-2f69` == `home-assistant/core` `dev`). Fork-only paths stripped (`spacexai-contribution/`, `spacexai-pr-media/`, `components/spacexai/brand/`). Former wave 8 (`brands` / `docs-*` = `done`) is **folded into wave 1** so Bronze hassfest can pass.
+Rebuilt from current `upstream/dev` (`cursor/spacexai-up-base-2f69`). Fork-only paths stripped. Former brands/docs flip folded into wave 1. Wave 1 is **bronze-first Conversation** (no tip `quality_scale` claims, no unrelated `requirements_all` churn, no Assist `after_dependencies` until the STT/TTS wave).
+
+### First Core PR recommendation
+
+| Peer | First PR size |
+| --- | --- |
+| LiteLLM | ~2.0k additions |
+| Harbor Sleep | ~1.6k |
+| Karakeep | ~1.3k |
+| **SpaceXAI wave 1 today** | ~5.7k (≈ half tests) |
+
+**Ship wave 1 (`up-conversation`) as the first Core PR** — that is the right story (OAuth Conversation agent + diagnostics + bronze). Do **not** open a mega tip PR.
+
+Optional size cut before undrafting Core (recommended): trim exotic stream edge-case coverage in `test_conversation.py` / `test_client.py` toward ~2–2.5k total additions. Keep production modules; tests are the bulk.
 
 | Wave | Branch (fork) | Adds | Quality-scale intent |
 | --- | --- | --- | --- |
