@@ -29,7 +29,6 @@ from homeassistant.components.spacexai.errors import (
     ErrorContext,
     MalformedProviderResponseError,
     ModelNotEntitledError,
-    NoConversationModelsError,
     Operation,
     PermanentProviderError,
     QuotaLimitedError,
@@ -232,17 +231,15 @@ async def test_model_discovery_translates_pagination_errors(
         await _client(hass).async_get_models()
 
 
-async def test_no_entitled_models(hass: HomeAssistant) -> None:
-    """Treat an empty conversation-model catalog as a distinct entitlement gap."""
-    with (
-        patch(
-            "openai.resources.models.AsyncModels.list",
-            new_callable=AsyncMock,
-            return_value=AsyncModelPage(),
-        ),
-        pytest.raises(NoConversationModelsError),
+async def test_empty_model_catalog_is_allowed(hass: HomeAssistant) -> None:
+    """Allow an empty catalog so setup can fall back to the default chat model."""
+    with patch(
+        "openai.resources.models.AsyncModels.list",
+        new_callable=AsyncMock,
+        return_value=AsyncModelPage(),
     ):
-        await _client(hass).async_get_models()
+        models = await _client(hass).async_get_models()
+    assert models == ()
 
 
 async def test_refresh_rejected() -> None:
@@ -396,6 +393,24 @@ async def test_async_validate(
         snapshot = await _client(hass).async_validate()
     assert snapshot.account.subject == "account-123"
     assert snapshot.has_model("grok-4.5")
+
+
+async def test_async_validate_allows_catalog_failure(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Keep setup going when model discovery fails after identity succeeds."""
+    aioclient_mock.get(
+        USERINFO_URL,
+        json={"sub": "account-123", "name": "Home User"},
+    )
+    with patch(
+        "openai.resources.models.AsyncModels.list",
+        new_callable=AsyncMock,
+        side_effect=_status_error(503),
+    ):
+        snapshot = await _client(hass).async_validate()
+    assert snapshot.account.subject == "account-123"
+    assert snapshot.models == ()
 
 
 async def test_async_validate_checks_subject_before_models(
@@ -606,6 +621,15 @@ async def test_stream_create_timeout_is_typed(hass: HomeAssistant) -> None:
             Operation.REVOCATION,
             SubscriptionNotEntitledError,
             id="403-revocation-subscription-message",
+        ),
+        pytest.param(
+            426,
+            None,
+            {},
+            False,
+            Operation.RESPONSE,
+            PermanentProviderError,
+            id="426",
         ),
         pytest.param(
             404,

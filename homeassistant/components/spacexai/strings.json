@@ -28,6 +28,9 @@
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]"
     },
+    "progress": {
+      "wait_for_device": "Open {verification_uri} and approve Home Assistant.\n\nIf asked for a code, enter:\n\n```{user_code}```\n\nThis login attempt expires in {expires_minutes} minutes."
+    },
     "step": {
       "conversation": {
         "data": {
@@ -50,6 +53,21 @@
         },
         "description": "Configure the Grok conversation agent for this SpaceXAI account."
       },
+      "device": {
+        "title": "Approve SpaceXAI on another device"
+      },
+      "device_connection_error": {
+        "description": "Home Assistant could not reach SpaceXAI while waiting for device approval. Submit to try again.",
+        "title": "Connection error"
+      },
+      "device_denied": {
+        "description": "The SpaceXAI account denied access. Submit to generate a new device code.",
+        "title": "Authorization denied"
+      },
+      "device_timeout": {
+        "description": "The device code expired before approval. Submit to generate a new code.",
+        "title": "Authorization timed out"
+      },
       "pick_implementation": {
         "data": {
           "implementation": "[%key:common::config_flow::data::implementation%]"
@@ -64,7 +82,11 @@
         "title": "[%key:common::config_flow::title::reauth%]"
       },
       "user": {
-        "description": "Sign in with a SpaceXAI subscription account using Authorization Code + PKCE."
+        "description": "Sign in with a SpaceXAI subscription account. Device code is recommended and works on phones. Browser redirect only works with an OAuth client that registers the Home Assistant redirect URI.",
+        "menu_options": {
+          "browser": "Sign in with browser redirect (requires HA redirect URI)",
+          "device": "Sign in with device code (recommended)"
+        }
       },
       "validate": {
         "description": "Home Assistant could not validate the SpaceXAI account. Submit to try again."
