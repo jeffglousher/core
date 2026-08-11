@@ -278,10 +278,12 @@ class SpaceXAIClient:
         max_output_tokens: int,
         prompt_cache_key: str,
         text: ResponseTextConfigParam | None = None,
+        include: Sequence[str] | None = None,
     ) -> AsyncStream[ResponseStreamEvent]:
         """Start a streaming Responses API request."""
         token = await self._token_provider.async_get_access_token()
         context = ErrorContext(operation=Operation.RESPONSE, model=model)
+        include_values = list(include or ("reasoning.encrypted_content",))
         try:
             async with self._sdk_lock:
                 client = await self._async_sdk_client(token)
@@ -293,7 +295,7 @@ class SpaceXAIClient:
                     "parallel_tool_calls": False,
                     "prompt_cache_key": prompt_cache_key,
                     "store": False,
-                    "include": ["reasoning.encrypted_content"],
+                    "include": include_values,
                     "stream": True,
                 }
                 if text is not None:

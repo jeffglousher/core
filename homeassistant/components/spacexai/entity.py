@@ -11,6 +11,7 @@ import openai
 from openai.types.responses import (
     EasyInputMessageParam,
     FunctionToolParam,
+    ResponseCodeInterpreterToolCall,
     ResponseCompletedEvent,
     ResponseContentPartAddedEvent,
     ResponseContentPartDoneEvent,
@@ -21,6 +22,7 @@ from openai.types.responses import (
     ResponseFunctionCallArgumentsDoneEvent,
     ResponseFunctionToolCall,
     ResponseFunctionToolCallParam,
+    ResponseFunctionWebSearch,
     ResponseIncompleteEvent,
     ResponseInProgressEvent,
     ResponseInputParam,
@@ -42,6 +44,16 @@ from openai.types.responses import (
     ResponseStreamEvent,
     ResponseTextDeltaEvent,
     ResponseTextDoneEvent,
+    ResponseWebSearchCallCompletedEvent,
+    ResponseWebSearchCallInProgressEvent,
+    ResponseWebSearchCallSearchingEvent,
+    WebSearchToolParam,
+)
+from openai.types.responses.response_code_interpreter_tool_call_param import (
+    ResponseCodeInterpreterToolCallParam,
+)
+from openai.types.responses.response_function_web_search_param import (
+    ResponseFunctionWebSearchParam,
 )
 from openai.types.responses.response_input_param import FunctionCallOutput
 from openai.types.responses.response_text_config_param import ResponseTextConfigParam
@@ -61,11 +73,21 @@ from homeassistant.util import slugify
 
 from . import SpaceXAIConfigEntry, async_mark_subscription_not_entitled
 from .const import (
+    CONF_CODE_INTERPRETER,
     CONF_MAX_OUTPUT_TOKENS,
+    CONF_WEB_SEARCH,
+    CONF_X_SEARCH,
     CONVERSE_TIMEOUT,
+    DEFAULT_CODE_INTERPRETER,
+    DEFAULT_WEB_SEARCH,
+    DEFAULT_X_SEARCH,
     DOMAIN,
     LOGGER,
     MAX_TOOL_ITERATIONS,
+    PROVIDER_CODE_INTERPRETER_TOOL,
+    PROVIDER_SEARCH_TOOLS,
+    PROVIDER_WEB_SEARCH_TOOL,
+    PROVIDER_X_SEARCH_TOOL,
     RESPONSE_TIMEOUT,
 )
 from .errors import (
@@ -91,6 +113,12 @@ from .issue import (
     async_create_model_not_entitled_issue,
     async_delete_model_not_entitled_issue,
     async_model_issue_is_response_originated,
+)
+
+_IGNORED_STREAM_EVENT_PREFIXES = (
+    "response.web_search_call.",
+    "response.x_search_call.",
+    "response.code_interpreter_call.",
 )
 
 
@@ -156,16 +184,35 @@ def _convert_content(
     """Convert Home Assistant-owned history to Responses API input."""
     messages: ResponseInputParam = []
     reasoning_summary: list[str] = []
+    search_calls: dict[str, ResponseFunctionWebSearchParam] = {}
+    code_calls: dict[str, ResponseCodeInterpreterToolCallParam] = {}
     for content in chat_content:
         if isinstance(content, conversation.ToolResultContent):
             reasoning_summary = []
-            messages.append(
-                FunctionCallOutput(
-                    type="function_call_output",
-                    call_id=content.tool_call_id,
-                    output=json_dumps(content.tool_result),
+            if (
+                content.tool_name in PROVIDER_SEARCH_TOOLS
+                and content.tool_call_id in search_calls
+            ):
+                search_call = search_calls.pop(content.tool_call_id)
+                search_call["status"] = content.tool_result.get(  # type: ignore[typeddict-item]
+                    "status", "completed"
                 )
-            )
+                messages.append(search_call)
+            elif (
+                content.tool_name == PROVIDER_CODE_INTERPRETER_TOOL
+                and content.tool_call_id in code_calls
+            ):
+                code_call = code_calls.pop(content.tool_call_id)
+                code_call["outputs"] = content.tool_result.get("output")  # type: ignore[typeddict-item]
+                messages.append(code_call)
+            else:
+                messages.append(
+                    FunctionCallOutput(
+                        type="function_call_output",
+                        call_id=content.tool_call_id,
+                        output=json_dumps(content.tool_result),
+                    )
+                )
             continue
 
         if isinstance(content, conversation.AssistantContent):
@@ -197,14 +244,34 @@ def _convert_content(
                     )
                 )
             for tool_call in content.tool_calls or ():
-                messages.append(
-                    ResponseFunctionToolCallParam(
-                        type="function_call",
-                        call_id=tool_call.id,
-                        name=tool_call.tool_name,
-                        arguments=json_dumps(tool_call.tool_args),
+                if tool_call.tool_name in PROVIDER_SEARCH_TOOLS:
+                    search_calls[tool_call.id] = cast(
+                        ResponseFunctionWebSearchParam,
+                        {
+                            "type": tool_call.tool_name,
+                            "id": tool_call.id,
+                            "status": "completed",
+                            "action": tool_call.tool_args.get("action"),
+                        },
                     )
-                )
+                elif tool_call.tool_name == PROVIDER_CODE_INTERPRETER_TOOL:
+                    code_calls[tool_call.id] = ResponseCodeInterpreterToolCallParam(
+                        type="code_interpreter_call",
+                        id=tool_call.id,
+                        code=tool_call.tool_args.get("code"),
+                        container_id=str(tool_call.tool_args.get("container") or ""),
+                        outputs=None,
+                        status="completed",
+                    )
+                else:
+                    messages.append(
+                        ResponseFunctionToolCallParam(
+                            type="function_call",
+                            call_id=tool_call.id,
+                            name=tool_call.tool_name,
+                            arguments=json_dumps(tool_call.tool_args),
+                        )
+                    )
             continue
 
         reasoning_summary = []
@@ -262,6 +329,49 @@ def _stream_failure(
             "Provider reported a transient failure", context=context
         )
     return PermanentProviderError("Provider rejected the response", context=context)
+
+
+def _item_type(item: object) -> str | None:
+    """Return a Responses output item type when available."""
+    item_type = getattr(item, "type", None)
+    return item_type if isinstance(item_type, str) else None
+
+
+def _external_search_deltas(
+    item: object,
+    tool_name: str,
+) -> list[
+    conversation.AssistantContentDeltaDict | conversation.ToolResultContentDeltaDict
+]:
+    """Emit chat-log deltas for a completed server-side search tool."""
+    action = getattr(item, "action", None)
+    if action is not None and hasattr(action, "to_dict"):
+        action = action.to_dict()
+    item_id = getattr(item, "id", None)
+    status = getattr(item, "status", "completed")
+    if not isinstance(item_id, str) or not item_id:
+        raise MalformedProviderResponseError(
+            "Provider search tool omitted its item ID",
+            context=ErrorContext(operation=Operation.RESPONSE),
+        )
+    return [
+        {
+            "tool_calls": [
+                llm.ToolInput(
+                    id=item_id,
+                    tool_name=tool_name,
+                    tool_args={"action": action},
+                    external=True,
+                )
+            ]
+        },
+        {
+            "role": "tool_result",
+            "tool_call_id": item_id,
+            "tool_name": tool_name,
+            "tool_result": {"status": status},
+        },
+    ]
 
 
 async def _transform_stream(  # noqa: C901
@@ -360,8 +470,16 @@ async def _transform_stream(  # noqa: C901
                 reasoning_native_set = False
                 last_summary_index = None
                 continue
+            if isinstance(
+                event.item, (ResponseFunctionWebSearch, ResponseCodeInterpreterToolCall)
+            ) or _item_type(event.item) in (
+                PROVIDER_WEB_SEARCH_TOOL,
+                PROVIDER_X_SEARCH_TOOL,
+                "code_interpreter_call",
+            ):
+                continue
             raise MalformedProviderResponseError(
-                f"Unexpected output item type {type(event.item)!r}",
+                f"Unexpected output item type {_item_type(event.item) or type(event.item)!r}",
                 context=ErrorContext(operation=Operation.RESPONSE, model=model),
             )
 
@@ -434,6 +552,49 @@ async def _transform_stream(  # noqa: C901
             if isinstance(event.item, ResponseReasoningItem):
                 _emit({"native": event.item})
                 reasoning_native_set = True
+            elif isinstance(event.item, ResponseFunctionWebSearch) or _item_type(
+                event.item
+            ) in (PROVIDER_WEB_SEARCH_TOOL, PROVIDER_X_SEARCH_TOOL):
+                tool_name = (
+                    PROVIDER_X_SEARCH_TOOL
+                    if _item_type(event.item) == PROVIDER_X_SEARCH_TOOL
+                    else PROVIDER_WEB_SEARCH_TOOL
+                )
+                if not assistant_open:
+                    yield {"role": "assistant"}
+                    assistant_open = True
+                for delta in _external_search_deltas(event.item, tool_name):
+                    yield delta
+                assistant_open = False
+                assistant_has_tool_calls = False
+            elif isinstance(event.item, ResponseCodeInterpreterToolCall):
+                if not assistant_open:
+                    yield {"role": "assistant"}
+                    assistant_open = True
+                yield {
+                    "tool_calls": [
+                        llm.ToolInput(
+                            id=event.item.id,
+                            tool_name=PROVIDER_CODE_INTERPRETER_TOOL,
+                            tool_args={
+                                "code": event.item.code,
+                                "container": event.item.container_id,
+                            },
+                            external=True,
+                        )
+                    ]
+                }
+                outputs: Any = None
+                if event.item.outputs is not None:
+                    outputs = [output.to_dict() for output in event.item.outputs]
+                yield {
+                    "role": "tool_result",
+                    "tool_call_id": event.item.id,
+                    "tool_name": PROVIDER_CODE_INTERPRETER_TOOL,
+                    "tool_result": {"output": outputs},
+                }
+                assistant_open = False
+                assistant_has_tool_calls = False
             continue
 
         if isinstance(event, ResponseCompletedEvent):
@@ -501,7 +662,13 @@ async def _transform_stream(  # noqa: C901
                 ResponseReasoningTextDeltaEvent,
                 ResponseReasoningTextDoneEvent,
                 ResponseTextDoneEvent,
+                ResponseWebSearchCallCompletedEvent,
+                ResponseWebSearchCallInProgressEvent,
+                ResponseWebSearchCallSearchingEvent,
             ),
+        ) or any(
+            getattr(event, "type", "").startswith(prefix)
+            for prefix in _IGNORED_STREAM_EVENT_PREFIXES
         ):
             continue
 
@@ -601,6 +768,15 @@ class SpaceXAIBaseLLMEntity(Entity):
                 dict(_format_tool(tool, chat_log.llm_api.custom_serializer))
                 for tool in chat_log.llm_api.tools
             ]
+        if self.subentry.data.get(CONF_WEB_SEARCH, DEFAULT_WEB_SEARCH):
+            tools.append(dict(WebSearchToolParam(type="web_search")))
+        if self.subentry.data.get(CONF_X_SEARCH, DEFAULT_X_SEARCH):
+            tools.append({"type": "x_search"})
+        if self.subentry.data.get(CONF_CODE_INTERPRETER, DEFAULT_CODE_INTERPRETER):
+            tools.append({"type": "code_interpreter"})
+        include = ["reasoning.encrypted_content"]
+        if self.subentry.data.get(CONF_CODE_INTERPRETER, DEFAULT_CODE_INTERPRETER):
+            include.append("code_interpreter_call.outputs")
         text: ResponseTextConfigParam | None = None
         if structure and structure_name:
             text = {
@@ -621,6 +797,7 @@ class SpaceXAIBaseLLMEntity(Entity):
                         max_output_tokens=self._max_output_tokens,
                         prompt_cache_key=chat_log.conversation_id,
                         text=text,
+                        include=include,
                     )
 
                     async with stream:

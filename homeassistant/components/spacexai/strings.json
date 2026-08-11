@@ -31,16 +31,22 @@
     "step": {
       "conversation": {
         "data": {
+          "code_interpreter": "Enable code interpreter",
           "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
           "max_output_tokens": "Maximum response tokens",
           "model": "[%key:common::generic::model%]",
-          "prompt": "[%key:common::config_flow::data::prompt%]"
+          "prompt": "[%key:common::config_flow::data::prompt%]",
+          "web_search": "Enable web search",
+          "x_search": "Enable X search"
         },
         "data_description": {
+          "code_interpreter": "Allow Grok to run Python on SpaceXAI servers to calculate, analyze, and transform data.",
           "llm_hass_api": "Home Assistant APIs that Grok may use. Only explicitly exposed entities and tools are available.",
           "max_output_tokens": "Maximum number of tokens Grok may generate for one response.",
           "model": "Grok model discovered for the signed-in subscription.",
-          "prompt": "Instructions that define how Grok should respond. This can be a template."
+          "prompt": "Instructions that define how Grok should respond. This can be a template.",
+          "web_search": "Allow Grok to use SpaceXAI server-side web search before answering.",
+          "x_search": "Allow Grok to search public posts on X before answering."
         },
         "description": "Configure the Grok conversation agent for this SpaceXAI account."
       },
@@ -120,30 +126,42 @@
       "step": {
         "reconfigure": {
           "data": {
+            "code_interpreter": "[%key:component::spacexai::config::step::conversation::data::code_interpreter%]",
             "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
             "model": "[%key:common::generic::model%]",
-            "prompt": "[%key:common::config_flow::data::prompt%]"
+            "prompt": "[%key:common::config_flow::data::prompt%]",
+            "web_search": "[%key:component::spacexai::config::step::conversation::data::web_search%]",
+            "x_search": "[%key:component::spacexai::config::step::conversation::data::x_search%]"
           },
           "data_description": {
+            "code_interpreter": "[%key:component::spacexai::config::step::conversation::data_description::code_interpreter%]",
             "llm_hass_api": "[%key:component::spacexai::config::step::conversation::data_description::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
-            "prompt": "[%key:component::spacexai::config::step::conversation::data_description::prompt%]"
+            "prompt": "[%key:component::spacexai::config::step::conversation::data_description::prompt%]",
+            "web_search": "[%key:component::spacexai::config::step::conversation::data_description::web_search%]",
+            "x_search": "[%key:component::spacexai::config::step::conversation::data_description::x_search%]"
           }
         },
         "user": {
           "data": {
+            "code_interpreter": "[%key:component::spacexai::config::step::conversation::data::code_interpreter%]",
             "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
             "model": "[%key:common::generic::model%]",
-            "prompt": "[%key:common::config_flow::data::prompt%]"
+            "prompt": "[%key:common::config_flow::data::prompt%]",
+            "web_search": "[%key:component::spacexai::config::step::conversation::data::web_search%]",
+            "x_search": "[%key:component::spacexai::config::step::conversation::data::x_search%]"
           },
           "data_description": {
+            "code_interpreter": "[%key:component::spacexai::config::step::conversation::data_description::code_interpreter%]",
             "llm_hass_api": "[%key:component::spacexai::config::step::conversation::data_description::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
-            "prompt": "[%key:component::spacexai::config::step::conversation::data_description::prompt%]"
+            "prompt": "[%key:component::spacexai::config::step::conversation::data_description::prompt%]",
+            "web_search": "[%key:component::spacexai::config::step::conversation::data_description::web_search%]",
+            "x_search": "[%key:component::spacexai::config::step::conversation::data_description::x_search%]"
           }
         }
       }

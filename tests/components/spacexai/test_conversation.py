@@ -12,6 +12,8 @@ from freezegun import freeze_time
 import httpx
 from openai import OpenAIError
 from openai.types.responses import (
+    ResponseCodeInterpreterToolCall,
+    ResponseFunctionWebSearch,
     ResponseInProgressEvent,
     ResponseOutputItemAddedEvent,
     ResponseOutputItemDoneEvent,
@@ -21,6 +23,7 @@ from openai.types.responses import (
     ResponseRefusalDeltaEvent,
     ResponseStreamEvent,
     ResponseTextDeltaEvent,
+    ResponseWebSearchCallSearchingEvent,
 )
 from pydantic import ValidationError
 import pytest
@@ -35,7 +38,10 @@ from homeassistant.components.spacexai.client import (
     ProviderSnapshot,
 )
 from homeassistant.components.spacexai.const import (
+    CONF_CODE_INTERPRETER,
     CONF_MAX_OUTPUT_TOKENS,
+    CONF_WEB_SEARCH,
+    CONF_X_SEARCH,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
     MAX_TOOL_ITERATIONS,
@@ -1522,3 +1528,151 @@ async def test_adjacent_stream_deltas_are_coalesced(
         and content.thinking_content
     ]
     assert thinking == ["Think twice"]
+
+
+async def test_web_search_tool_is_server_side(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+) -> None:
+    """Treat provider web search calls as external tools."""
+    subentry = conversation_subentry(setup_integration)
+    hass.config_entries.async_update_subentry(
+        setup_integration,
+        subentry,
+        data={**subentry.data, CONF_WEB_SEARCH: True},
+    )
+    await hass.config_entries.async_reload(setup_integration.entry_id)
+    await hass.async_block_till_done()
+
+    mock_stream.return_value = EventStream(
+        [
+            ResponseOutputItemAddedEvent(
+                item=ResponseFunctionWebSearch.model_validate(
+                    {
+                        "id": "ws_1",
+                        "status": "in_progress",
+                        "type": "web_search_call",
+                        "action": {"type": "search", "query": "xAI"},
+                    }
+                ),
+                output_index=0,
+                sequence_number=0,
+                type="response.output_item.added",
+            ),
+            ResponseWebSearchCallSearchingEvent(
+                item_id="ws_1",
+                output_index=0,
+                sequence_number=1,
+                type="response.web_search_call.searching",
+            ),
+            ResponseOutputItemDoneEvent(
+                item=ResponseFunctionWebSearch.model_validate(
+                    {
+                        "id": "ws_1",
+                        "status": "completed",
+                        "type": "web_search_call",
+                        "action": {"type": "search", "query": "xAI"},
+                    }
+                ),
+                output_index=0,
+                sequence_number=2,
+                type="response.output_item.done",
+            ),
+            *message_events("Found it", complete=True),
+        ]
+    )
+    result = await converse(hass, "Search for xAI")
+    assert result.response.speech["plain"]["speech"] == "Found it"
+    assert {"type": "web_search"} in mock_stream.call_args.kwargs["tools"]
+
+
+async def test_code_interpreter_tool_is_server_side(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+) -> None:
+    """Treat provider code interpreter calls as external tools."""
+    subentry = conversation_subentry(setup_integration)
+    hass.config_entries.async_update_subentry(
+        setup_integration,
+        subentry,
+        data={**subentry.data, CONF_CODE_INTERPRETER: True},
+    )
+    await hass.config_entries.async_reload(setup_integration.entry_id)
+    await hass.async_block_till_done()
+
+    item = ResponseCodeInterpreterToolCall.model_validate(
+        {
+            "id": "code_1",
+            "code": "print(2+2)",
+            "container_id": "container",
+            "outputs": [{"type": "logs", "logs": "4"}],
+            "status": "completed",
+            "type": "code_interpreter_call",
+        }
+    )
+    mock_stream.return_value = EventStream(
+        [
+            ResponseOutputItemAddedEvent(
+                item=item,
+                output_index=0,
+                sequence_number=0,
+                type="response.output_item.added",
+            ),
+            ResponseOutputItemDoneEvent(
+                item=item,
+                output_index=0,
+                sequence_number=1,
+                type="response.output_item.done",
+            ),
+            *message_events("Four", complete=True),
+        ]
+    )
+    result = await converse(hass, "What is 2+2?")
+    assert result.response.speech["plain"]["speech"] == "Four"
+    assert {"type": "code_interpreter"} in mock_stream.call_args.kwargs["tools"]
+    assert "code_interpreter_call.outputs" in mock_stream.call_args.kwargs["include"]
+
+
+async def test_x_search_tool_is_server_side(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+) -> None:
+    """Treat provider X search calls as external tools."""
+    subentry = conversation_subentry(setup_integration)
+    hass.config_entries.async_update_subentry(
+        setup_integration,
+        subentry,
+        data={**subentry.data, CONF_X_SEARCH: True},
+    )
+    await hass.config_entries.async_reload(setup_integration.entry_id)
+    await hass.async_block_till_done()
+
+    item = SimpleNamespace(
+        type="x_search_call",
+        id="xs_1",
+        status="completed",
+        action={"type": "search", "query": "xAI"},
+    )
+    mock_stream.return_value = EventStream(
+        [
+            ResponseOutputItemAddedEvent.model_construct(
+                item=item,
+                output_index=0,
+                sequence_number=0,
+                type="response.output_item.added",
+            ),
+            ResponseOutputItemDoneEvent.model_construct(
+                item=item,
+                output_index=0,
+                sequence_number=1,
+                type="response.output_item.done",
+            ),
+            *message_events("Trending", complete=True),
+        ]
+    )
+    result = await converse(hass, "What are people saying?")
+    assert result.response.speech["plain"]["speech"] == "Trending"
+    assert {"type": "x_search"} in mock_stream.call_args.kwargs["tools"]
