@@ -16,13 +16,14 @@ Canonical AI policy: [Open Home Foundation AI Policy](https://developers.home-as
 | Fork draft PRs | `#14`→`#18`→`#17`→`#16`→`#21`→`#19`→`#22`→`#20` (+ kit `#15`); legacy `#1`–`#7`/`#12`/`#13` closed |
 | Brands + CLA | [home-assistant/brands#10947](https://github.com/home-assistant/brands/pull/10947) ready-for-review — **sign CLA here** |
 | Docs | Draft [home-assistant.io#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
-| Rebase onto `upstream/dev` | **DONE** (rebuilt on tip; force-updated `up-*`) |
+| Rebase onto `upstream/dev` | **DONE** @ `96092a2d` (full `up-*` rebuild 2026-08-11) |
 | Strip fork-only paths | **DONE** on all `up-*` waves |
 | Wave 1 bronze-first cleanup | **DONE** — honest bronze QS; clean `requirements_all` (+1 comment line); no Assist after-deps yet |
-| First Core PR | **Wave 1 only** (`up-conversation` / fork `#14`) — still larger than LiteLLM; optional test trim before Core undraft |
-| Dedicated HA OAuth client | **BLOCKER (A1)** for device-code / CLI-proxy waves — wave 1 uses Application Credentials |
+| Wave 1 pytest | **133 passed** @ `2023ad01` |
+| First Core PR | **Ready for YOU to open as DRAFT** — branch `jeffglousher:cursor/spacexai-up-conversation-2f69` → `home-assistant/core` `dev` (~5660 / −16). Agent will not open Core PRs (AI policy). |
+| Dedicated HA OAuth client | **Not required for wave 1** (Application Credentials). **A1 still blocks wave 4+** (device-code / CLI proxy headers). |
 
-Do **not** undraft against `home-assistant/core` until **A4** (and **A1** before wave 4). Opening a **Core draft** of wave 1 for CLA is OK if brands CLA bot never fires; prefer signing on brands.
+Open Core wave 1 as **draft** after you rewrite the PR body. Prefer CLA on brands; Core draft also triggers CLA if needed. Do **not** undraft until B1–B3 are true for you.
 
 ---
 
@@ -136,7 +137,8 @@ Notes: [TRACKING.md](TRACKING.md).
 | Fork-only paths stripped | No kit/media/`brand/` on `up-*` tips |
 | Wave 8 folded into wave 1 | w1 `brands: done` + bronze `docs-*`; tip `quality_scale: platinum` |
 | Integration + tests | `homeassistant/components/spacexai/`, `tests/components/spacexai/` |
-| Pytest spacexai (up tip) | **241 passed** @ `7588c0cf` (HA host) |
+| Pytest spacexai (wave 1) | **133 passed** @ `2023ad01` (HA host) |
+| Pytest spacexai (full tip, prior) | **241 passed** on earlier tip rebuild |
 | Hassfest quality_scale (up tip) | Invalid integrations: 0 |
 | Brands draft PR | [#10947](https://github.com/home-assistant/brands/pull/10947) |
 | Docs draft PR | [#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
