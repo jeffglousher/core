@@ -90,20 +90,20 @@ Live Assist wiring (after tip `4ae2d711` + HA Core restart): preferred pipeline 
 Rebuilt from `upstream/dev` as `cursor/spacexai-up-*-2f69`. Former wave 8
 (brands/docs `done`) folded into wave 1. Platinum is wave 8.
 
-| Wave | Branch | Notes |
-| --- | --- | --- |
-| base | `cursor/spacexai-up-base-2f69` | == `upstream/dev` |
-| 1 | `cursor/spacexai-up-conversation-2f69` | Bronze + brands/docs `done` |
-| 2 | `cursor/spacexai-up-ai-task-2f69` | AI Task |
-| 3 | `cursor/spacexai-up-capabilities-2f69` | Server tools |
-| 4 | `cursor/spacexai-up-device-code-2f69` | Device-code + CLI OAuth (**A1 blocker**) |
-| 5 | `cursor/spacexai-up-hardening-2f69` | Attachments / Imagine |
-| 6 | `cursor/spacexai-up-full-capabilities-2f69` | STT/TTS/Assist |
-| 7 | `cursor/spacexai-up-optimized-surface-2f69` | Feature tip |
-| 8 | `cursor/spacexai-up-platinum-2f69` | `quality_scale: platinum` |
-| kit | `cursor/spacexai-contribution-kit-2f69` | This folder only (not for Core) |
+| Wave | Branch | Fork draft PR | Notes |
+| --- | --- | --- | --- |
+| base | `cursor/spacexai-up-base-2f69` | — | == `upstream/dev` |
+| 1 | `cursor/spacexai-up-conversation-2f69` | [#14](https://github.com/jeffglousher/core/pull/14) | Bronze + brands/docs `done` |
+| 2 | `cursor/spacexai-up-ai-task-2f69` | [#18](https://github.com/jeffglousher/core/pull/18) | AI Task |
+| 3 | `cursor/spacexai-up-capabilities-2f69` | [#17](https://github.com/jeffglousher/core/pull/17) | Server tools |
+| 4 | `cursor/spacexai-up-device-code-2f69` | [#16](https://github.com/jeffglousher/core/pull/16) | Device-code + CLI OAuth (**A1 blocker**) |
+| 5 | `cursor/spacexai-up-hardening-2f69` | [#21](https://github.com/jeffglousher/core/pull/21) | Attachments / Imagine |
+| 6 | `cursor/spacexai-up-full-capabilities-2f69` | [#19](https://github.com/jeffglousher/core/pull/19) | STT/TTS/Assist |
+| 7 | `cursor/spacexai-up-optimized-surface-2f69` | [#22](https://github.com/jeffglousher/core/pull/22) | Feature tip |
+| 8 | `cursor/spacexai-up-platinum-2f69` | [#20](https://github.com/jeffglousher/core/pull/20) | `quality_scale: platinum` |
+| kit | `cursor/spacexai-contribution-kit-2f69` | [#15](https://github.com/jeffglousher/core/pull/15) | This folder only (not for Core) |
 
-Legacy `-0109` fork PRs `#1`–`#7`, `#12`, `#13` are superseded by the `up-*` drafts.
+Legacy `-0109` fork PRs `#1`–`#7`, `#12`, `#13` are **closed** as superseded by the `up-*` drafts.
 
 External drafts:
 

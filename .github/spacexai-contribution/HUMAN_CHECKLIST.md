@@ -13,7 +13,7 @@ Canonical AI policy: [Open Home Foundation AI Policy](https://developers.home-as
 | Track | State |
 | --- | --- |
 | Upstream-ready stack | `cursor/spacexai-up-*-2f69` on `jeffglousher/core` (base = `upstream/dev`) |
-| Fork draft PRs | Stacked `up-*` drafts (see [TRACKING.md](TRACKING.md)); legacy `#1`–`#7`/`#12`/`#13` superseded |
+| Fork draft PRs | `#14`→`#18`→`#17`→`#16`→`#21`→`#19`→`#22`→`#20` (+ kit `#15`); legacy `#1`–`#7`/`#12`/`#13` closed |
 | Brands | Draft [home-assistant/brands#10947](https://github.com/home-assistant/brands/pull/10947) |
 | Docs | Draft [home-assistant.io#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
 | Rebase onto `upstream/dev` | **DONE** — `cursor/spacexai-up-base-2f69` == `upstream/dev` |
@@ -132,7 +132,8 @@ Notes: [TRACKING.md](TRACKING.md).
 | Hassfest quality_scale (up tip) | Invalid integrations: 0 |
 | Brands draft PR | [#10947](https://github.com/home-assistant/brands/pull/10947) |
 | Docs draft PR | [#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
-| Contribution kit meta | `cursor/spacexai-contribution-kit-2f69` (this folder) |
+| Contribution kit meta | [`#15`](https://github.com/jeffglousher/core/pull/15) `cursor/spacexai-contribution-kit-2f69` |
+| Upstream-ready fork drafts | `#14` `#18` `#17` `#16` `#21` `#19` `#22` `#20` (see TRACKING) |
 
 ---
 
