@@ -63,7 +63,7 @@ from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session
 
 from . import EventStream
 
-from tests.test_util.aiohttp import AiohttpClientMocker, AiohttpClientMockResponse, AiohttpClientMockResponse
+from tests.test_util.aiohttp import AiohttpClientMocker, AiohttpClientMockResponse
 
 
 def _client(hass: HomeAssistant, *, runtime: bool = False) -> SpaceXAIClient:
