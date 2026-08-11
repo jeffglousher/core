@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SITREP — SpaceXAI Architecture</title>
+    <style>
+      :root {
+        --bg: #0f1419;
+        --panel: #1a222c;
+        --ink: #e7ecf1;
+        --muted: #9aa7b5;
+        --line: #2c3845;
+        --good: #3dbe8c;
+        --warn: #e0a34a;
+        --bad: #e06363;
+        --accent: #6cb0ff;
+        --mono: "IBM Plex Mono", "SF Mono", ui-monospace, monospace;
+        --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(
+            1200px 600px at 10% -10%,
+            #1c3348 0%,
+            transparent 55%
+          ),
+          radial-gradient(900px 500px at 100% 0%, #2a2218 0%, transparent 45%),
+          var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 var(--sans);
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+      header {
+        border: 1px solid var(--line);
+        background: color-mix(in srgb, var(--panel) 88%, black);
+        padding: 22px 24px;
+        margin-bottom: 18px;
+      }
+      .kicker {
+        font: 12px/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--warn);
+        margin-bottom: 10px;
+      }
+      h1 {
+        font-size: 1.7rem;
+        margin: 0 0 8px;
+        letter-spacing: -0.02em;
+      }
+      .meta {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      .grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: 1.2fr 1fr;
+      }
+      @media (max-width: 800px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      section {
+        border: 1px solid var(--line);
+        background: var(--panel);
+        padding: 18px 20px;
+      }
+      section.wide {
+        grid-column: 1 / -1;
+      }
+      h2 {
+        margin: 0 0 12px;
+        font-size: 0.78rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-family: var(--mono);
+      }
+      ul {
+        margin: 0;
+        padding-left: 1.1rem;
+      }
+      li {
+        margin: 0.35rem 0;
+      }
+      .tag {
+        display: inline-block;
+        font: 11px/1 var(--mono);
+        padding: 3px 7px;
+        border: 1px solid var(--line);
+        margin-right: 6px;
+        vertical-align: 1px;
+      }
+      .tag.s {
+        color: var(--bad);
+        border-color: color-mix(in srgb, var(--bad) 50%, var(--line));
+      }
+      .tag.a {
+        color: var(--warn);
+        border-color: color-mix(in srgb, var(--warn) 50%, var(--line));
+      }
+      .tag.b {
+        color: var(--muted);
+      }
+      .tag.g {
+        color: var(--good);
+        border-color: color-mix(in srgb, var(--good) 45%, var(--line));
+      }
+      .verdict {
+        font-size: 1.05rem;
+        border-left: 3px solid var(--warn);
+        padding-left: 14px;
+        color: #f0f4f8;
+      }
+      .path {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 14px;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.9em;
+        color: #c9ddf5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="kicker">SITREP · Adversarial architecture · SpaceXAI</div>
+        <h1>Privacy-leaning OpenAI fork with concentrated residual risk</h1>
+        <div class="meta">
+          Domain <code>spacexai</code> · tip
+          <code>cursor/spacexai-optimized-surface-0109</code> · stance: assume
+          merge pressure · full report linked below
+        </div>
+      </header>
+
+      <div class="grid">
+        <section class="wide">
+          <h2>Verdict</h2>
+          <p class="verdict">
+            Architecture is coherent: OAuth account → shared client/snapshot →
+            ChatLog-owned Responses loop → thin platforms. Stream parsing and
+            auth state machines are careful. Residual risk clusters in four
+            places—capability aggregation, dual transport, entitlement/snapshot
+            gaps, and a few under-justified product defaults—not in platform
+            layout.
+          </p>
+        </section>
+
+        <section>
+          <h2>Structure (what exists)</h2>
+          <ul>
+            <li>
+              One OAuth parent entry; four subentries (conversation, AI Task,
+              STT, TTS)
+            </li>
+            <li>
+              <code>SpaceXAIClient</code> owns tokens + dual HTTP (SDK Responses
+              + aiohttp media)
+            </li>
+            <li>
+              <code>entity.py</code> owns history convert, stream FSM, tool
+              loop, attachments
+            </li>
+            <li>
+              Typed <code>errors.py</code> taxonomy drives reauth / repair /
+              retry
+            </li>
+            <li>
+              Always <code>store=false</code>; reasoning continuity via
+              encrypted native blobs
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Hard to criticize</h2>
+          <ul>
+            <li>
+              <span class="tag g">STRONG</span> Layering + typed
+              <code>runtime_data</code>
+            </li>
+            <li>
+              <span class="tag g">STRONG</span> Provider-adversarial stream
+              validation
+            </li>
+            <li>
+              <span class="tag g">STRONG</span> Privacy-default store=false
+            </li>
+            <li>
+              <span class="tag g">STRONG</span> Device-code as first-class auth
+            </li>
+            <li>
+              <span class="tag g">STRONG</span> Chat model discovery with
+              aliases
+            </li>
+          </ul>
+        </section>
+
+        <section class="wide">
+          <h2>Weak areas (ranked)</h2>
+          <ul>
+            <li>
+              <span class="tag s">S</span>
+              <strong>Capability aggregation</strong> — Assist CONTROL + web/X
+              search + code interpreter on one agent
+            </li>
+            <li>
+              <span class="tag s">S</span> <strong>Broad OAuth scopes</strong> —
+              includes <code>grok-cli:access</code> until HA-specific
+              client/scopes exist
+            </li>
+            <li>
+              <span class="tag s">S</span>
+              <strong>Attachment host paths</strong> sent as provider filenames
+            </li>
+            <li>
+              <span class="tag a">A</span> Dual transport / SDK pin drift;
+              Imagine MIME hardcoded JPEG; image models not snapshotted
+            </li>
+            <li>
+              <span class="tag a">A</span> <code>_sdk_lock</code> + unlimited
+              platform concurrency → Responses head-of-line blocking
+            </li>
+            <li>
+              <span class="tag a">A</span> STT swallows exceptions quietly; AI
+              Task tool-loop cap=10 (vs OpenAI’s much higher)
+            </li>
+            <li>
+              <span class="tag b">B</span> Forced four subentries at install;
+              <code>entity.py</code> concentration; unavailable-on-429 UX
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Critical code paths</h2>
+          <ul>
+            <li>
+              <strong>Auth</strong> — credentials → device/browser OAuth →
+              validate account+models → 4 subentries
+            </li>
+            <li>
+              <strong>Chat</strong> — prompt+identity → ChatLog → stream/tools
+              loop → availability
+            </li>
+            <li>
+              <strong>AI Task data</strong> — shared chat loop + JSON schema
+            </li>
+            <li>
+              <strong>AI Task image</strong> — separate Imagine REST (not
+              Responses tool)
+            </li>
+            <li>
+              <strong>STT/TTS</strong> — aiohttp media endpoints; PCM→WAV off
+              loop
+            </li>
+            <li>
+              <strong>Reauth</strong> — runtime credential rejection →
+              start_reauth → unique_id match
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>Upstream will ask</h2>
+          <ul>
+            <li>Can scopes shrink before merge?</li>
+            <li>Is bare <code>code_interpreter</code> officially supported?</li>
+            <li>Why JPEG MIME / no image model discovery?</li>
+            <li>Separate AI Task iteration budget?</li>
+            <li>Dual-stack forever, or one transport?</li>
+            <li>UI warning when CONTROL + server tools combine?</li>
+          </ul>
+        </section>
+
+        <section class="wide">
+          <h2>Recommended next engineering pass (not cosmetics)</h2>
+          <ul>
+            <li>
+              Threat-model Assist CONTROL × server tools; consider mutual
+              exclusion or explicit confirm copy
+            </li>
+            <li>
+              Split AI Task max iterations; discover/entitle image models; stop
+              hardcoding JPEG
+            </li>
+            <li>
+              Plan transport unification or document dual-stack as permanent
+              with shared auth middleware
+            </li>
+            <li>
+              Cap attachment/STT/image memory; log STT failures; revisit
+              unavailable-on-429
+            </li>
+            <li>
+              Track HA OAuth client + scope reduction as a merge blocker, not a
+              footnote
+            </li>
+          </ul>
+          <p class="path">
+            Full adversarial report (in-repo):
+            <code
+              >.github/spacexai-contribution/ARCHITECTURE_ADVERSARIAL_REVIEW.md</code
+            >
+          </p>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>
