@@ -2,7 +2,7 @@
 
 Domain: **`spacexai`**. Company name stays SpaceXAI; model IDs change over time and are **discovered** from the account (`models.list`), then presented in selectors. Chat, image, and video models are partitioned into `ProviderSnapshot` when the catalog exposes them; curated Imagine IDs remain as a fallback when discovery is sparse.
 
-This folder is the **human-facing contribution kit**. Core code still lives in `homeassistant/components/spacexai/` on the fork stack. Do **not** open against `home-assistant/core` until OAuth client, brands, docs, and AI-policy human review are ready.
+This folder is the **human-facing contribution kit**. Core code still lives in `homeassistant/components/spacexai/` on the fork stack. Do **not** open against `home-assistant/core` until the [HUMAN_CHECKLIST.md](HUMAN_CHECKLIST.md) blockers are cleared. Retarget notes: [UPSTREAM.md](UPSTREAM.md).
 
 ## External prerequisites (parallel, not Core commits)
 
