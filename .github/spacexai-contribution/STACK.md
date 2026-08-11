@@ -66,7 +66,7 @@ Home Assistant’s default LLM prompt and Assist API do **not** expose Core vers
 
 ## Suggested human submission order
 
-1. Brands PR (`home-assistant/brands`) — [brands#10947](https://github.com/home-assistant/brands/pull/10947)
+1. Brands edition — [brands#10947](https://github.com/home-assistant/brands/pull/10947): Ready for review → **sign CLA** → merge
 2. Docs PR (`home-assistant.io` `current`) — [docs#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) with `ha_quality_scale: bronze`
 3. Clear **A1** OAuth client (human)
 4. Core waves 1 → 8 on `home-assistant/core` `dev` using the `up-*` branches (wave 1 already includes brands/docs `done`)

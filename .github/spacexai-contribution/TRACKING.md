@@ -109,7 +109,7 @@ External drafts:
 
 | Track | PR | Notes |
 | --- | --- | --- |
-| Brands | [`brands#10947`](https://github.com/home-assistant/brands/pull/10947) | `core_integrations/spacexai/` pack |
+| Brands + CLA | [`brands#10947`](https://github.com/home-assistant/brands/pull/10947) | `core_integrations/spacexai/` pack; **sign HA CLA on this PR** when Ready for review |
 | Docs | [`docs#47349`](https://github.com/home-assistant/home-assistant.io/pull/47349) | bronze front matter; platinum docs follow Core wave 8 |
 
 Host validate (Alpine clone `/mnt/data/pytest-spacexai/core` on tip `up-platinum` @ `7588c0cf`):

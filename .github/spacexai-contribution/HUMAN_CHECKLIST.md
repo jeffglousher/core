@@ -14,14 +14,14 @@ Canonical AI policy: [Open Home Foundation AI Policy](https://developers.home-as
 | --- | --- |
 | Upstream-ready stack | `cursor/spacexai-up-*-2f69` on `jeffglousher/core` (base = `upstream/dev`) |
 | Fork draft PRs | `#14`→`#18`→`#17`→`#16`→`#21`→`#19`→`#22`→`#20` (+ kit `#15`); legacy `#1`–`#7`/`#12`/`#13` closed |
-| Brands | Draft [home-assistant/brands#10947](https://github.com/home-assistant/brands/pull/10947) |
+| Brands + CLA | Draft [home-assistant/brands#10947](https://github.com/home-assistant/brands/pull/10947) — **CLA is signed here** (first HA-org PR) |
 | Docs | Draft [home-assistant.io#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
 | Rebase onto `upstream/dev` | **DONE** — `cursor/spacexai-up-base-2f69` == `upstream/dev` |
 | Strip fork-only paths | **DONE** on all `up-*` waves |
 | Wave rearrange (fold former wave 8 into wave 1) | **DONE** — wave 1 has `brands`/`docs-*` = `done` + `quality_scale: bronze` |
 | Dedicated HA OAuth client | **BLOCKER (A1)** — still using Grok CLI public client id |
 
-Do **not** open or undraft against `home-assistant/core` until **A1**, **A4**, and **A5** below are done (A2/A3 already cleared on the `up-*` cut).
+Do **not** open or undraft against `home-assistant/core` until **A1** and **A4** below are done (A2/A3 already cleared; **A5 CLA is part of the brands edition**).
 
 ---
 
@@ -42,12 +42,18 @@ Do **not** open or undraft against `home-assistant/core` until **A1**, **A4**, a
       - local junk: `agent-tools/`, `tmp-brand-check/`
 
 - [ ] **A4. Brands + docs land (or are accepted as merge-ready)**  
-      - Undraft / merge [brands#10947](https://github.com/home-assistant/brands/pull/10947)  
+      - Complete the **brands edition** on [brands#10947](https://github.com/home-assistant/brands/pull/10947) (includes **A5 CLA** — see below)  
       - Undraft / merge [docs#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) (bronze front matter is correct for the docs PR)  
       Wave 1 already marks `brands` / `docs-*` = `done` so Core Bronze CI can pass once those merge (or the same release train).
 
-- [ ] **A5. CLA signed** for the GitHub account that will author Core PRs  
-      Sign via the CLA bot when the first upstream PR opens (if not already).
+- [ ] **A5. CLA signed on the brands PR** (not deferred to Core)  
+      Vehicle: [home-assistant/brands#10947](https://github.com/home-assistant/brands/pull/10947) under account `jeffglousher`.  
+      Steps (you click; agent cannot write to the brands repo from this session):
+      1. Open the PR → **Ready for review** (leave draft so the CLA bot may not fire).  
+      2. Wait for the Home Assistant CLA bot comment / check.  
+      3. Follow its link and sign [`CLA.md`](../../CLA.md) once for this GitHub account.  
+      4. Confirm the CLA check is green, then continue brands review → merge.  
+      Same signature covers later Core / docs PRs from this account.
 
 ---
 
@@ -87,7 +93,8 @@ Former separate “wave 8” brands/docs flip is **already folded into wave 1** 
 
 ### Order
 
-1. [ ] **Brands** undraft → address review → merge  
+1. [ ] **Brands edition** on [brands#10947](https://github.com/home-assistant/brands/pull/10947)  
+       Ready for review → **sign CLA (A5)** → address review → merge  
 2. [ ] **Docs** undraft → address review → merge (keep `ha_quality_scale: bronze` until platinum docs follow-up)  
 3. [ ] **A1 OAuth client** resolved in `const.py` (rebuild/push wave 4+ if needed)  
 4. [ ] **Core wave 1** → `home-assistant/core` `dev`  

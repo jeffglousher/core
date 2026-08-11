@@ -28,17 +28,17 @@ Keep on Core: `homeassistant/components/spacexai/**` (minus `brand/`), `tests/co
 
 ## Flip to Core
 
-1. Clear checklist **A1** (OAuth), **A4** (brands/docs), **A5** (CLA).  
+1. Clear checklist **A1** (OAuth) and **A4** (brands/docs). **A5 CLA** is cleared during the brands edition (not on Core).  
 2. `git fetch upstream dev` — if `up-base` diverged, re-run the build script.  
 3. Retarget each stacked fork draft: base becomes the previous wave’s **Core** PR branch (wave 1 → `home-assistant/core` `dev`).  
 4. Human undrafts in order; agent does not undraft Core PRs.
 
 ## External PRs
 
-| Repo | Draft | Base |
-| --- | --- | --- |
-| brands | https://github.com/home-assistant/brands/pull/10947 | `master` |
-| docs | https://github.com/home-assistant/home-assistant.io/pull/47349 | `current` |
+| Repo | Draft | Base | Notes |
+| --- | --- | --- | --- |
+| brands | https://github.com/home-assistant/brands/pull/10947 | `master` | **Sign CLA here** when marking ready for review |
+| docs | https://github.com/home-assistant/home-assistant.io/pull/47349 | `current` | After brands + CLA |
 
 ## OAuth
 
