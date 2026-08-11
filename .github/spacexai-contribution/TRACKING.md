@@ -87,10 +87,10 @@ Live Assist wiring (after tip `4ae2d711` + HA Core restart): preferred pipeline 
 
 ## Quality waves (2026-08-11)
 
-| Wave | Branch | Change |
+| Wave | Branch / Core PR | Change |
 | --- | --- | --- |
-| 8 | `cursor/spacexai-quality-docs-brands-0109` | Flip `brands` + applicable `docs-*` to `done` in `quality_scale.yaml` |
-| 9 | `cursor/spacexai-quality-platinum-0109` | Declare `quality_scale: platinum` in manifest + docs front matter |
+| 8 | [`#13`](https://github.com/jeffglousher/core/pull/13) `cursor/spacexai-quality-docs-brands-0109` | Flip `brands` + applicable `docs-*` to `done` in `quality_scale.yaml` |
+| 9 | [`#12`](https://github.com/jeffglousher/core/pull/12) `cursor/spacexai-quality-platinum-0109` | Declare `quality_scale: platinum` in manifest + docs front matter |
 
 External draft branches (forks under `jeffglousher/`):
 
