@@ -53,7 +53,7 @@ from .issue import (
     async_delete_subscription_issue,
 )
 
-PLATFORMS = (Platform.CONVERSATION,)
+PLATFORMS = (Platform.AI_TASK, Platform.CONVERSATION)
 
 
 @dataclass(slots=True)

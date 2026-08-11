@@ -58,11 +58,12 @@ async def test_setup_and_unload(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
 ) -> None:
-    """Set up and unload the Conversation platform."""
+    """Set up and unload the Conversation and AI Task platforms."""
     assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
     assert mock_config_entry.state is ConfigEntryState.LOADED
     assert hass.states.get(AGENT_ID) is not None
+    assert hass.states.get("ai_task.grok_ai_task") is not None
 
     assert await hass.config_entries.async_unload(mock_config_entry.entry_id)
     assert mock_config_entry.state is ConfigEntryState.NOT_LOADED

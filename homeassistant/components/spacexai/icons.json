@@ -1,5 +1,10 @@
 {
   "entity": {
+    "ai_task": {
+      "ai_task_data": {
+        "default": "mdi:brain"
+      }
+    },
     "conversation": {
       "conversation": {
         "default": "mdi:message-processing"

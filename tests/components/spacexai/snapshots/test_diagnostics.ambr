@@ -11,6 +11,14 @@
       'grok-4.5',
       'grok-4.3',
     ]),
+    'ai_task': list([
+      dict({
+        'max_output_tokens': 2048,
+        'model': 'grok-4.5',
+        'model_entitled': True,
+        'title': 'Grok AI Task',
+      }),
+    ]),
     'conversation': list([
       dict({
         'llm_hass_api': list([

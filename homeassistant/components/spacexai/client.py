@@ -11,6 +11,7 @@ import openai
 from openai import AsyncStream
 from openai.types import Model as OpenAIModel
 from openai.types.responses import ResponseInputParam, ResponseStreamEvent
+from openai.types.responses.response_text_config_param import ResponseTextConfigParam
 from pydantic import ValidationError
 
 from homeassistant.core import HomeAssistant
@@ -276,6 +277,7 @@ class SpaceXAIClient:
         tools: Sequence[Mapping[str, Any]],
         max_output_tokens: int,
         prompt_cache_key: str,
+        text: ResponseTextConfigParam | None = None,
     ) -> AsyncStream[ResponseStreamEvent]:
         """Start a streaming Responses API request."""
         token = await self._token_provider.async_get_access_token()
@@ -294,6 +296,8 @@ class SpaceXAIClient:
                     "include": ["reasoning.encrypted_content"],
                     "stream": True,
                 }
+                if text is not None:
+                    create_args["text"] = text
                 try:
                     async with asyncio.timeout(CREATE_TIMEOUT):
                         return cast(

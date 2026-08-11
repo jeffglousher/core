@@ -43,6 +43,8 @@ async def test_diagnostics_are_sanitized(
         "name": REDACTED,
         "email": REDACTED,
     }
+    assert diagnostics["ai_task"][0]["model"] == "grok-4.5"
+    assert diagnostics["ai_task"][0]["model_entitled"] is True
     serialized = json.dumps(diagnostics)
     assert ACCESS_TOKEN not in serialized
     assert REFRESH_TOKEN not in serialized
