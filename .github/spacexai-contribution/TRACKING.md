@@ -92,5 +92,10 @@ Live Assist wiring (after tip `4ae2d711` + HA Core restart): preferred pipeline 
 | 8 | `cursor/spacexai-quality-docs-brands-0109` | Flip `brands` + applicable `docs-*` to `done` in `quality_scale.yaml` |
 | 9 | `cursor/spacexai-quality-platinum-0109` | Declare `quality_scale: platinum` in manifest + docs front matter |
 
-External draft PRs (forks under `jeffglousher/`): brands + home-assistant.io docs — linked from wave 8/9 PR bodies once opened.
+External draft branches (forks under `jeffglousher/`):
+
+| Track | Fork branch | Notes |
+| --- | --- | --- |
+| Brands | `jeffglousher/brands` `cursor/spacexai-brands-2f69` | `core_integrations/spacexai/` pack |
+| Docs | `jeffglousher/home-assistant.io` `cursor/spacexai-docs-2f69` | `source/_integrations/spacexai.markdown` (bronze front matter on docs PR; Core wave 9 declares platinum) |
 

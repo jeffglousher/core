@@ -18,7 +18,7 @@ ha_platforms:
   - conversation
   - stt
   - tts
-ha_quality_scale: bronze
+ha_quality_scale: platinum
 ---
 
 The **SpaceXAI** {% term integration %} lets Home Assistant use Grok for conversation,

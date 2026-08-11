@@ -9,7 +9,7 @@ This folder is the **human-facing contribution kit**. Core code still lives in `
 | Track | Repo / branch | Content | Status artifact |
 | --- | --- | --- | --- |
 | Brands | `home-assistant/brands` → `master` | `core_integrations/spacexai/` from [`brands/`](brands/) | [`brands/SOURCE.md`](brands/SOURCE.md) |
-| Docs | `home-assistant/home-assistant.io` → `next` | `source/_integrations/spacexai.markdown` from [`docs/spacexai.markdown`](docs/spacexai.markdown) | Front matter `ha_quality_scale: bronze` until flip wave |
+| Docs | `home-assistant/home-assistant.io` → `current` | `source/_integrations/spacexai.markdown` from [`docs/spacexai.markdown`](docs/spacexai.markdown) | Front matter `ha_quality_scale: bronze` on docs PR; platinum on Core wave 9 |
 | OAuth | xAI allowlist | Dedicated Home Assistant public client ID | Blocker until issued |
 
 ## Core stack (fork today → `home-assistant/core` `dev` when ready)
@@ -76,8 +76,8 @@ Home Assistant’s default LLM prompt and Assist API do **not** expose Core vers
 
 ## Suggested human submission order
 
-1. Brands PR (`home-assistant/brands`)
-2. Docs PR (`home-assistant.io` `next`) — `ha_quality_scale: bronze`
+1. Brands PR (`home-assistant/brands`) — draft from `jeffglousher/brands`
+2. Docs PR (`home-assistant.io` `current`) — `ha_quality_scale: bronze` initially
 3. Core wave 1 → … → 7 stacked on `home-assistant/core` `dev`
-4. Wave 8 quality flip after brands + docs merge
-5. Wave 9 declare Platinum (optional) once wave 8 is green
+4. Wave 8 quality flip (`cursor/spacexai-quality-docs-brands-0109`)
+5. Wave 9 declare Platinum (`cursor/spacexai-quality-platinum-0109`)
