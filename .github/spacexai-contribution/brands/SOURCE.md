@@ -39,6 +39,6 @@ Produced under `core_integrations/spacexai/`:
 
 ## Submission checklist
 
-- [x] Open PR to `home-assistant/brands` against `master` with only `core_integrations/spacexai/*`
-- [ ] Link that PR from the `home-assistant.io` docs PR and from core wave 1
+- [x] Open PR to `home-assistant/brands` against `master` with only `core_integrations/spacexai/*` — [#10947](https://github.com/home-assistant/brands/pull/10947)
+- [x] Link that PR from the `home-assistant.io` docs PR ([#47349](https://github.com/home-assistant/home-assistant.io/pull/47349)) and from Core quality waves
 - [x] Flip `brands: done` in core quality_scale (wave 8)

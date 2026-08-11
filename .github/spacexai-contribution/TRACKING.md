@@ -96,6 +96,6 @@ External draft branches (forks under `jeffglousher/`):
 
 | Track | Fork branch | Notes |
 | --- | --- | --- |
-| Brands | `jeffglousher/brands` `cursor/spacexai-brands-2f69` | `core_integrations/spacexai/` pack |
-| Docs | `jeffglousher/home-assistant.io` `cursor/spacexai-docs-2f69` | `source/_integrations/spacexai.markdown` (bronze front matter on docs PR; Core wave 9 declares platinum) |
+| Brands | [`home-assistant/brands#10947`](https://github.com/home-assistant/brands/pull/10947) (`cursor/spacexai-brands-2f69`) | `core_integrations/spacexai/` pack |
+| Docs | [`home-assistant/home-assistant.io#47349`](https://github.com/home-assistant/home-assistant.io/pull/47349) (`cursor/spacexai-docs-2f69`) | bronze front matter on docs PR; Core wave 9 declares platinum |
 
