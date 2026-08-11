@@ -34,6 +34,8 @@ class Operation(StrEnum):
     MODELS = "models"
     RESPONSE = "response"
     IMAGE = "image"
+    STT = "stt"
+    TTS = "tts"
     REFRESH = "refresh"
     REVOCATION = "revocation"
     TOOL = "tool"

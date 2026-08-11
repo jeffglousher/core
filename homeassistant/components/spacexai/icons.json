@@ -9,6 +9,16 @@
       "conversation": {
         "default": "mdi:message-processing"
       }
+    },
+    "stt": {
+      "stt": {
+        "default": "mdi:microphone-message"
+      }
+    },
+    "tts": {
+      "tts": {
+        "default": "mdi:speaker-message"
+      }
     }
   }
 }

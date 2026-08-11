@@ -191,12 +191,74 @@
           }
         }
       }
+    },
+    "stt": {
+      "abort": {
+        "entry_not_loaded": "[%key:component::spacexai::config_subentries::conversation::abort::entry_not_loaded%]",
+        "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
+      },
+      "entry_type": "Speech-to-text",
+      "initiate_flow": {
+        "reconfigure": "Reconfigure speech-to-text",
+        "user": "Add speech-to-text"
+      },
+      "step": {
+        "reconfigure": {
+          "description": "SpaceXAI speech-to-text uses the account-linked Grok STT service."
+        },
+        "user": {
+          "description": "Add a SpaceXAI speech-to-text engine."
+        }
+      }
+    },
+    "tts": {
+      "abort": {
+        "entry_not_loaded": "[%key:component::spacexai::config_subentries::conversation::abort::entry_not_loaded%]",
+        "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
+      },
+      "entry_type": "Text-to-speech",
+      "initiate_flow": {
+        "reconfigure": "Reconfigure text-to-speech",
+        "user": "Add text-to-speech"
+      },
+      "step": {
+        "reconfigure": {
+          "data": {
+            "tts_speed": "Speech speed",
+            "voice": "Voice"
+          },
+          "data_description": {
+            "tts_speed": "Playback speed multiplier for synthesized speech.",
+            "voice": "Built-in Grok voice used for synthesis."
+          }
+        },
+        "user": {
+          "data": {
+            "tts_speed": "[%key:component::spacexai::config_subentries::tts::step::reconfigure::data::tts_speed%]",
+            "voice": "[%key:component::spacexai::config_subentries::tts::step::reconfigure::data::voice%]"
+          },
+          "data_description": {
+            "tts_speed": "[%key:component::spacexai::config_subentries::tts::step::reconfigure::data_description::tts_speed%]",
+            "voice": "[%key:component::spacexai::config_subentries::tts::step::reconfigure::data_description::voice%]"
+          }
+        }
+      }
     }
   },
   "entity": {
     "ai_task": {
       "ai_task_data": {
         "name": "AI Task"
+      }
+    },
+    "stt": {
+      "stt": {
+        "name": "Speech-to-text"
+      }
+    },
+    "tts": {
+      "tts": {
+        "name": "Text-to-speech"
       }
     }
   },
