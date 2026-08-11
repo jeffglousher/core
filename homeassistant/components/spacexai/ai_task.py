@@ -10,7 +10,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util.json import json_loads
 
 from . import SpaceXAIConfigEntry
-from .const import DOMAIN, LOGGER
+from .const import CONF_IMAGE_MODEL, DEFAULT_IMAGE_MODEL, DOMAIN, LOGGER
 from .entity import SpaceXAIBaseLLMEntity
 from .errors import SpaceXAIError
 
@@ -35,7 +35,11 @@ async def async_setup_entry(
 class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
     """SpaceXAI AI Task entity."""
 
-    _attr_supported_features = ai_task.AITaskEntityFeature.GENERATE_DATA
+    _attr_supported_features = (
+        ai_task.AITaskEntityFeature.GENERATE_DATA
+        | ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS
+        | ai_task.AITaskEntityFeature.GENERATE_IMAGE
+    )
     _attr_translation_key = "ai_task_data"
 
     @override
@@ -49,6 +53,9 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
             await self._async_handle_chat_log(chat_log, task.name, task.structure)
         except SpaceXAIError as err:
             self._raise_provider_home_assistant_error(err)
+        except HomeAssistantError:
+            # Already carries a translated, actionable message.
+            raise
         except Exception as err:  # noqa: BLE001
             self._raise_unexpected_provider_failure(err)
 
@@ -79,4 +86,43 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
         return ai_task.GenDataTaskResult(
             conversation_id=chat_log.conversation_id,
             data=data,
+        )
+
+    @override
+    async def _async_generate_image(
+        self,
+        task: ai_task.GenImageTask,
+        chat_log: conversation.ChatLog,
+    ) -> ai_task.GenImageTaskResult:
+        """Handle a generate image task via the Imagine API."""
+        user_message = chat_log.content[-1]
+        assert isinstance(user_message, conversation.UserContent)
+        image_model = self.subentry.data.get(CONF_IMAGE_MODEL, DEFAULT_IMAGE_MODEL)
+
+        try:
+            generated = await self.entry.runtime_data.client.async_generate_image(
+                model=image_model,
+                prompt=user_message.content,
+            )
+        except SpaceXAIError as err:
+            self._raise_provider_home_assistant_error(err)
+        except HomeAssistantError:
+            # Already carries a translated, actionable message.
+            raise
+        except Exception as err:  # noqa: BLE001
+            self._raise_unexpected_provider_failure(err)
+
+        self._mark_available()
+        chat_log.async_add_assistant_content_without_tools(
+            conversation.AssistantContent(
+                agent_id=self.entity_id,
+                content=generated.revised_prompt or "",
+            )
+        )
+        return ai_task.GenImageTaskResult(
+            image_data=generated.image_data,
+            conversation_id=chat_log.conversation_id,
+            mime_type=generated.mime_type,
+            model=generated.model,
+            revised_prompt=generated.revised_prompt,
         )

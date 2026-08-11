@@ -46,18 +46,21 @@ from . import (
 from .client import ProviderSnapshot, SpaceXAIClient, StaticAccessTokenProvider
 from .const import (
     CONF_CODE_INTERPRETER,
+    CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
     DEFAULT_AI_TASK_NAME,
     DEFAULT_CODE_INTERPRETER,
     DEFAULT_CONVERSATION_NAME,
+    DEFAULT_IMAGE_MODEL,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
     DEFAULT_WEB_SEARCH,
     DEFAULT_X_SEARCH,
     DOMAIN,
     GROK_CLI_OAUTH_CLIENT_ID,
+    IMAGE_MODELS,
     LOGGER,
 )
 from .errors import (
@@ -133,6 +136,8 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Authorize with SpaceXAI using the RFC 8628 device code grant."""
+        if err := await self._async_ensure_oauth_implementation():
+            return err
         assert isinstance(self.flow_impl, LocalOAuth2Implementation)
 
         if self._device_authorization is None:
@@ -421,6 +426,7 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
                         "data": {
                             CONF_MODEL: user_input[CONF_MODEL],
                             CONF_MAX_OUTPUT_TOKENS: user_input[CONF_MAX_OUTPUT_TOKENS],
+                            CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
                         },
                         "title": DEFAULT_AI_TASK_NAME,
                         "unique_id": None,
@@ -704,10 +710,23 @@ def _ai_task_schema(
     default_model, suggested_max_tokens, model_options = _model_selector_defaults(
         snapshot, suggested
     )
+    image_model = DEFAULT_IMAGE_MODEL
+    if suggested is not None and isinstance(
+        suggested_image := suggested.get(CONF_IMAGE_MODEL), str
+    ):
+        image_model = suggested_image
     return vol.Schema(
         {
             vol.Required(CONF_MODEL, default=default_model): SelectSelector(
                 SelectSelectorConfig(options=model_options)
+            ),
+            vol.Required(CONF_IMAGE_MODEL, default=image_model): SelectSelector(
+                SelectSelectorConfig(
+                    options=[
+                        SelectOptionDict(value=model, label=model)
+                        for model in IMAGE_MODELS
+                    ]
+                )
             ),
             **_max_output_tokens_schema(suggested_max_tokens),
         }
