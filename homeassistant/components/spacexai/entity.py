@@ -1,7 +1,7 @@
 """Shared SpaceXAI LLM entity helpers."""
 
 import asyncio
-from collections.abc import AsyncGenerator, AsyncIterable, Callable, Iterable
+from collections.abc import AsyncGenerator, AsyncIterable, Callable, Iterable, Mapping
 import json
 import traceback
 from typing import Any, Literal, NoReturn, cast
@@ -84,8 +84,10 @@ from .errors import (
     TransientProviderError,
 )
 from .issue import (
+    MODEL_ISSUE_ORIGIN_RESPONSE,
     async_create_model_not_entitled_issue,
     async_delete_model_not_entitled_issue,
+    async_model_issue_is_response_originated,
 )
 
 
@@ -495,6 +497,8 @@ class SpaceXAIBaseLLMEntity(Entity):
         self.subentry = subentry
         self._unavailable_logged = False
         self._account_wide_unavailable = False
+        self._model_entitlement_blocked = False
+        self._availability_epoch = 0
         model = cast(str, subentry.data[CONF_MODEL])
         self._attr_available = entry.runtime_data.snapshot.has_model(model)
         self._attr_unique_id = subentry.subentry_id
@@ -687,6 +691,7 @@ class SpaceXAIBaseLLMEntity(Entity):
                 self.entry,
                 subentry_id=self.subentry.subentry_id,
                 model=err.context.model or self._model,
+                origin=MODEL_ISSUE_ORIGIN_RESPONSE,
             )
             self._mark_unavailable(err)
             return
@@ -733,9 +738,15 @@ class SpaceXAIBaseLLMEntity(Entity):
         self, err: SpaceXAIError, *, account_wide: bool = False
     ) -> None:
         """Mark unavailable and log the transition once."""
-        self._account_wide_unavailable = account_wide and (
-            err.category is not ErrorCategory.MODEL_NOT_ENTITLED
-        )
+        self._availability_epoch += 1
+        if err.category is ErrorCategory.MODEL_NOT_ENTITLED:
+            if err.context.operation is Operation.RESPONSE:
+                self._model_entitlement_blocked = True
+            self._account_wide_unavailable = False
+        elif account_wide and not self._model_entitlement_blocked:
+            self._account_wide_unavailable = True
+        elif not account_wide and not self._model_entitlement_blocked:
+            self._account_wide_unavailable = False
         self._attr_available = False
         if self.hass and self.entity_id:
             self.async_write_ha_state()
@@ -752,21 +763,34 @@ class SpaceXAIBaseLLMEntity(Entity):
             )
             self._unavailable_logged = True
 
-    def _mark_available(self) -> bool:
+    def _mark_available(
+        self, epoch: int | None = None, *, inference_ok: bool = False
+    ) -> bool:
         """Recover only when the configured model is still entitled."""
+        if epoch is not None and epoch != self._availability_epoch:
+            return False
         if not self.entry.runtime_data.snapshot.has_model(self._model):
+            return False
+        if self._model_entitlement_blocked and not inference_ok:
             return False
         self._attr_available = True
         self._account_wide_unavailable = False
+        self._model_entitlement_blocked = False
         if self.hass and self.entity_id:
             self.async_write_ha_state()
-        async_delete_model_not_entitled_issue(self.hass, self.subentry.subentry_id)
+        async_delete_model_not_entitled_issue(
+            self.hass,
+            self.subentry.subentry_id,
+            catalog_only=not inference_ok,
+        )
         if self._unavailable_logged:
             LOGGER.info("SpaceXAI is available again")
             self._unavailable_logged = False
         return True
 
-    def _restore_entitled_entry_agents(self) -> None:
+    def _restore_entitled_entry_agents(
+        self, availability_epochs: Mapping[str, int] | None = None
+    ) -> None:
         """Restore siblings that were down only for a shared account outage."""
         for platform in entity_platform.async_get_platforms(self.hass, DOMAIN):
             for entity in platform.entities.values():
@@ -774,13 +798,32 @@ class SpaceXAIBaseLLMEntity(Entity):
                     continue
                 if not getattr(entity, "_account_wide_unavailable", False):
                     continue
-                getattr(entity, "_mark_available")()  # noqa: B009
+                epoch: int | None = None
+                subentry = getattr(entity, "subentry", None)
+                if availability_epochs is not None and subentry is not None:
+                    epoch = availability_epochs.get(subentry.subentry_id)
+                getattr(entity, "_mark_available")(epoch)  # noqa: B009
 
     @callback
-    def async_apply_model_entitlement(self) -> None:
+    def async_apply_model_entitlement(self, epoch: int | None = None) -> None:
         """Sync availability with whether the configured model remains entitled."""
+        if self.hass is not None and async_model_issue_is_response_originated(
+            self.hass, self.subentry.subentry_id
+        ):
+            self._model_entitlement_blocked = True
         if self.entry.runtime_data.snapshot.has_model(self._model):
-            self._mark_available()
+            if self._model_entitlement_blocked:
+                if self.available:
+                    self._mark_unavailable(
+                        ModelNotEntitledError(
+                            "Configured model is not available to this account",
+                            context=ErrorContext(
+                                operation=Operation.RESPONSE, model=self._model
+                            ),
+                        )
+                    )
+                return
+            self._mark_available(epoch)
             return
         if self.available:
             self._mark_unavailable(

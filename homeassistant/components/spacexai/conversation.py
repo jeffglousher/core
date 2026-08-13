@@ -16,7 +16,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_platform, llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import SpaceXAIConfigEntry
+from . import SpaceXAIConfigEntry, async_capture_availability_epochs
 from .const import DOMAIN
 from .entity import SpaceXAIBaseLLMEntity
 from .errors import SpaceXAIError
@@ -123,6 +123,9 @@ class SpaceXAIConversationEntity(
         except conversation.ConverseError as err:
             return err.as_conversation_result()
 
+        availability_epochs = async_capture_availability_epochs(self.hass, self.entry)
+        availability_epoch = self._availability_epoch
+        subscription_epoch = self.entry.runtime_data.subscription_epoch
         try:
             await self._async_handle_chat_log(chat_log)
         except SpaceXAIError as err:
@@ -132,7 +135,8 @@ class SpaceXAIConversationEntity(
         except Exception as err:  # noqa: BLE001
             self._raise_unexpected_provider_failure(err)
 
-        if self._mark_available():
-            async_delete_subscription_issue(self.hass, self.entry.entry_id)
-            self._restore_entitled_entry_agents()
+        if self._mark_available(availability_epoch, inference_ok=True):
+            if subscription_epoch == self.entry.runtime_data.subscription_epoch:
+                async_delete_subscription_issue(self.hass, self.entry.entry_id)
+            self._restore_entitled_entry_agents(availability_epochs)
         return conversation.async_get_result_from_chat_log(user_input, chat_log)

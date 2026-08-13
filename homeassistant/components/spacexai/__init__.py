@@ -1,5 +1,6 @@
 """The SpaceXAI integration."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import cast
 
@@ -62,6 +63,8 @@ class SpaceXAIData:
     client: SpaceXAIClient
     snapshot: ProviderSnapshot
     subentries: tuple[tuple[str, str, str], ...]
+    subscription_epoch: int = 0
+    catalog_epoch: int = 0
 
 
 type SpaceXAIConfigEntry = ConfigEntry[SpaceXAIData]
@@ -217,6 +220,31 @@ async def async_remove_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) ->
 
 
 @callback
+def async_begin_catalog_refresh(entry: SpaceXAIConfigEntry) -> int:
+    """Advance the catalog generation for an in-flight snapshot refresh."""
+    entry.runtime_data.catalog_epoch += 1
+    return entry.runtime_data.catalog_epoch
+
+
+@callback
+def async_capture_availability_epochs(
+    hass: HomeAssistant, entry: SpaceXAIConfigEntry
+) -> dict[str, int]:
+    """Capture entity availability generations before a catalog refresh."""
+    epochs: dict[str, int] = {}
+    for platform in entity_platform.async_get_platforms(hass, DOMAIN):
+        for entity in platform.entities.values():
+            if getattr(entity, "entry", None) is not entry:
+                continue
+            subentry = getattr(entity, "subentry", None)
+            epoch = getattr(entity, "_availability_epoch", None)
+            if subentry is None or not isinstance(epoch, int):
+                continue
+            epochs[subentry.subentry_id] = epoch
+    return epochs
+
+
+@callback
 def async_mark_subscription_not_entitled(
     hass: HomeAssistant,
     entry: SpaceXAIConfigEntry,
@@ -224,6 +252,7 @@ def async_mark_subscription_not_entitled(
     operation: Operation = Operation.MODELS,
 ) -> None:
     """Create the subscription repair and mark loaded conversation entities down."""
+    entry.runtime_data.subscription_epoch += 1
     async_create_subscription_issue(hass, entry)
     err = SubscriptionNotEntitledError(
         "Account is not entitled for subscription-backed Grok access",
@@ -244,16 +273,32 @@ def async_reconcile_snapshot(
     hass: HomeAssistant,
     entry: SpaceXAIConfigEntry,
     snapshot: ProviderSnapshot,
+    *,
+    availability_epochs: Mapping[str, int] | None = None,
+    subscription_epoch: int | None = None,
+    catalog_epoch: int | None = None,
 ) -> None:
     """Apply a fresh snapshot to repairs and loaded conversation entities."""
+    if catalog_epoch is not None and catalog_epoch != entry.runtime_data.catalog_epoch:
+        return
     entry.runtime_data.snapshot = snapshot
-    async_delete_subscription_issue(hass, entry.entry_id)
+    if (
+        subscription_epoch is None
+        or subscription_epoch == entry.runtime_data.subscription_epoch
+    ):
+        async_delete_subscription_issue(hass, entry.entry_id)
     for subentry in entry.subentries.values():
         if CONF_MODEL not in subentry.data:
             continue
         model = cast(str, subentry.data[CONF_MODEL])
         if snapshot.has_model(model):
-            async_delete_model_not_entitled_issue(hass, subentry.subentry_id)
+            if (
+                availability_epochs is None
+                or subentry.subentry_id not in availability_epochs
+            ):
+                async_delete_model_not_entitled_issue(
+                    hass, subentry.subentry_id, catalog_only=True
+                )
         else:
             async_create_model_not_entitled_issue(
                 hass,
@@ -267,7 +312,11 @@ def async_reconcile_snapshot(
             apply = getattr(entity, "async_apply_model_entitlement", None)
             if apply is None or getattr(entity, "entry", None) is not entry:
                 continue
-            apply()
+            epoch: int | None = None
+            entity_subentry = getattr(entity, "subentry", None)
+            if availability_epochs is not None and entity_subentry is not None:
+                epoch = availability_epochs.get(entity_subentry.subentry_id)
+            apply(epoch)
 
 
 def _subentry_fingerprint(

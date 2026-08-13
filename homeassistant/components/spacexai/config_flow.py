@@ -34,6 +34,8 @@ from homeassistant.loader import async_get_application_credentials
 
 from . import (
     SpaceXAIConfigEntry,
+    async_begin_catalog_refresh,
+    async_capture_availability_epochs,
     async_create_subscription_issue,
     async_mark_subscription_not_entitled,
     async_reconcile_snapshot,
@@ -303,6 +305,9 @@ class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
         if entry.state is not ConfigEntryState.LOADED:
             return self.async_abort(reason="entry_not_loaded")
 
+        availability_epochs = async_capture_availability_epochs(self.hass, entry)
+        subscription_epoch = entry.runtime_data.subscription_epoch
+        catalog_epoch = async_begin_catalog_refresh(entry)
         try:
             snapshot = await entry.runtime_data.client.async_validate(
                 expected_subject=entry.unique_id
@@ -313,10 +318,12 @@ class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
             ReauthenticationRequiredError,
             RefreshRejectedError,
         ):
-            entry.async_start_reauth(self.hass)
+            if catalog_epoch == entry.runtime_data.catalog_epoch:
+                entry.async_start_reauth(self.hass)
             return self.async_abort(reason="oauth_unauthorized")
         except SubscriptionNotEntitledError:
-            async_mark_subscription_not_entitled(self.hass, entry)
+            if catalog_epoch == entry.runtime_data.catalog_epoch:
+                async_mark_subscription_not_entitled(self.hass, entry)
             return self.async_abort(reason="subscription_not_entitled")
         except NoConversationModelsError:
             return self.async_abort(reason="no_conversation_models")
@@ -336,7 +343,16 @@ class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
         except SpaceXAIError:
             return self.async_abort(reason="unknown")
 
-        async_reconcile_snapshot(self.hass, entry, snapshot)
+        async_reconcile_snapshot(
+            self.hass,
+            entry,
+            snapshot,
+            availability_epochs=availability_epochs,
+            subscription_epoch=subscription_epoch,
+            catalog_epoch=catalog_epoch,
+        )
+        if catalog_epoch != entry.runtime_data.catalog_epoch:
+            snapshot = entry.runtime_data.snapshot
         if user_input is not None:
             if CONF_MODEL in user_input and not snapshot.has_model(
                 user_input[CONF_MODEL]

@@ -1,6 +1,7 @@
 """Tests for the SpaceXAI config flow."""
 
 from http import HTTPStatus
+from typing import Any
 from unittest.mock import AsyncMock, patch
 from urllib.parse import parse_qs, urlparse
 
@@ -9,6 +10,10 @@ import pytest
 from homeassistant import config_entries
 from homeassistant.components.application_credentials import (
     DOMAIN as APPLICATION_CREDENTIALS_DOMAIN,
+)
+from homeassistant.components.spacexai import (
+    async_begin_catalog_refresh,
+    async_mark_subscription_not_entitled,
 )
 from homeassistant.components.spacexai.client import (
     AccountInfo,
@@ -761,6 +766,60 @@ async def test_subentry_aborts_when_catalog_refresh_fails(
 
 
 @pytest.mark.usefixtures("setup_credentials")
+@pytest.mark.parametrize(
+    ("error", "reason"),
+    [
+        pytest.param(
+            ReauthenticationRequiredError(
+                "expired",
+                context=ErrorContext(operation=Operation.ACCOUNT),
+            ),
+            "oauth_unauthorized",
+            id="reauth",
+        ),
+        pytest.param(
+            SubscriptionNotEntitledError(
+                "no_plan",
+                context=ErrorContext(operation=Operation.MODELS),
+            ),
+            "subscription_not_entitled",
+            id="subscription",
+        ),
+    ],
+)
+async def test_subentry_ignores_stale_catalog_refresh_side_effects(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+    issue_registry: ir.IssueRegistry,
+    error: Exception,
+    reason: str,
+) -> None:
+    """A superseded catalog refresh must not start reauth or create a subscription issue."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+
+    async def _fail(*_args: object, **_kwargs: object) -> ProviderSnapshot:
+        async_begin_catalog_refresh(mock_config_entry)
+        raise error
+
+    mock_validate.side_effect = _fail
+    with patch.object(mock_config_entry, "async_start_reauth") as start_reauth:
+        result = await hass.config_entries.subentries.async_init(
+            (mock_config_entry.entry_id, "conversation"),
+            context={"source": config_entries.SOURCE_USER},
+        )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == reason
+    start_reauth.assert_not_called()
+    assert (
+        issue_registry.async_get_issue(
+            DOMAIN, f"subscription_not_entitled_{mock_config_entry.entry_id}"
+        )
+        is None
+    )
+
+
+@pytest.mark.usefixtures("setup_credentials")
 async def test_subentry_subscription_failure_creates_repair(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
@@ -820,6 +879,45 @@ async def test_subentry_submit_rejects_withdrawn_model(
 
 
 @pytest.mark.usefixtures("setup_credentials")
+async def test_subentry_submit_uses_current_catalog_snapshot(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+) -> None:
+    """Reject a submit whose catalog refresh lost to a newer snapshot."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "conversation"),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.FORM
+
+    async def _stale_snapshot(**_kwargs: Any) -> ProviderSnapshot:
+        mock_config_entry.runtime_data.catalog_epoch += 1
+        mock_config_entry.runtime_data.snapshot = ProviderSnapshot(
+            account=AccountInfo(ACCOUNT_ID, "Home User", None),
+            models=(ModelInfo("grok-fresh", "xai"),),
+        )
+        return ProviderSnapshot(
+            account=AccountInfo(ACCOUNT_ID, "Home User", None),
+            models=(ModelInfo(DEFAULT_MODEL, "xai"),),
+        )
+
+    mock_validate.side_effect = _stale_snapshot
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            CONF_MODEL: DEFAULT_MODEL,
+            CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
+            CONF_PROMPT: "Be concise.",
+            CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
+        },
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "model_not_entitled"
+
+
+@pytest.mark.usefixtures("setup_credentials")
 async def test_successful_subentry_refresh_clears_subscription_repair(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
@@ -847,6 +945,37 @@ async def test_successful_subentry_refresh_clears_subscription_repair(
     )
     assert result["type"] is FlowResultType.FORM
     assert not issue_registry.async_get_issue(DOMAIN, issue_id)
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_subentry_refresh_keeps_newer_subscription_repair(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+    issue_registry: ir.IssueRegistry,
+    provider_snapshot: ProviderSnapshot,
+) -> None:
+    """Do not clear a subscription repair created while catalog refresh ran."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    issue_id = f"subscription_not_entitled_{mock_config_entry.entry_id}"
+
+    async def _validate_then_runtime_denial(
+        **_kwargs: Any,
+    ) -> ProviderSnapshot:
+        async_mark_subscription_not_entitled(hass, mock_config_entry)
+        return provider_snapshot
+
+    mock_validate.side_effect = _validate_then_runtime_denial
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "conversation"),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert issue_registry.async_get_issue(DOMAIN, issue_id)
+    state = hass.states.get(AGENT_ID)
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
 
 
 @pytest.mark.usefixtures("setup_credentials", "mock_validate")

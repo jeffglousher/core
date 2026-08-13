@@ -1,5 +1,6 @@
 """Test helpers for SpaceXAI."""
 
+import asyncio
 from collections.abc import AsyncIterator, Iterable, Sequence
 from typing import Any, Self
 
@@ -97,6 +98,27 @@ class EventStream:
             return next(self._events)
         except StopIteration as err:
             raise StopAsyncIteration from err
+
+
+class WaitingStream(EventStream):
+    """Stream that blocks on the first read until ``release`` is set."""
+
+    def __init__(
+        self,
+        events: Iterable[ResponseStreamEvent],
+        release: asyncio.Event,
+    ) -> None:
+        """Initialize a gated stream."""
+        super().__init__(events)
+        self._release = release
+        self._started = False
+
+    async def __anext__(self) -> ResponseStreamEvent:
+        """Wait once, then yield events normally."""
+        if not self._started:
+            self._started = True
+            await self._release.wait()
+        return await super().__anext__()
 
 
 def response_payload(**changes: Any) -> Response:

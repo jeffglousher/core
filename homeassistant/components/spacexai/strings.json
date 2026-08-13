@@ -183,7 +183,38 @@
   },
   "issues": {
     "model_not_entitled": {
-      "description": "The conversation agent is configured to use `{model}`, which is not available to this SpaceXAI account. Assist cannot use this agent until a currently entitled model is selected.\n\n1. Open the conversation agent settings for this SpaceXAI entry.\n2. Choose a replacement from the models currently entitled to the account.\n3. Save the conversation agent.\n\nThe agent becomes available after a currently entitled model is saved.",
+      "fix_flow": {
+        "abort": {
+          "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+          "entry_not_loaded": "The SpaceXAI account must be loaded before this repair can be fixed.",
+          "model_not_entitled": "[%key:component::spacexai::config::abort::model_not_entitled%]",
+          "no_conversation_models": "[%key:component::spacexai::config::abort::no_conversation_models%]",
+          "oauth_unauthorized": "[%key:common::config_flow::abort::oauth2_unauthorized%]",
+          "quota_limited": "[%key:component::spacexai::config::abort::quota_limited%]",
+          "subscription_not_entitled": "[%key:component::spacexai::config::abort::subscription_not_entitled%]",
+          "unknown": "[%key:common::config_flow::error::unknown%]"
+        },
+        "error": {
+          "model_not_entitled": "[%key:component::spacexai::config::abort::model_not_entitled%]"
+        },
+        "step": {
+          "replace_model": {
+            "data": {
+              "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
+              "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
+              "model": "[%key:common::generic::model%]",
+              "prompt": "[%key:common::config_flow::data::prompt%]"
+            },
+            "data_description": {
+              "llm_hass_api": "[%key:component::spacexai::config::step::conversation::data_description::llm_hass_api%]",
+              "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
+              "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
+              "prompt": "[%key:component::spacexai::config::step::conversation::data_description::prompt%]"
+            },
+            "description": "The conversation agent is configured to use `{model}`, which is not available to this SpaceXAI account. Assist cannot use this agent until a currently entitled model is selected.\n\n1. Choose a replacement from the models currently entitled to the account.\n2. Submit the form to update the conversation agent.\n\nThe agent becomes available after a currently entitled model is saved."
+          }
+        }
+      },
       "title": "Configured SpaceXAI model is unavailable"
     },
     "subscription_not_entitled": {

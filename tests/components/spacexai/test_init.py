@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from homeassistant.components.spacexai import (
+    async_begin_catalog_refresh,
     async_reconcile_snapshot,
     async_remove_entry,
 )
@@ -236,7 +237,7 @@ async def test_setup_model_not_entitled(
     mock_validate: AsyncMock,
     issue_registry: ir.IssueRegistry,
 ) -> None:
-    """Load with a repair so the user can reconfigure a replacement model."""
+    """Load with a repair so the user can select a replacement model."""
     mock_validate.return_value = ProviderSnapshot(
         account=AccountInfo(ACCOUNT_ID, "Home User", None),
         models=(ModelInfo("grok-other", "xai"),),
@@ -251,7 +252,7 @@ async def test_setup_model_not_entitled(
         f"model_not_entitled_{conversation_subentry(mock_config_entry).subentry_id}",
     )
     assert issue is not None
-    assert issue.is_fixable is False
+    assert issue.is_fixable is True
 
 
 @pytest.mark.usefixtures("setup_credentials", "mock_validate")
@@ -298,6 +299,39 @@ async def test_reconcile_skips_subentries_without_model(
     await hass.async_block_till_done()
     async_reconcile_snapshot(hass, entry, provider_snapshot)
     assert hass.states.get(AGENT_ID) is not None
+
+
+@pytest.mark.usefixtures("setup_credentials", "mock_validate")
+async def test_stale_catalog_snapshot_is_ignored(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """Ignore a superseded catalog refresh so a newer snapshot keeps runtime state."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+    current = mock_config_entry.runtime_data.snapshot
+    stale = async_begin_catalog_refresh(mock_config_entry)
+    async_begin_catalog_refresh(mock_config_entry)
+
+    async_reconcile_snapshot(
+        hass,
+        mock_config_entry,
+        ProviderSnapshot(
+            account=AccountInfo(ACCOUNT_ID, "Home User", None),
+            models=(ModelInfo("grok-stale", "xai"),),
+        ),
+        catalog_epoch=stale,
+    )
+
+    assert mock_config_entry.runtime_data.snapshot is current
+    state = hass.states.get(AGENT_ID)
+    assert state is not None
+    assert state.state != STATE_UNAVAILABLE
+    assert not issue_registry.async_get_issue(
+        "spacexai",
+        f"model_not_entitled_{conversation_subentry(mock_config_entry).subentry_id}",
+    )
 
 
 @pytest.mark.usefixtures("setup_credentials")
@@ -583,7 +617,7 @@ async def test_remove_subentry_while_unloaded_cleans_model_repair(
         hass,
         "spacexai",
         foreign_issue_id,
-        is_fixable=False,
+        is_fixable=True,
         severity=ir.IssueSeverity.ERROR,
         translation_key="model_not_entitled",
         translation_placeholders={"model": "grok-foreign"},
@@ -623,7 +657,7 @@ async def test_remove_cleans_account_repairs(
         hass,
         "spacexai",
         model_issue,
-        is_fixable=False,
+        is_fixable=True,
         severity=ir.IssueSeverity.ERROR,
         translation_key="model_not_entitled",
         translation_placeholders={"model": "grok-old"},

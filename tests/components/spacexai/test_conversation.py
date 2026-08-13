@@ -28,6 +28,7 @@ from syrupy.assertion import SnapshotAssertion
 
 from homeassistant.components import conversation
 from homeassistant.components.conversation import trace
+from homeassistant.components.spacexai import async_reconcile_snapshot
 from homeassistant.components.spacexai.client import (
     AccountInfo,
     ModelInfo,
@@ -50,6 +51,11 @@ from homeassistant.components.spacexai.errors import (
     ReauthenticationRequiredError,
     SubscriptionNotEntitledError,
 )
+from homeassistant.components.spacexai.issue import (
+    MODEL_ISSUE_ORIGIN_CATALOG,
+    MODEL_ISSUE_ORIGIN_RESPONSE,
+    async_create_model_not_entitled_issue,
+)
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.const import (
     CONF_LLM_HASS_API,
@@ -70,6 +76,7 @@ from homeassistant.helpers import (
 from . import (
     AGENT_ID,
     EventStream,
+    WaitingStream,
     completed_event,
     conversation_subentry,
     converse,
@@ -529,6 +536,37 @@ async def test_model_not_entitled_creates_repair_once(
     assert caplog.text.count("SpaceXAI is unavailable:") == 1
 
 
+async def test_reload_keeps_response_originated_model_block(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """Keep a runtime model denial after reload while the catalog still lists it."""
+    mock_stream.side_effect = ModelNotEntitledError(
+        "not entitled",
+        context=ErrorContext(operation=Operation.RESPONSE, model=DEFAULT_MODEL),
+    )
+    issue_id = (
+        f"model_not_entitled_{conversation_subentry(setup_integration).subentry_id}"
+    )
+    await converse(hass, "Hello")
+    state = hass.states.get(AGENT_ID)
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
+    assert issue_registry.async_get_issue("spacexai", issue_id)
+
+    assert await hass.config_entries.async_reload(setup_integration.entry_id)
+    await hass.async_block_till_done()
+
+    state = hass.states.get(AGENT_ID)
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
+    issue = issue_registry.async_get_issue("spacexai", issue_id)
+    assert issue is not None
+    assert issue.data["origin"] == MODEL_ISSUE_ORIGIN_RESPONSE
+
+
 async def test_model_not_entitled_recovers_and_clears_repair(
     hass: HomeAssistant,
     setup_integration: MockConfigEntry,
@@ -545,7 +583,37 @@ async def test_model_not_entitled_recovers_and_clears_repair(
         f"model_not_entitled_{conversation_subentry(setup_integration).subentry_id}"
     )
     await converse(hass, "Hello")
+    issue = issue_registry.async_get_issue("spacexai", issue_id)
+    assert issue is not None
+    assert issue.data["origin"] == "response"
+
+    async_create_model_not_entitled_issue(
+        hass,
+        setup_integration,
+        subentry_id=conversation_subentry(setup_integration).subentry_id,
+        model=DEFAULT_MODEL,
+        origin=MODEL_ISSUE_ORIGIN_CATALOG,
+    )
+    assert (
+        issue_registry.async_get_issue("spacexai", issue_id).data["origin"]
+        == "response"
+    )
+
+    async_reconcile_snapshot(
+        hass,
+        setup_integration,
+        ProviderSnapshot(
+            account=AccountInfo(ACCOUNT_ID, "Home User", None),
+            models=(
+                ModelInfo(id=DEFAULT_MODEL, owner="xai"),
+                ModelInfo(id="grok-4.3", owner="xai"),
+            ),
+        ),
+    )
     assert issue_registry.async_get_issue("spacexai", issue_id)
+    state = hass.states.get(AGENT_ID)
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
 
     mock_stream.side_effect = None
     mock_stream.return_value = EventStream(message_events("Recovered"))
@@ -584,6 +652,45 @@ async def test_subscription_not_entitled_recovers_and_clears_repair(
     assert state is not None
     assert state.state != STATE_UNAVAILABLE
     assert not issue_registry.async_get_issue("spacexai", subscription_issue)
+
+
+async def test_catalog_refresh_reconciles_while_converse_runs(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+    mock_validate: AsyncMock,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """Keep a withdrawn model unavailable even after an in-flight converse succeeds."""
+    gate = asyncio.Event()
+    mock_stream.return_value = WaitingStream(message_events("Still ok"), gate)
+    mock_validate.return_value = ProviderSnapshot(
+        account=AccountInfo(ACCOUNT_ID, "Home User", None),
+        models=(ModelInfo("grok-other", "xai"),),
+    )
+
+    converse_task = hass.async_create_task(converse(hass, "Hello"))
+    await asyncio.sleep(0)
+    result = await hass.config_entries.subentries.async_init(
+        (setup_integration.entry_id, "conversation"),
+        context={"source": "user"},
+    )
+    assert result["type"] is FlowResultType.FORM
+    issue_id = (
+        f"model_not_entitled_{conversation_subentry(setup_integration).subentry_id}"
+    )
+    assert issue_registry.async_get_issue("spacexai", issue_id)
+    state = hass.states.get(AGENT_ID)
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
+
+    gate.set()
+    converse_result = await converse_task
+    assert converse_result.response.speech["plain"]["speech"] == "Still ok"
+    state = hass.states.get(AGENT_ID)
+    assert state is not None
+    assert state.state == STATE_UNAVAILABLE
+    assert issue_registry.async_get_issue("spacexai", issue_id)
 
 
 async def test_catalog_restore_marks_entity_available_without_chat(
@@ -1255,6 +1362,38 @@ async def test_auth_and_quota_failures_mark_sibling_agents(
     await converse(hass, "Hello", agent_id=PRIMARY_AGENT_ID)
     assert hass.states.get(PRIMARY_AGENT_ID).state != STATE_UNAVAILABLE
     assert hass.states.get(SECONDARY_AGENT_ID).state == STATE_UNAVAILABLE
+
+
+async def test_catalog_reconcile_does_not_clear_newer_subscription_repair(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """Keep a newer subscription repair when catalog recovery marks models available."""
+    mock_stream.side_effect = SubscriptionNotEntitledError(
+        "subscription",
+        context=ErrorContext(operation=Operation.RESPONSE, model=DEFAULT_MODEL),
+    )
+    subscription_issue = f"subscription_not_entitled_{setup_integration.entry_id}"
+    await converse(hass, "Hello")
+    assert issue_registry.async_get_issue("spacexai", subscription_issue)
+    denied_epoch = setup_integration.runtime_data.subscription_epoch
+    assert denied_epoch > 0
+
+    async_reconcile_snapshot(
+        hass,
+        setup_integration,
+        ProviderSnapshot(
+            account=AccountInfo(ACCOUNT_ID, "Home User", None),
+            models=(
+                ModelInfo(id=DEFAULT_MODEL, owner="xai"),
+                ModelInfo(id="grok-4.3", owner="xai"),
+            ),
+        ),
+        subscription_epoch=denied_epoch - 1,
+    )
+    assert issue_registry.async_get_issue("spacexai", subscription_issue)
 
 
 @pytest.mark.usefixtures("setup_integration")
