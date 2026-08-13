@@ -49,7 +49,7 @@ rules:
 
   # Gold
   devices: done
-  diagnostics: todo
+  diagnostics: done
   discovery-update-info:
     status: exempt
     comment: Service integration, no discovery.
@@ -83,7 +83,7 @@ rules:
     status: exempt
     comment: Entities set `_attr_name` to `None`.
   exception-translations: done
-  icon-translations: todo
+  icon-translations: done
   reconfiguration-flow:
     status: exempt
     comment: Parent OAuth entry has no user-editable settings; agents use subentry flows.
