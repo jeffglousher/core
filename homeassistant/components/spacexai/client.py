@@ -39,6 +39,7 @@ from .const import (
     IMAGES_URL,
     MAX_IMAGE_BYTES,
     MAX_IMAGE_COUNT,
+    MODELS_URL,
     REVOCATION_URL,
     STT_TIMEOUT_SECONDS,
     STT_URL,
@@ -195,7 +196,7 @@ class ProviderSnapshot:
     def has_model(self, model: str) -> bool:
         """Return whether the account may use a chat model.
 
-        Discovered catalog entries and the grok-4.5 fallback are known-good.
+        Discovered catalog entries and the grok-4.6 fallback are known-good.
         Manual custom chat ids (grok-*, excluding imagine media models) are
         allowed and validated at request time.
         """
@@ -231,6 +232,13 @@ class ProviderSnapshot:
         if self.image_models:
             return tuple(mid for m in self.image_models for mid in m.selectable_ids)
         return IMAGE_MODELS
+
+    @property
+    def selectable_video_models(self) -> tuple[str, ...]:
+        """Return selectable video model identifiers."""
+        if self.video_models:
+            return tuple(mid for m in self.video_models for mid in m.selectable_ids)
+        return VIDEO_MODELS
 
 
 class SpaceXAIClient:
@@ -321,9 +329,9 @@ class SpaceXAIClient:
                 "OAuth account does not match the config entry",
                 context=ErrorContext(operation=Operation.ACCOUNT),
             )
-        page: list[OpenAIModel] = []
+        cli_page: list[OpenAIModel] = []
         try:
-            page = await self._async_list_provider_models()
+            cli_page = await self._async_list_provider_models()
         except (
             AuthenticationRejectedError,
             ReauthenticationRequiredError,
@@ -340,7 +348,10 @@ class SpaceXAIClient:
             SubscriptionNotEntitledError,
             MalformedProviderResponseError,
         ):
-            page = []
+            cli_page = []
+        # The CLI catalog is chat-only. Imagine ids live on the developer API.
+        developer_page = await self._async_list_developer_models_optional()
+        page = _merge_model_pages(cli_page, developer_page)
         return ProviderSnapshot(
             account=account,
             models=_conversation_models_from_page(page),
@@ -824,6 +835,67 @@ class SpaceXAIClient:
         except (openai.OpenAIError, ValidationError) as err:
             raise self.translate_sdk_error(err, context) from err
 
+    async def _async_list_developer_models_optional(self) -> list[OpenAIModel]:
+        """Fetch Imagine-capable models from the developer catalog.
+
+        Soft-fails: chat setup must not depend on this secondary catalog.
+        """
+        try:
+            return await self._async_list_developer_models()
+        except (
+            AuthenticationRejectedError,
+            ReauthenticationRequiredError,
+            RefreshRejectedError,
+            PermanentProviderError,
+            QuotaLimitedError,
+            RateLimitedError,
+            RequestTimeoutError,
+            TransientProviderError,
+            SubscriptionNotEntitledError,
+            MalformedProviderResponseError,
+            ConnectionFailureError,
+        ):
+            return []
+
+    async def _async_list_developer_models(self) -> list[OpenAIModel]:
+        """Fetch the developer API catalog used for Imagine model discovery."""
+        token = await self._token_provider.async_get_access_token()
+        context = ErrorContext(operation=Operation.MODELS)
+        session = async_get_clientsession(self._hass)
+        try:
+            async with session.get(
+                MODELS_URL,
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=HTTP_TIMEOUT,
+            ) as response:
+                if response.status >= 400:
+                    body = await _safe_json(response)
+                    raise self._error_for_status(
+                        response.status,
+                        ErrorContext(
+                            operation=Operation.MODELS,
+                            status=response.status,
+                            provider_code=_provider_error_code(body),
+                        ),
+                        body=body,
+                    )
+                payload = await response.json()
+        except SpaceXAIError:
+            raise
+        except (ContentTypeError, TypeError, ValueError) as err:
+            raise MalformedProviderResponseError(
+                "Developer models endpoint returned invalid JSON", context=context
+            ) from err
+        except TimeoutError as err:
+            raise RequestTimeoutError(
+                "Developer models endpoint request timed out", context=context
+            ) from err
+        except ClientError as err:
+            raise ConnectionFailureError(
+                "Could not connect to the developer models endpoint", context=context
+            ) from err
+        return _openai_models_from_payload(payload, context)
+
     async def _async_get_sdk(self, token: str) -> openai.AsyncOpenAI:
         """Return the shared SDK client, locking only construction/mutation."""
         async with self._sdk_lock:
@@ -1020,6 +1092,65 @@ def _is_permission_denial(
         return True
     message = (_provider_error_message(body) or "").lower()
     return "permission denied" in message or "access denied" in message
+
+
+def _openai_models_from_payload(
+    payload: object, context: ErrorContext
+) -> list[OpenAIModel]:
+    """Parse an OpenAI-compatible models list from the developer API."""
+    if not isinstance(payload, Mapping):
+        raise MalformedProviderResponseError(
+            "Developer models endpoint returned a non-object response", context=context
+        )
+    data = payload.get("data")
+    if not isinstance(data, list):
+        raise MalformedProviderResponseError(
+            "Developer models endpoint omitted the data list", context=context
+        )
+    models: list[OpenAIModel] = []
+    for item in data:
+        if not isinstance(item, Mapping):
+            continue
+        model_id = item.get("id")
+        if not isinstance(model_id, str) or not model_id:
+            continue
+        try:
+            models.append(OpenAIModel.model_validate(item))
+        except ValidationError:
+            owner = item.get("owned_by")
+            created = item.get("created")
+            models.append(
+                OpenAIModel(
+                    id=model_id,
+                    created=created if isinstance(created, int) else 0,
+                    object="model",
+                    owned_by=owner if isinstance(owner, str) else "xai",
+                )
+            )
+    return models
+
+
+def _merge_model_pages(*pages: Sequence[OpenAIModel]) -> list[OpenAIModel]:
+    """Merge catalogs, preferring richer metadata for the same model id."""
+    merged: dict[str, OpenAIModel] = {}
+    for page in pages:
+        for model in page:
+            existing = merged.get(model.id)
+            if existing is None or _model_metadata_rank(model) > _model_metadata_rank(
+                existing
+            ):
+                merged[model.id] = model
+    return list(merged.values())
+
+
+def _model_metadata_rank(model: OpenAIModel) -> int:
+    """Prefer media classification, then explicit chat metadata."""
+    if _is_image_model(model) or _is_video_model(model):
+        return 2
+    extra = model.model_extra or {}
+    if extra.get("output_modalities") or extra.get("completion_text_token_price"):
+        return 1
+    return 0
 
 
 def _model_aliases(model: OpenAIModel) -> tuple[str, ...]:

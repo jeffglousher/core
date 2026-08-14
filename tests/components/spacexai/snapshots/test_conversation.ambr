@@ -27,7 +27,7 @@
   dict({
     'plain': dict({
       'extra_data': None,
-      'speech': 'SpaceXAI rejected the request to grok-4.5',
+      'speech': 'SpaceXAI rejected the request to grok-4.6',
     }),
   })
 # ---
@@ -35,7 +35,7 @@
   dict({
     'plain': dict({
       'extra_data': None,
-      'speech': 'SpaceXAI encountered a temporary error while using grok-4.5. Try again later',
+      'speech': 'SpaceXAI encountered a temporary error while using grok-4.6. Try again later',
     }),
   })
 # ---
@@ -43,7 +43,7 @@
   dict({
     'plain': dict({
       'extra_data': None,
-      'speech': 'SpaceXAI rejected the request to grok-4.5',
+      'speech': 'SpaceXAI rejected the request to grok-4.6',
     }),
   })
 # ---
@@ -51,7 +51,7 @@
   dict({
     'plain': dict({
       'extra_data': None,
-      'speech': 'SpaceXAI reached the configured output-token limit for grok-4.5',
+      'speech': 'SpaceXAI reached the configured output-token limit for grok-4.6',
     }),
   })
 # ---
@@ -59,7 +59,7 @@
   dict({
     'plain': dict({
       'extra_data': None,
-      'speech': 'SpaceXAI is rate limiting requests to grok-4.5. Try again later',
+      'speech': 'SpaceXAI is rate limiting requests to grok-4.6. Try again later',
     }),
   })
 # ---
@@ -67,7 +67,7 @@
   dict({
     'plain': dict({
       'extra_data': None,
-      'speech': 'SpaceXAI rejected the request to grok-4.5',
+      'speech': 'SpaceXAI rejected the request to grok-4.6',
     }),
   })
 # ---
@@ -75,7 +75,7 @@
   dict({
     'plain': dict({
       'extra_data': None,
-      'speech': 'SpaceXAI encountered a temporary error while using grok-4.5. Try again later',
+      'speech': 'SpaceXAI encountered a temporary error while using grok-4.6. Try again later',
     }),
   })
 # ---
@@ -89,7 +89,7 @@
   Runtime identity (answer truthfully when asked about versions):
   - Home Assistant Core: 2026.9.0.dev0
   - Provider: SpaceXAI (Grok)
-  - Conversation model: grok-4.5
+  - Conversation model: grok-4.6
   Only if the user wants to control a device, tell them to expose entities to their voice assistant in Home Assistant.
   '''
 # ---

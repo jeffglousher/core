@@ -46,8 +46,11 @@ from .client import (
 )
 from .const import (
     CONF_DEFAULT_ASSIST,
+    CONF_IMAGE_MODEL,
     CONF_TTS_SPEED,
     CONF_VOICE,
+    DEFAULT_IMAGE_MODEL,
+    DEFAULT_MODEL,
     DEFAULT_MODEL_PLACEHOLDER,
     DEFAULT_STT_NAME,
     DEFAULT_TTS_NAME,
@@ -56,6 +59,8 @@ from .const import (
     DEFAULT_VOICE,
     DOMAIN,
     ISSUE_MODEL_NOT_ENTITLED,
+    LEGACY_DEFAULT_IMAGE_MODEL,
+    LEGACY_DEFAULT_MODEL,
     LOGGER,
     SERVICE_GENERATE_VIDEO,
 )
@@ -299,10 +304,31 @@ async def async_migrate_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -
         _ensure_speech_subentries(hass, entry)
         hass.config_entries.async_update_entry(entry, minor_version=2)
 
+    if entry.version == 1 and entry.minor_version < 3:
+        _migrate_recommended_model_fallbacks(hass, entry)
+        hass.config_entries.async_update_entry(entry, minor_version=3)
+
     LOGGER.debug(
         "Migration to version %s:%s successful", entry.version, entry.minor_version
     )
     return True
+
+
+def _migrate_recommended_model_fallbacks(
+    hass: HomeAssistant, entry: SpaceXAIConfigEntry
+) -> None:
+    """Move previous built-in fallbacks to the current recommended models."""
+    for subentry in entry.subentries.values():
+        data = dict(subentry.data)
+        changed = False
+        if data.get(CONF_MODEL) == LEGACY_DEFAULT_MODEL:
+            data[CONF_MODEL] = DEFAULT_MODEL
+            changed = True
+        if data.get(CONF_IMAGE_MODEL) == LEGACY_DEFAULT_IMAGE_MODEL:
+            data[CONF_IMAGE_MODEL] = DEFAULT_IMAGE_MODEL
+            changed = True
+        if changed:
+            hass.config_entries.async_update_subentry(entry, subentry, data=data)
 
 
 def _ensure_speech_subentries(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> None:

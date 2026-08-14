@@ -19,6 +19,8 @@ from homeassistant.components.spacexai.const import (
     DEFAULT_MODEL,
     DEFAULT_STT_NAME,
     DEFAULT_TTS_NAME,
+    LEGACY_DEFAULT_IMAGE_MODEL,
+    LEGACY_DEFAULT_MODEL,
 )
 from homeassistant.components.spacexai.errors import (
     AuthenticationRejectedError,
@@ -523,10 +525,82 @@ async def test_migrate_adds_missing_speech_subentries(
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
-    assert entry.minor_version == 2
+    assert entry.minor_version == 3
     types = {sub.subentry_type for sub in entry.subentries.values()}
     assert types == {"conversation", "ai_task_data", "stt", "tts"}
     assert hass.states.get("stt.grok_stt") is not None or any(
         sub.title == DEFAULT_STT_NAME for sub in entry.subentries.values()
     )
     assert any(sub.title == DEFAULT_TTS_NAME for sub in entry.subentries.values())
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_migrate_updates_legacy_model_fallbacks(
+    hass: HomeAssistant,
+    mock_validate: AsyncMock,
+) -> None:
+    """Remap previous recommended chat and Imagine fallbacks."""
+    entry = MockConfigEntry(
+        domain="spacexai",
+        title="Home User",
+        unique_id=ACCOUNT_ID,
+        version=1,
+        minor_version=2,
+        data={
+            "auth_implementation": "spacexai",
+            "token": {
+                "access_token": ACCESS_TOKEN,
+                "refresh_token": REFRESH_TOKEN,
+                "expires_at": time.time() + 3600,
+                "expires_in": 3600,
+                "token_type": "Bearer",
+            },
+        },
+        subentries_data=[
+            ConfigSubentryData(
+                data={
+                    CONF_MODEL: LEGACY_DEFAULT_MODEL,
+                    CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
+                    CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
+                },
+                subentry_type="conversation",
+                title="Grok",
+                unique_id=None,
+            ),
+            ConfigSubentryData(
+                data={
+                    CONF_MODEL: LEGACY_DEFAULT_MODEL,
+                    CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
+                    CONF_IMAGE_MODEL: LEGACY_DEFAULT_IMAGE_MODEL,
+                },
+                subentry_type="ai_task_data",
+                title="Grok AI Task",
+                unique_id=None,
+            ),
+            ConfigSubentryData(
+                data={},
+                subentry_type="stt",
+                title=DEFAULT_STT_NAME,
+                unique_id=None,
+            ),
+            ConfigSubentryData(
+                data={},
+                subentry_type="tts",
+                title=DEFAULT_TTS_NAME,
+                unique_id=None,
+            ),
+        ],
+    )
+    entry.add_to_hass(hass)
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    assert entry.minor_version == 3
+    conversation = next(
+        sub for sub in entry.subentries.values() if sub.subentry_type == "conversation"
+    )
+    ai_task = next(
+        sub for sub in entry.subentries.values() if sub.subentry_type == "ai_task_data"
+    )
+    assert conversation.data[CONF_MODEL] == DEFAULT_MODEL
+    assert ai_task.data[CONF_MODEL] == DEFAULT_MODEL
+    assert ai_task.data[CONF_IMAGE_MODEL] == DEFAULT_IMAGE_MODEL

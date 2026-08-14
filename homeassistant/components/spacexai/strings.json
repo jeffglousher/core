@@ -77,10 +77,10 @@
           "image_generation_action": "How Grok should use the image generation tool. Auto lets the model choose.",
           "llm_hass_api": "Home Assistant APIs that Grok may use. Only explicitly exposed entities and tools are available.",
           "max_output_tokens": "Upper limit for one response. Short answers stay short. Default is 3000.",
-          "model": "Models come from the signed-in account. grok-4.5 is always listed. Choose Custom model ID to type another grok-* id.",
+          "model": "Models come from the signed-in account. grok-4.6 is always listed. Choose Custom model ID to type another grok-* id.",
           "model_custom": "Exact model id, such as grok-4.3 or grok-build-0.1.",
           "prompt": "Instructions for how Grok should respond. This can be a template.",
-          "recommended": "Keep this on for Assist control and grok-4.5. Turn it off to choose the model, sampling, and tools.",
+          "recommended": "Keep this on for Assist control and grok-4.6. Turn it off to choose the model, sampling, and tools.",
           "service_tier": "Priority asks SpaceXAI to schedule the request faster. This is the Assist default and may cost more when granted.",
           "store_responses": "When enabled, SpaceXAI may keep responses. Leave this off unless you need that history.",
           "temperature": "Sampling temperature (0–2). Default is 1.0.",
@@ -102,7 +102,7 @@
       },
       "recommended": {
         "title": "Recommended setup",
-        "description": "Creates a Grok conversation agent, AI Task, speech-to-text, and text-to-speech with Assist control and grok-4.5.",
+        "description": "Creates a Grok conversation agent, AI Task, speech-to-text, and text-to-speech with Assist control and grok-4.6.",
         "data": {
           "default_assist": "[%key:component::spacexai::config::step::conversation::data::default_assist%]"
         },

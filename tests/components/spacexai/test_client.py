@@ -26,6 +26,7 @@ from homeassistant.components.spacexai.const import (
     DEVELOPER_API_BASE_URL,
     IMAGES_EDIT_URL,
     IMAGES_URL,
+    MODELS_URL,
     REVOCATION_URL,
     STT_URL,
     TTS_URL,
@@ -70,6 +71,20 @@ def _client(hass: HomeAssistant, *, runtime: bool = False) -> SpaceXAIClient:
         hass,
         StaticAccessTokenProvider("access-token"),
         runtime_session=runtime,
+    )
+
+
+def _mock_developer_models(
+    aioclient_mock: AiohttpClientMocker,
+    models: list[dict[str, object]] | None = None,
+    *,
+    status: int = 200,
+) -> None:
+    """Stub the developer /models catalog used for Imagine discovery."""
+    aioclient_mock.get(
+        MODELS_URL,
+        status=status,
+        json={"object": "list", "data": models or []},
     )
 
 
@@ -192,12 +207,15 @@ def test_empty_catalog_allows_known_media_models() -> None:
         account=AccountInfo("sub", "Name", None),
         models=(ModelInfo(id="grok-4.5", owner="xai"),),
     )
+    assert snapshot.has_image_model("grok-imagine-image-2.0")
     assert snapshot.has_image_model("grok-imagine-image-quality")
     assert snapshot.has_image_model("grok-imagine-image")
     assert not snapshot.has_image_model("grok-imagine-image-unknown")
     assert snapshot.has_video_model("grok-imagine-video-1.5")
     assert snapshot.has_video_model("grok-imagine-video")
     assert not snapshot.has_video_model("grok-imagine-video-unknown")
+    assert snapshot.selectable_image_models[0] == "grok-imagine-image-2.0"
+    assert snapshot.selectable_video_models[0] == "grok-imagine-video-1.5"
 
 
 def test_listed_media_catalog_is_authoritative() -> None:
@@ -209,9 +227,12 @@ def test_listed_media_catalog_is_authoritative() -> None:
         video_models=(ModelInfo(id="grok-imagine-video", owner="xai"),),
     )
     assert snapshot.has_image_model("grok-imagine-image")
+    assert not snapshot.has_image_model("grok-imagine-image-2.0")
     assert not snapshot.has_image_model("grok-imagine-image-quality")
     assert snapshot.has_video_model("grok-imagine-video")
     assert not snapshot.has_video_model("grok-imagine-video-1.5")
+    assert snapshot.selectable_image_models == ("grok-imagine-image",)
+    assert snapshot.selectable_video_models == ("grok-imagine-video",)
 
 
 async def test_model_discovery_iterates_every_page(hass: HomeAssistant) -> None:
@@ -413,10 +434,11 @@ async def test_async_validate(
         USERINFO_URL,
         json={"sub": "account-123", "name": "Home User"},
     )
+    _mock_developer_models(aioclient_mock)
     page = AsyncModelPage(
         [
             Model(
-                id="grok-4.5",
+                id="grok-4.6",
                 created=1,
                 object="model",
                 owned_by="xai",
@@ -431,7 +453,7 @@ async def test_async_validate(
     ):
         snapshot = await _client(hass).async_validate()
     assert snapshot.account.subject == "account-123"
-    assert snapshot.has_model("grok-4.5")
+    assert snapshot.has_model("grok-4.6")
 
 
 async def test_async_validate_allows_catalog_failure(
@@ -442,6 +464,7 @@ async def test_async_validate_allows_catalog_failure(
         USERINFO_URL,
         json={"sub": "account-123", "name": "Home User"},
     )
+    _mock_developer_models(aioclient_mock, status=503)
     with patch(
         "openai.resources.models.AsyncModels.list",
         new_callable=AsyncMock,
@@ -450,6 +473,94 @@ async def test_async_validate_allows_catalog_failure(
         snapshot = await _client(hass).async_validate()
     assert snapshot.account.subject == "account-123"
     assert snapshot.models == ()
+    assert snapshot.image_models == ()
+    assert snapshot.video_models == ()
+
+
+async def test_async_validate_merges_developer_imagine_models(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Combine CLI chat models with Imagine ids from the developer catalog."""
+    aioclient_mock.get(
+        USERINFO_URL,
+        json={"sub": "account-123", "name": "Home User"},
+    )
+    _mock_developer_models(
+        aioclient_mock,
+        [
+            {
+                "id": "grok-imagine-image-2.0",
+                "object": "model",
+                "created": 1,
+                "owned_by": "xai",
+            },
+            {
+                "id": "grok-imagine-video-1.5",
+                "object": "model",
+                "created": 1,
+                "owned_by": "xai",
+            },
+            {
+                "id": "grok-4.6",
+                "object": "model",
+                "created": 1,
+                "owned_by": "xai",
+            },
+        ],
+    )
+    page = AsyncModelPage(
+        [
+            Model(
+                id="grok-4.6",
+                created=1,
+                object="model",
+                owned_by="xai",
+                completion_text_token_price=1,
+            )
+        ]
+    )
+    with patch(
+        "openai.resources.models.AsyncModels.list",
+        new_callable=AsyncMock,
+        return_value=page,
+    ):
+        snapshot = await _client(hass).async_validate()
+    assert [model.id for model in snapshot.models] == ["grok-4.6"]
+    assert [model.id for model in snapshot.image_models] == ["grok-imagine-image-2.0"]
+    assert [model.id for model in snapshot.video_models] == ["grok-imagine-video-1.5"]
+    assert snapshot.has_image_model("grok-imagine-image-2.0")
+    assert not snapshot.has_image_model("grok-imagine-image-quality")
+
+
+async def test_async_validate_ignores_developer_catalog_failure(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Keep CLI chat discovery when the developer catalog is unavailable."""
+    aioclient_mock.get(
+        USERINFO_URL,
+        json={"sub": "account-123", "name": "Home User"},
+    )
+    _mock_developer_models(aioclient_mock, status=503)
+    page = AsyncModelPage(
+        [
+            Model(
+                id="grok-4.6",
+                created=1,
+                object="model",
+                owned_by="xai",
+                completion_text_token_price=1,
+            )
+        ]
+    )
+    with patch(
+        "openai.resources.models.AsyncModels.list",
+        new_callable=AsyncMock,
+        return_value=page,
+    ):
+        snapshot = await _client(hass).async_validate()
+    assert snapshot.has_model("grok-4.6")
+    assert snapshot.image_models == ()
+    assert snapshot.has_image_model("grok-imagine-image-2.0")
 
 
 async def test_async_validate_checks_subject_before_models(

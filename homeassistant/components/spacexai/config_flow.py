@@ -149,7 +149,7 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
 
     DOMAIN = DOMAIN
     VERSION = 1
-    MINOR_VERSION = 2
+    MINOR_VERSION = 3
 
     def __init__(self) -> None:
         """Initialize the flow."""
@@ -972,7 +972,7 @@ def _discovered_model_ids(snapshot: ProviderSnapshot) -> list[str]:
 
 
 def _default_chat_model(_snapshot: ProviderSnapshot) -> str:
-    """Return the preferred chat model for recommended setup (grok-4.5)."""
+    """Return the preferred chat model for recommended setup (grok-4.6)."""
     return DEFAULT_MODEL
 
 
@@ -982,7 +982,7 @@ def _model_selector_defaults(
 ) -> tuple[str, int, list[SelectOptionDict], str | None]:
     """Return default model, token limit, labeled options, and custom value.
 
-    Always surfaces discovered models and the grok-4.5 fallback as distinct
+    Always surfaces discovered models and the grok-4.6 fallback as distinct
     choices, plus a Custom option for a manual model id string.
     """
     discovered = _discovered_model_ids(snapshot)
@@ -1003,7 +1003,7 @@ def _model_selector_defaults(
             suggested.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
         )
 
-    # Discovered models first; always include grok-4.5 as the sole fallback.
+    # Discovered models first; always include grok-4.6 as the sole fallback.
     options: list[SelectOptionDict] = [
         SelectOptionDict(value=model_id, label=f"{model_id} · discovered")
         for model_id in discovered

@@ -12,6 +12,7 @@ REVOCATION_URL = "https://auth.x.ai/oauth2/revoke"
 DEVICE_CODE_URL = "https://auth.x.ai/oauth2/device/code"
 API_BASE_URL = "https://cli-chat-proxy.grok.com/v1"
 DEVELOPER_API_BASE_URL = "https://api.x.ai/v1"
+MODELS_URL = f"{DEVELOPER_API_BASE_URL}/models"
 IMAGES_URL = f"{DEVELOPER_API_BASE_URL}/images/generations"
 IMAGES_EDIT_URL = f"{DEVELOPER_API_BASE_URL}/images/edits"
 VIDEOS_URL = f"{DEVELOPER_API_BASE_URL}/videos/generations"
@@ -94,7 +95,9 @@ DEFAULT_STORE_RESPONSES = False
 # Assist/conversation defaults to priority; AI Task stays on standard tier.
 DEFAULT_SERVICE_TIER = SERVICE_TIER_PRIORITY
 DEFAULT_AI_TASK_SERVICE_TIER = SERVICE_TIER_DEFAULT
-DEFAULT_MODEL = "grok-4.5"
+DEFAULT_MODEL = "grok-4.6"
+# Previous recommended chat fallback; remapped on config-entry minor version 3.
+LEGACY_DEFAULT_MODEL = "grok-4.5"
 DEFAULT_MODEL_PLACEHOLDER = "Grok"
 DEFAULT_WEB_SEARCH = False
 DEFAULT_X_SEARCH = False
@@ -104,7 +107,9 @@ DEFAULT_IMAGE_GENERATION_ACTION = "auto"
 DEFAULT_ALLOW_CONTROL_WITH_PROVIDER_TOOLS = False
 DEFAULT_WEB_SEARCH_IMAGE_SEARCH = False
 DEFAULT_X_SEARCH_VIDEO_UNDERSTANDING = False
-DEFAULT_IMAGE_MODEL = "grok-imagine-image-quality"
+DEFAULT_IMAGE_MODEL = "grok-imagine-image-2.0"
+# Previous recommended Imagine fallback; remapped on config-entry minor version 3.
+LEGACY_DEFAULT_IMAGE_MODEL = "grok-imagine-image-quality"
 DEFAULT_VIDEO_MODEL = "grok-imagine-video-1.5"
 DEFAULT_IMAGE_ASPECT_RATIO = "1:1"
 DEFAULT_IMAGE_RESOLUTION = "1k"
@@ -134,6 +139,7 @@ PROVIDER_X_SEARCH_TOOL = "x_search_call"
 PROVIDER_CODE_INTERPRETER_TOOL = "code_interpreter"
 PROVIDER_SEARCH_TOOLS = frozenset({PROVIDER_WEB_SEARCH_TOOL, PROVIDER_X_SEARCH_TOOL})
 IMAGE_MODELS = (
+    "grok-imagine-image-2.0",
     "grok-imagine-image-quality",
     "grok-imagine-image",
 )
