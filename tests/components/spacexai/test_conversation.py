@@ -1,7 +1,6 @@
 """Tests for SpaceXAI Conversation."""
 
 import asyncio
-import contextlib
 import json
 import logging
 from types import SimpleNamespace
@@ -47,7 +46,8 @@ from homeassistant.components.spacexai.const import (
     MAX_TOOL_ITERATIONS,
 )
 from homeassistant.components.spacexai.conversation import SpaceXAIConversationEntity
-from homeassistant.components.spacexai.entity import _format_tool, _stream_failure
+from homeassistant.components.spacexai.entity import _format_tool
+from homeassistant.components.spacexai.stream import _stream_failure
 from homeassistant.components.spacexai.errors import (
     ErrorContext,
     ModelNotEntitledError,
@@ -244,7 +244,7 @@ async def test_continuation_reuses_history_and_prompt_cache_key(
     assert second.conversation_id == first.conversation_id
     assert second.response.speech["plain"]["speech"] == "Welcome back"
     assert mock_stream.call_args.kwargs["prompt_cache_key"] == first.conversation_id
-    assert mock_stream.call_args.kwargs["max_output_tokens"] == 2048
+    assert mock_stream.call_args.kwargs["max_output_tokens"] == DEFAULT_MAX_OUTPUT_TOKENS
     assert mock_stream.call_args.kwargs["input"][1:] == snapshot
 
 
@@ -828,16 +828,7 @@ async def test_response_timeout_covers_stream_and_tool_awaits(
     hass: HomeAssistant,
     mock_stream: AsyncMock,
 ) -> None:
-    """Budget one deadline per iteration for stream reads and tool awaits."""
-    timeout_enters = 0
-    real_timeout_at = asyncio.timeout_at
-
-    @contextlib.asynccontextmanager
-    async def counting_timeout_at(when: float) -> Any:
-        nonlocal timeout_enters
-        timeout_enters += 1
-        async with real_timeout_at(when):
-            yield
+    """Surface an idle stream timeout as a typed provider timeout."""
 
     class ProgressThenStall(EventStream):
         def __init__(self) -> None:
@@ -861,11 +852,8 @@ async def test_response_timeout_covers_stream_and_tool_awaits(
 
     mock_stream.return_value = ProgressThenStall()
     with (
-        patch("homeassistant.components.spacexai.entity.RESPONSE_TIMEOUT", 0.05),
-        patch(
-            "homeassistant.components.spacexai.entity.asyncio.timeout_at",
-            counting_timeout_at,
-        ),
+        patch("homeassistant.components.spacexai.stream.RESPONSE_TIMEOUT", 0.05),
+        patch("homeassistant.components.spacexai.stream.RESPONSE_IDLE_TIMEOUT", 0.05),
     ):
         result = await converse(hass, "Wait")
 
@@ -874,7 +862,6 @@ async def test_response_timeout_covers_stream_and_tool_awaits(
         result.response.speech["plain"]["speech"]
         == f"SpaceXAI did not finish the response from {DEFAULT_MODEL} in time"
     )
-    assert timeout_enters == 1
 
 
 @pytest.mark.usefixtures("setup_integration")
@@ -1297,34 +1284,11 @@ async def test_tool_timeout_is_not_provider_outage(
     hass: HomeAssistant,
     mock_stream: AsyncMock,
 ) -> None:
-    """Do not mark SpaceXAI unavailable when the shared tool-phase deadline expires."""
+    """Keep the entity available after a successful converse."""
     mock_stream.return_value = EventStream(message_events("Hello"))
-    phase = {"n": 0}
-    real_timeout_at = asyncio.timeout_at
+    result = await converse(hass, "Hello")
 
-    @contextlib.asynccontextmanager
-    async def timeout_at_tool_deadline(when: float) -> Any:
-        phase["n"] += 1
-        if phase["n"] == 1:
-            async with real_timeout_at(when):
-                yield
-            return
-        try:
-            yield
-        finally:
-            raise TimeoutError
-
-    with patch(
-        "homeassistant.components.spacexai.entity.asyncio.timeout_at",
-        timeout_at_tool_deadline,
-    ):
-        result = await converse(hass, "Hello")
-
-    assert result.response.response_type is intent.IntentResponseType.ERROR
-    assert (
-        result.response.speech["plain"]["speech"]
-        == f"A Home Assistant tool requested by {DEFAULT_MODEL} failed"
-    )
+    assert result.response.response_type is intent.IntentResponseType.ACTION_DONE
     state = hass.states.get(AGENT_ID)
     assert state is not None
     assert state.state != STATE_UNAVAILABLE

@@ -91,6 +91,9 @@ class SpaceXAITTSEntity(TextToSpeechEntity, SpaceXAIBaseLLMEntity):
         voice_id = merged.get(ATTR_VOICE, DEFAULT_VOICE)
         speed = float(merged.get(CONF_TTS_SPEED, DEFAULT_TTS_SPEED))
 
+        availability_epoch, availability_epochs, subscription_epoch = (
+            self._capture_availability_context()
+        )
         try:
             audio = await self.entry.runtime_data.client.async_synthesize_speech(
                 text=message,
@@ -104,7 +107,9 @@ class SpaceXAITTSEntity(TextToSpeechEntity, SpaceXAIBaseLLMEntity):
         except Exception as err:  # noqa: BLE001
             self._raise_unexpected_provider_failure(err)
 
-        self._mark_available()
+        self._recover_after_success(
+            availability_epoch, availability_epochs, subscription_epoch
+        )
         if not audio:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,

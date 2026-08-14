@@ -22,11 +22,14 @@ from homeassistant.components.spacexai.client import (
     _safe_json,
 )
 from homeassistant.components.spacexai.const import (
+    DEVELOPER_API_BASE_URL,
+    IMAGES_EDIT_URL,
     IMAGES_URL,
     REVOCATION_URL,
     STT_URL,
     TTS_URL,
     USERINFO_URL,
+    VIDEOS_URL,
 )
 from homeassistant.components.spacexai.errors import (
     AccountMismatchError,
@@ -57,7 +60,7 @@ from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session
 
 from . import AsyncModelPage, EventStream
 
-from tests.test_util.aiohttp import AiohttpClientMocker
+from tests.test_util.aiohttp import AiohttpClientMocker, AiohttpClientMockResponse
 
 
 def _client(hass: HomeAssistant, *, runtime: bool = False) -> SpaceXAIClient:
@@ -1063,3 +1066,201 @@ async def test_synthesize_speech_connection_failure(
         await _client(hass).async_synthesize_speech(
             text="hello", voice_id="eve", language="en"
         )
+
+
+async def test_edit_image_success(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Return decoded image bytes from the Imagine edits endpoint."""
+    aioclient_mock.post(
+        IMAGES_EDIT_URL,
+        json={
+            "data": [
+                {
+                    "b64_json": base64.b64encode(b"edited-bytes").decode(),
+                    "revised_prompt": "a red bicycle at noon",
+                }
+            ]
+        },
+    )
+    generated = await _client(hass).async_edit_image(
+        model="grok-imagine-image-quality",
+        prompt="make it noon",
+        images=["https://example.com/bike.jpg"],
+    )
+    assert generated.image_data == b"edited-bytes"
+    assert generated.mime_type == "image/jpeg"
+    request = aioclient_mock.mock_calls[0][2]
+    assert request["image"] == {
+        "url": "https://example.com/bike.jpg",
+        "type": "image_url",
+    }
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        pytest.param("not-an-object", id="not-an-object"),
+        pytest.param({"data": []}, id="empty-data"),
+        pytest.param({"data": [{"b64_json": ""}]}, id="empty-base64"),
+    ],
+)
+async def test_edit_image_malformed(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, payload: object
+) -> None:
+    """Reject malformed Imagine edit responses."""
+    aioclient_mock.post(IMAGES_EDIT_URL, json=payload)
+    with pytest.raises(MalformedProviderResponseError):
+        await _client(hass).async_edit_image(
+            model="grok-imagine-image-quality",
+            prompt="make it noon",
+            images=["https://example.com/bike.jpg"],
+        )
+
+
+async def test_edit_image_status_error(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Classify an Imagine edit endpoint status failure."""
+    aioclient_mock.post(
+        IMAGES_EDIT_URL, json={"error": {"code": "rate_limited"}}, status=429
+    )
+    with pytest.raises(RateLimitedError):
+        await _client(hass).async_edit_image(
+            model="grok-imagine-image-quality",
+            prompt="make it noon",
+            images=["https://example.com/bike.jpg"],
+        )
+
+
+async def test_edit_image_connection_failure(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Surface a transport failure from the Imagine edit endpoint."""
+    aioclient_mock.post(IMAGES_EDIT_URL, exc=ClientConnectionError("offline"))
+    with pytest.raises(ConnectionFailureError):
+        await _client(hass).async_edit_image(
+            model="grok-imagine-image-quality",
+            prompt="make it noon",
+            images=["https://example.com/bike.jpg"],
+        )
+
+
+async def test_generate_video_missing_request_id(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Reject a video create response that omits request_id."""
+    aioclient_mock.post(VIDEOS_URL, json={})
+    with pytest.raises(MalformedProviderResponseError):
+        await _client(hass).async_generate_video(
+            model="grok-imagine-video-1.5", prompt="ball"
+        )
+
+
+async def test_generate_video_malformed_create(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Reject a non-object video create response."""
+    aioclient_mock.post(VIDEOS_URL, json="not-an-object")
+    with pytest.raises(MalformedProviderResponseError):
+        await _client(hass).async_generate_video(
+            model="grok-imagine-video-1.5", prompt="ball"
+        )
+
+
+@pytest.mark.parametrize("status", ["failed", "expired"])
+async def test_generate_video_terminal_status(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker, status: str
+) -> None:
+    """Raise when the provider marks a video job failed or expired."""
+    aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
+    aioclient_mock.get(
+        f"{DEVELOPER_API_BASE_URL}/videos/req-1", json={"status": status}
+    )
+    with pytest.raises(PermanentProviderError):
+        await _client(hass).async_generate_video(
+            model="grok-imagine-video-1.5", prompt="ball"
+        )
+
+
+async def test_generate_video_times_out(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Raise when video polling exceeds the provider timeout."""
+    aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
+    aioclient_mock.get(
+        f"{DEVELOPER_API_BASE_URL}/videos/req-1", json={"status": "pending"}
+    )
+    with (
+        patch(
+            "homeassistant.components.spacexai.client.monotonic",
+            side_effect=[0, 301],
+        ),
+        patch(
+            "homeassistant.components.spacexai.client.asyncio.sleep",
+            new_callable=AsyncMock,
+        ),
+        pytest.raises(RequestTimeoutError),
+    ):
+        await _client(hass).async_generate_video(
+            model="grok-imagine-video-1.5", prompt="ball"
+        )
+
+
+async def test_generate_video_malformed_status(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Reject a malformed video status payload."""
+    aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
+    aioclient_mock.get(f"{DEVELOPER_API_BASE_URL}/videos/req-1", json="not-an-object")
+    with pytest.raises(MalformedProviderResponseError):
+        await _client(hass).async_generate_video(
+            model="grok-imagine-video-1.5", prompt="ball"
+        )
+
+
+async def test_generate_video_refreshes_token_while_polling(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Refresh the OAuth access token on each video status poll."""
+    provider = AsyncMock()
+    provider.async_get_access_token = AsyncMock(
+        side_effect=["token-start", "token-poll-1", "token-poll-2"]
+    )
+    client = SpaceXAIClient(hass, provider, runtime_session=False)
+
+    aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
+    status_url = f"{DEVELOPER_API_BASE_URL}/videos/req-1"
+    status_payloads = iter(
+        [
+            {"status": "pending"},
+            {"status": "done", "video": {"url": "https://vidgen.example/v.mp4"}},
+        ]
+    )
+
+    async def status_side_effect(
+        method: str, url: object, data: object
+    ) -> AiohttpClientMockResponse:
+        return AiohttpClientMockResponse(
+            method=method,
+            url=url,
+            json=next(status_payloads),
+        )
+
+    aioclient_mock.get(status_url, side_effect=status_side_effect)
+
+    with patch(
+        "homeassistant.components.spacexai.client.asyncio.sleep",
+        new_callable=AsyncMock,
+    ):
+        generated = await client.async_generate_video(
+            model="grok-imagine-video-1.5",
+            prompt="ball",
+            duration=3,
+        )
+
+    assert generated.url == "https://vidgen.example/v.mp4"
+    assert provider.async_get_access_token.await_count == 3
+    assert aioclient_mock.mock_calls[0][3]["Authorization"] == "Bearer token-start"
+    assert aioclient_mock.mock_calls[1][3]["Authorization"] == "Bearer token-poll-1"
+    assert aioclient_mock.mock_calls[2][3]["Authorization"] == "Bearer token-poll-2"

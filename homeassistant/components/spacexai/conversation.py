@@ -1,6 +1,6 @@
 """Conversation platform for SpaceXAI."""
 
-from typing import Literal, override
+from typing import Literal, cast, override
 
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigSubentry
@@ -13,7 +13,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import llm
+from homeassistant.helpers import entity_platform, llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import SpaceXAIConfigEntry
@@ -22,6 +22,12 @@ from .entity import SpaceXAIBaseLLMEntity
 from .errors import SpaceXAIError
 
 PARALLEL_UPDATES = 0
+
+
+def _prompt_safe_literal(value: str) -> str:
+    """Strip Jinja delimiter characters from provider-controlled literals."""
+    return value.replace("{", "").replace("}", "").replace("%", "").replace("#", "")
+
 
 # Assist's default LLM prompt does not include Core or provider model identity.
 _RUNTIME_IDENTITY_PROMPT = (
@@ -72,6 +78,27 @@ class SpaceXAIConversationEntity(
         return MATCH_ALL
 
     @override
+    async def async_added_to_hass(self) -> None:
+        """When entity is added to Home Assistant."""
+        await super().async_added_to_hass()
+        conversation.async_set_agent(self.hass, self.entry, self)
+
+    @override
+    async def async_will_remove_from_hass(self) -> None:
+        """Keep an entry-id agent alias when sibling conversation entities remain."""
+        conversation.async_unset_agent(self.hass, self.entry)
+        for platform in entity_platform.async_get_platforms(self.hass, DOMAIN):
+            for entity in platform.entities.values():
+                if (
+                    entity is not self
+                    and isinstance(entity, conversation.AbstractConversationAgent)
+                    and getattr(entity, "entry", None) is self.entry
+                ):
+                    conversation.async_set_agent(self.hass, self.entry, entity)
+                    break
+        await super().async_will_remove_from_hass()
+
+    @override
     async def _async_handle_message(
         self,
         user_input: conversation.ConversationInput,
@@ -81,7 +108,9 @@ class SpaceXAIConversationEntity(
         user_prompt = (
             self.subentry.data.get(CONF_PROMPT) or llm.DEFAULT_INSTRUCTIONS_PROMPT
         )
-        identity = _RUNTIME_IDENTITY_PROMPT.format(model=self.subentry.data[CONF_MODEL])
+        identity = _RUNTIME_IDENTITY_PROMPT.format(
+            model=_prompt_safe_literal(cast(str, self.subentry.data[CONF_MODEL]))
+        )
         prompt = f"{user_prompt}\n\n{identity}"
 
         try:
@@ -94,6 +123,9 @@ class SpaceXAIConversationEntity(
         except conversation.ConverseError as err:
             return err.as_conversation_result()
 
+        availability_epoch, availability_epochs, subscription_epoch = (
+            self._capture_availability_context()
+        )
         try:
             await self._async_handle_chat_log(chat_log)
         except SpaceXAIError as err:
@@ -104,5 +136,7 @@ class SpaceXAIConversationEntity(
         except Exception as err:  # noqa: BLE001
             self._raise_unexpected_provider_failure(err)
 
-        self._mark_available()
+        self._recover_after_success(
+            availability_epoch, availability_epochs, subscription_epoch
+        )
         return conversation.async_get_result_from_chat_log(user_input, chat_log)

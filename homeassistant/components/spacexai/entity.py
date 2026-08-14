@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterable, Mapping
 import traceback
 from typing import Any, Literal, NoReturn, cast
 
+import httpx
 import openai
 from openai.types.responses import (
     EasyInputMessageParam,
@@ -32,13 +33,23 @@ from voluptuous_openapi import convert
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.const import CONF_MODEL
+from homeassistant.core import callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import device_registry as dr, issue_registry as ir, llm
+from homeassistant.helpers import (
+    device_registry as dr,
+    entity_platform,
+    issue_registry as ir,
+    llm,
+)
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.json import json_dumps
 from homeassistant.util import slugify
 
-from . import ISSUE_MODEL_NOT_ENTITLED, SpaceXAIConfigEntry
+from . import (
+    SpaceXAIConfigEntry,
+    async_capture_availability_epochs,
+    async_mark_subscription_not_entitled,
+)
 from .const import (
     CONF_CODE_INTERPRETER,
     CONF_IMAGE_GENERATION,
@@ -79,8 +90,10 @@ from .const import (
     PROVIDER_SEARCH_TOOLS,
 )
 from .errors import (
+    ConnectionFailureError,
     ErrorCategory,
     ErrorContext,
+    ModelNotEntitledError,
     Operation,
     RateLimitedError,
     RequestTimeoutError,
@@ -88,6 +101,13 @@ from .errors import (
     ToolLoopLimitError,
 )
 from .files import async_prepare_files_for_prompt
+from .issue import (
+    MODEL_ISSUE_ORIGIN_RESPONSE,
+    async_create_model_not_entitled_issue,
+    async_delete_model_not_entitled_issue,
+    async_delete_subscription_issue,
+    async_model_issue_is_response_originated,
+)
 from .stream import _transform_stream
 
 
@@ -132,7 +152,12 @@ def _format_tool(
     tool: llm.Tool, custom_serializer: Callable[[Any], Any] | None
 ) -> FunctionToolParam:
     """Convert a Home Assistant LLM tool to a Responses API tool."""
+    unsupported_keys = {"oneOf", "anyOf", "allOf", "enum", "not"}
     schema = convert(tool.parameters, custom_serializer=custom_serializer)
+    if unsupported_keys.intersection(schema):
+        schema = {
+            key: value for key, value in schema.items() if key not in unsupported_keys
+        }
     return FunctionToolParam(
         type="function",
         name=tool.name,
@@ -231,9 +256,12 @@ def _convert_content(
 
         if isinstance(content, conversation.AssistantContent):
             if isinstance(content.native, ResponseReasoningItem):
-                messages.append(
-                    cast(ResponseReasoningItemParam, content.native.to_dict())
-                )
+                reasoning = cast(ResponseReasoningItemParam, content.native.to_dict())
+                if content.thinking_content:
+                    reasoning["summary"] = [
+                        {"type": "summary_text", "text": content.thinking_content}
+                    ]
+                messages.append(reasoning)
             elif isinstance(content.native, ImageGenerationCall) or (
                 content.native is not None
                 and getattr(content.native, "type", None) == "image_generation_call"
@@ -302,6 +330,9 @@ class SpaceXAIBaseLLMEntity(Entity):
         self.entry = entry
         self.subentry = subentry
         self._unavailable_logged = False
+        self._account_wide_unavailable = False
+        self._model_entitlement_blocked = False
+        self._availability_epoch = 0
         # Speech entities are not backed by a language model.
         configured_model = CONF_MODEL in subentry.data
         model = cast(str, subentry.data.get(CONF_MODEL, DEFAULT_MODEL_PLACEHOLDER))
@@ -447,9 +478,17 @@ class SpaceXAIBaseLLMEntity(Entity):
                     store=self._store_responses,
                     service_tier=self._service_tier,
                 )
-            except TimeoutError as err:
+            except (TimeoutError, httpx.TimeoutException) as err:
                 raise RequestTimeoutError(
                     "Provider response timed out",
+                    context=ErrorContext(
+                        operation=Operation.RESPONSE,
+                        model=model,
+                    ),
+                ) from err
+            except httpx.ConnectError as err:
+                raise ConnectionFailureError(
+                    "Could not connect to the provider",
                     context=ErrorContext(
                         operation=Operation.RESPONSE,
                         model=model,
@@ -470,9 +509,17 @@ class SpaceXAIBaseLLMEntity(Entity):
                             _transform_stream(chat_log, stream, model=model),
                         )
                     ]
-            except TimeoutError as err:
+            except (TimeoutError, httpx.TimeoutException) as err:
                 raise RequestTimeoutError(
                     "Provider response timed out",
+                    context=ErrorContext(
+                        operation=Operation.RESPONSE,
+                        model=model,
+                    ),
+                ) from err
+            except httpx.ConnectError as err:
+                raise ConnectionFailureError(
+                    "Could not connect to the provider",
                     context=ErrorContext(
                         operation=Operation.RESPONSE,
                         model=model,
@@ -518,19 +565,16 @@ class SpaceXAIBaseLLMEntity(Entity):
             ErrorCategory.ACCOUNT_MISMATCH,
         ):
             self.entry.async_start_reauth(self.hass)
-            self._mark_unavailable(err)
+            self._mark_entry_agents_unavailable(err)
             return
 
         if err.category is ErrorCategory.MODEL_NOT_ENTITLED:
-            model = err.context.model or self._model
-            ir.async_create_issue(
+            async_create_model_not_entitled_issue(
                 self.hass,
-                DOMAIN,
-                f"{ISSUE_MODEL_NOT_ENTITLED}_{self.subentry.subentry_id}",
-                is_fixable=False,
-                severity=ir.IssueSeverity.ERROR,
-                translation_key=ISSUE_MODEL_NOT_ENTITLED,
-                translation_placeholders={"model": model},
+                self.entry,
+                subentry_id=self.subentry.subentry_id,
+                model=err.context.model or self._model,
+                origin=MODEL_ISSUE_ORIGIN_RESPONSE,
             )
             self._mark_unavailable(err)
             return
@@ -550,6 +594,18 @@ class SpaceXAIBaseLLMEntity(Entity):
                 translation_key="speech_api_access",
             )
             self._mark_unavailable(err)
+            return
+
+        if err.category is ErrorCategory.SUBSCRIPTION_NOT_ENTITLED:
+            async_mark_subscription_not_entitled(
+                self.hass,
+                self.entry,
+                operation=err.context.operation,
+            )
+            return
+
+        if err.category is ErrorCategory.QUOTA_LIMITED:
+            self._mark_entry_agents_unavailable(err)
             return
 
         if (
@@ -583,8 +639,29 @@ class SpaceXAIBaseLLMEntity(Entity):
             err.retryable,
         )
 
-    def _mark_unavailable(self, err: SpaceXAIError) -> None:
+    def _mark_entry_agents_unavailable(self, err: SpaceXAIError) -> None:
+        """Mark every conversation agent on this config entry unavailable."""
+        for platform in entity_platform.async_get_platforms(self.hass, DOMAIN):
+            for entity in platform.entities.values():
+                if getattr(entity, "entry", None) is not self.entry:
+                    continue
+                mark = getattr(entity, "_mark_unavailable", None)
+                if mark is not None:
+                    mark(err, account_wide=True)
+
+    def _mark_unavailable(
+        self, err: SpaceXAIError, *, account_wide: bool = False
+    ) -> None:
         """Mark unavailable and log the transition once."""
+        self._availability_epoch += 1
+        if err.category is ErrorCategory.MODEL_NOT_ENTITLED:
+            if err.context.operation is Operation.RESPONSE:
+                self._model_entitlement_blocked = True
+            self._account_wide_unavailable = False
+        elif account_wide and not self._model_entitlement_blocked:
+            self._account_wide_unavailable = True
+        elif not account_wide and not self._model_entitlement_blocked:
+            self._account_wide_unavailable = False
         self._attr_available = False
         if self.hass and self.entity_id:
             self.async_write_ha_state()
@@ -601,11 +678,98 @@ class SpaceXAIBaseLLMEntity(Entity):
             )
             self._unavailable_logged = True
 
-    def _mark_available(self) -> None:
-        """Mark available and log recovery once."""
+    def _mark_available(
+        self, epoch: int | None = None, *, inference_ok: bool = False
+    ) -> bool:
+        """Recover only when the configured model is still entitled."""
+        if epoch is not None and epoch != self._availability_epoch:
+            return False
+        if CONF_MODEL in self.subentry.data and not (
+            self.entry.runtime_data.snapshot.has_model(self._model)
+        ):
+            return False
+        if self._model_entitlement_blocked and not inference_ok:
+            return False
         self._attr_available = True
+        self._account_wide_unavailable = False
+        self._model_entitlement_blocked = False
         if self.hass and self.entity_id:
             self.async_write_ha_state()
+        async_delete_model_not_entitled_issue(
+            self.hass,
+            self.subentry.subentry_id,
+            catalog_only=not inference_ok,
+        )
         if self._unavailable_logged:
             LOGGER.info("SpaceXAI is available again")
             self._unavailable_logged = False
+        return True
+
+    def _restore_entitled_entry_agents(
+        self, availability_epochs: Mapping[str, int] | None = None
+    ) -> None:
+        """Restore siblings that were down only for a shared account outage."""
+        for platform in entity_platform.async_get_platforms(self.hass, DOMAIN):
+            for entity in platform.entities.values():
+                if entity is self or getattr(entity, "entry", None) is not self.entry:
+                    continue
+                if not getattr(entity, "_account_wide_unavailable", False):
+                    continue
+                epoch: int | None = None
+                subentry = getattr(entity, "subentry", None)
+                if availability_epochs is not None and subentry is not None:
+                    epoch = availability_epochs.get(subentry.subentry_id)
+                getattr(entity, "_mark_available")(epoch)  # noqa: B009
+
+    def _capture_availability_context(
+        self,
+    ) -> tuple[int, dict[str, int], int]:
+        """Capture availability generations before an in-flight request."""
+        return (
+            self._availability_epoch,
+            async_capture_availability_epochs(self.hass, self.entry),
+            self.entry.runtime_data.subscription_epoch,
+        )
+
+    def _recover_after_success(
+        self,
+        availability_epoch: int,
+        availability_epochs: Mapping[str, int],
+        subscription_epoch: int,
+    ) -> None:
+        """Restore this entity and account-wide siblings after a successful request."""
+        if self._mark_available(availability_epoch, inference_ok=True):
+            if subscription_epoch == self.entry.runtime_data.subscription_epoch:
+                async_delete_subscription_issue(self.hass, self.entry.entry_id)
+            self._restore_entitled_entry_agents(availability_epochs)
+
+    @callback
+    def async_apply_model_entitlement(self, epoch: int | None = None) -> None:
+        """Sync availability with whether the configured model remains entitled."""
+        if CONF_MODEL not in self.subentry.data:
+            return
+        if self.hass is not None and async_model_issue_is_response_originated(
+            self.hass, self.subentry.subentry_id
+        ):
+            self._model_entitlement_blocked = True
+        if self.entry.runtime_data.snapshot.has_model(self._model):
+            if self._model_entitlement_blocked:
+                if self.available:
+                    self._mark_unavailable(
+                        ModelNotEntitledError(
+                            "Configured model is not available to this account",
+                            context=ErrorContext(
+                                operation=Operation.RESPONSE, model=self._model
+                            ),
+                        )
+                    )
+                return
+            self._mark_available(epoch)
+            return
+        if self.available:
+            self._mark_unavailable(
+                ModelNotEntitledError(
+                    "Configured model is not available to this account",
+                    context=ErrorContext(operation=Operation.MODELS, model=self._model),
+                )
+            )

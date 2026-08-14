@@ -117,6 +117,9 @@ class SpaceXAISTTEntity(stt.SpeechToTextEntity, SpaceXAIBaseLLMEntity):
                 )
                 return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
 
+        availability_epoch, availability_epochs, subscription_epoch = (
+            self._capture_availability_context()
+        )
         try:
             text = await self.entry.runtime_data.client.async_transcribe(
                 audio=audio_data,
@@ -131,7 +134,9 @@ class SpaceXAISTTEntity(stt.SpeechToTextEntity, SpaceXAIBaseLLMEntity):
             LOGGER.exception("Unexpected SpaceXAI STT failure")
             return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
 
-        self._mark_available()
+        self._recover_after_success(
+            availability_epoch, availability_epochs, subscription_epoch
+        )
         return stt.SpeechResult(text, stt.SpeechResultState.SUCCESS)
 
 

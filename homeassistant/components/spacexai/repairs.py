@@ -15,7 +15,7 @@ from . import (
     async_reconcile_snapshot,
 )
 from .client import ProviderSnapshot
-from .config_flow import _conversation_schema, _llm_api_options
+from .config_flow import _llm_api_options, _repair_conversation_schema
 from .const import CONF_MAX_OUTPUT_TOKENS, DOMAIN, ISSUE_MODEL_NOT_ENTITLED
 from .errors import (
     AccountMismatchError,
@@ -113,7 +113,9 @@ class ModelNotEntitledRepairFlow(RepairsFlow):
 
         if user_input is not None and CONF_MODEL in user_input:
             selected = user_input[CONF_MODEL]
-            if not self._snapshot.has_model(selected):
+            if not any(
+                selected in item.selectable_ids for item in self._snapshot.models
+            ):
                 return self.async_abort(reason="model_not_entitled")
             if selected == subentry.data[
                 CONF_MODEL
@@ -171,7 +173,7 @@ class ModelNotEntitledRepairFlow(RepairsFlow):
         assert self._snapshot is not None
         return self.async_show_form(
             step_id="replace_model",
-            data_schema=_conversation_schema(
+            data_schema=_repair_conversation_schema(
                 self._snapshot,
                 _llm_api_options(self.hass),
                 dict(subentry.data),

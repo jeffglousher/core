@@ -11,9 +11,11 @@ from homeassistant.components.spacexai.errors import (
     ErrorContext,
     Operation,
     RateLimitedError,
+    SubscriptionNotEntitledError,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import issue_registry as ir
 
 from tests.common import MockConfigEntry
 
@@ -97,6 +99,32 @@ async def test_stt_provider_error(
             _audio_chunks(b"ogg"),
         )
     assert result.result == stt.SpeechResultState.ERROR
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_stt_speech_api_access_creates_repair(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    issue_registry: ir.IssueRegistry,
+) -> None:
+    """Create a speech API repair when STT is rejected for this session."""
+    entity: stt.SpeechToTextEntity = hass.data[stt.DOMAIN].get_entity(STT_ENTITY)
+    with patch(
+        "homeassistant.components.spacexai.client.SpaceXAIClient.async_transcribe",
+        new_callable=AsyncMock,
+        side_effect=SubscriptionNotEntitledError(
+            "speech denied",
+            context=ErrorContext(operation=Operation.STT),
+        ),
+    ):
+        result = await entity.async_process_audio_stream(
+            _metadata(),
+            _audio_chunks(b"\x00\x01" * 80),
+        )
+    assert result.result == stt.SpeechResultState.ERROR
+    assert issue_registry.async_get_issue(
+        "spacexai", f"speech_api_access_{setup_integration.entry_id}"
+    )
 
 
 @pytest.mark.usefixtures("setup_credentials")
