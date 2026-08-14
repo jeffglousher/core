@@ -16,10 +16,20 @@ generate_video:
       selector:
         select:
           options:
-            - grok-imagine-video-1.5
-            - grok-imagine-video
+            - label: Imagine Video 1.5
+              value: grok-imagine-video-1.5
           custom_value: true
     image_url:
+      required: false
+      selector:
+        text:
+publish_media:
+  fields:
+    media_source_id:
+      required: true
+      selector:
+        text:
+    filename:
       required: false
       selector:
         text:

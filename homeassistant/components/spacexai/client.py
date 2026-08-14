@@ -30,12 +30,16 @@ from homeassistant.helpers.httpx_client import get_async_client
 from .const import (
     API_BASE_URL,
     CREATE_TIMEOUT,
+    DEFAULT_IMAGE_MODEL,
     DEFAULT_MODEL,
+    DEFAULT_VIDEO_MODEL,
     DEVELOPER_API_BASE_URL,
     GROK_CLI_REQUEST_HEADERS,
     HTTP_TIMEOUT_SECONDS,
     IMAGE_MODELS,
     IMAGE_TIMEOUT_SECONDS,
+    LEGACY_IMAGE_MODELS,
+    LEGACY_VIDEO_MODELS,
     IMAGES_EDIT_URL,
     IMAGES_URL,
     MAX_IMAGE_BYTES,
@@ -256,12 +260,16 @@ class ProviderSnapshot:
     @property
     def selectable_image_models(self) -> tuple[str, ...]:
         """Return image model ids shown in the picker."""
-        return _picker_model_ids(IMAGE_MODELS, self.image_models)
+        return _picker_current_media_ids(
+            DEFAULT_IMAGE_MODEL, self.image_models, LEGACY_IMAGE_MODELS
+        )
 
     @property
     def selectable_video_models(self) -> tuple[str, ...]:
         """Return video model ids shown in the picker."""
-        return _picker_model_ids(VIDEO_MODELS, self.video_models)
+        return _picker_current_media_ids(
+            DEFAULT_VIDEO_MODEL, self.video_models, LEGACY_VIDEO_MODELS
+        )
 
 
 class SpaceXAIClient:
@@ -1176,6 +1184,20 @@ def _picker_model_ids(
         if model_id not in seen
     ]
     return (*documented, *extra)
+
+
+def _picker_current_media_ids(
+    recommended: str,
+    discovered: Sequence[ModelInfo],
+    legacy: frozenset[str],
+) -> tuple[str, ...]:
+    """Recommended id first, then non-legacy catalog ids."""
+    extras = [
+        model_id
+        for model_id in _catalog_model_ids(discovered)
+        if model_id != recommended and model_id not in legacy
+    ]
+    return (recommended, *extras)
 
 
 def _model_aliases(model: OpenAIModel) -> tuple[str, ...]:

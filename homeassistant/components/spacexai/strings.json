@@ -77,10 +77,10 @@
           "image_generation_action": "How Grok should use the image generation tool. Auto lets the model choose.",
           "llm_hass_api": "Home Assistant APIs that Grok may use. Only explicitly exposed entities and tools are available.",
           "max_output_tokens": "Upper limit for one response. Short answers stay short. Default is 3000.",
-          "model": "Chat models this Grok account can use. grok-4.6 is always available. Choose Custom model ID for another grok-* id.",
+          "model": "Chat models this Grok account can use. Grok 4.6 is recommended. Choose Custom model ID for another grok-* id.",
           "model_custom": "Exact model id, such as grok-4.3 or grok-build-0.1.",
           "prompt": "Instructions for how Grok should respond. This can be a template.",
-          "recommended": "Keep this on for Assist control and grok-4.6. Turn it off to choose the model, sampling, and tools.",
+          "recommended": "Keep this on for Assist control and Grok 4.6. Turn it off to choose the model, sampling, and tools.",
           "service_tier": "Priority asks SpaceXAI to schedule the request faster. This is the Assist default and may cost more when granted.",
           "store_responses": "When enabled, SpaceXAI may keep responses. Leave this off unless you need that history.",
           "temperature": "Sampling temperature (0–2). Default is 1.0.",
@@ -188,7 +188,7 @@
           },
           "data_description": {
             "image_aspect_ratio": "Aspect ratio used for AI Task image generation.",
-            "image_model": "Imagine model for AI Task images. grok-imagine-image-2.0 is the default.",
+            "image_model": "Imagine model for AI Task images. Imagine 2 is the default.",
             "image_resolution": "Resolution used for AI Task image generation.",
             "max_output_tokens": "Maximum tokens for one AI Task response. Default is 8192.",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
@@ -471,6 +471,9 @@
     "invalid_config_entry": {
       "message": "Invalid SpaceXAI config entry `{config_entry}`."
     },
+    "invalid_media_reference": {
+      "message": "SpaceXAI could not use `{media}` as a local image."
+    },
     "invalid_model_tool_request": {
       "message": "{model} requested a Home Assistant tool with invalid arguments."
     },
@@ -588,8 +591,8 @@
           "name": "Duration"
         },
         "image_url": {
-          "description": "Optional reference image URL for image-to-video generation.",
-          "name": "Image URL"
+          "description": "Optional still image for image-to-video. Accepts a public https URL, a /local/ path, or a media-source id from an AI Task image. Home Assistant paths are sent to Imagine as image data.",
+          "name": "Image"
         },
         "model": {
           "description": "The Imagine video model to use.",
@@ -601,6 +604,20 @@
         }
       },
       "name": "Generate video"
+    },
+    "publish_media": {
+      "description": "Copy an AI Task image into /local so Companion notifications can fetch it.",
+      "fields": {
+        "filename": {
+          "description": "Optional filename under /local/spacexai. Defaults to the source name.",
+          "name": "Filename"
+        },
+        "media_source_id": {
+          "description": "Media source id returned by AI Task generate image, such as media-source://ai_task/image/example.jpg.",
+          "name": "Media source"
+        }
+      },
+      "name": "Publish media"
     }
   },
   "selector": {

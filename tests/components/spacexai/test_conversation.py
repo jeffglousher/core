@@ -38,9 +38,12 @@ from homeassistant.components.spacexai.client import (
 )
 from homeassistant.components.spacexai.const import (
     CONF_CODE_INTERPRETER,
+    CONF_IMAGE_GENERATION,
     CONF_MAX_OUTPUT_TOKENS,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
+    DEFAULT_IMAGE_GENERATION_ACTION,
+    DEFAULT_IMAGE_MODEL,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
     MAX_TOOL_ITERATIONS,
@@ -1549,6 +1552,30 @@ async def test_web_search_tool_is_server_side(
     result = await converse(hass, "Search for xAI")
     assert result.response.speech["plain"]["speech"] == "Found it"
     assert {"type": "web_search"} in mock_stream.call_args.kwargs["tools"]
+
+
+async def test_image_generation_tool_uses_imagine_2(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+) -> None:
+    """Pin the in-chat image tool to Imagine 2 when that tool is enabled."""
+    subentry = conversation_subentry(setup_integration)
+    hass.config_entries.async_update_subentry(
+        setup_integration,
+        subentry,
+        data={**subentry.data, CONF_IMAGE_GENERATION: True},
+    )
+    await hass.config_entries.async_reload(setup_integration.entry_id)
+    await hass.async_block_till_done()
+
+    result = await converse(hass, "Draw a porch at dawn")
+    assert result.response.speech["plain"]["speech"] == "Hello from Grok"
+    assert {
+        "type": "image_generation",
+        "model": DEFAULT_IMAGE_MODEL,
+        "action": DEFAULT_IMAGE_GENERATION_ACTION,
+    } in mock_stream.call_args.kwargs["tools"]
 
 
 async def test_code_interpreter_tool_is_server_side(

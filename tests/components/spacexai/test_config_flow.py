@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, patch
 from urllib.parse import parse_qs, urlparse
 
 import pytest
+import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.components.application_credentials import (
@@ -90,10 +91,12 @@ from homeassistant.components.spacexai.errors import (
     SubscriptionNotEntitledError,
 )
 from homeassistant.components.spacexai.oauth_device import DeviceAuthorization
-from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
+from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL
+from homeassistant.helpers.selector import SelectSelector, CONF_PROMPT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er, issue_registry as ir, llm
+from homeassistant.helpers.selector import SelectSelector
 from homeassistant.helpers.config_entry_oauth2_flow import (
     ImplementationUnavailableError,
 )
@@ -877,6 +880,41 @@ async def test_ai_task_subentry_add(
             entity_registry, mock_config_entry.entry_id
         )
     )
+
+
+def _select_options(schema: vol.Schema, key: str) -> list[dict[str, str]]:
+    """Return select options for a config-flow schema key."""
+    for schema_key, schema_val in schema.schema.items():
+        if getattr(schema_key, "schema", None) == key:
+            assert isinstance(schema_val, SelectSelector)
+            return list(schema_val.config["options"])
+    raise AssertionError(f"missing selector for {key}")
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_ai_task_image_picker_uses_plain_language(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+) -> None:
+    """Show Imagine 2 in the image picker and hide older Imagine models."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "ai_task_data"),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.FORM
+    options = _select_options(result["data_schema"], CONF_IMAGE_MODEL)
+    assert options[0] == {
+        "value": DEFAULT_IMAGE_MODEL,
+        "label": "Imagine 2 · recommended",
+    }
+    assert all(option["value"] != "grok-imagine-image-quality" for option in options)
+    chat_options = _select_options(result["data_schema"], CONF_MODEL)
+    assert {
+        "value": DEFAULT_MODEL,
+        "label": "Grok 4.6 · recommended",
+    } in chat_options
 
 
 @pytest.mark.usefixtures("setup_credentials")

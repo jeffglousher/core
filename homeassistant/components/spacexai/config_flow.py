@@ -118,6 +118,7 @@ from .const import (
     MODEL_CUSTOM_OPTION,
     SERVICE_TIERS,
     TTS_VOICES,
+    model_label,
 )
 from .errors import (
     AccountMismatchError,
@@ -1003,9 +1004,7 @@ def _model_selector_defaults(
     options: list[SelectOptionDict] = [
         SelectOptionDict(
             value=model_id,
-            label=(
-                f"{model_id} · recommended" if model_id == DEFAULT_MODEL else model_id
-            ),
+            label=model_label(model_id, recommended=model_id == DEFAULT_MODEL),
         )
         for model_id in discovered
     ]
@@ -1379,7 +1378,12 @@ def _repair_conversation_schema(
             vol.Required(CONF_MODEL, default=default_model): SelectSelector(
                 SelectSelectorConfig(
                     options=[
-                        SelectOptionDict(value=model_id, label=model_id)
+                        SelectOptionDict(
+                            value=model_id,
+                            label=model_label(
+                                model_id, recommended=model_id == DEFAULT_MODEL
+                            ),
+                        )
                         for model_id in model_ids
                     ]
                 )
@@ -1410,12 +1414,14 @@ def _ai_task_schema(
     default_model, suggested_max_tokens, model_options, custom_model = (
         _model_selector_defaults(snapshot, defaults)
     )
-    image_models = snapshot.selectable_image_models
+    image_models = list(snapshot.selectable_image_models)
     image_model = DEFAULT_IMAGE_MODEL
     if isinstance(suggested_image := defaults.get(CONF_IMAGE_MODEL), str):
         image_model = suggested_image
     elif DEFAULT_IMAGE_MODEL not in image_models and image_models:
         image_model = image_models[0]
+    if image_model not in image_models:
+        image_models.insert(0, image_model)
     image_aspect_ratio = DEFAULT_IMAGE_ASPECT_RATIO
     image_resolution = DEFAULT_IMAGE_RESOLUTION
     if isinstance(suggested_ratio := defaults.get(CONF_IMAGE_ASPECT_RATIO), str):
@@ -1439,7 +1445,12 @@ def _ai_task_schema(
             vol.Required(CONF_IMAGE_MODEL, default=image_model): SelectSelector(
                 SelectSelectorConfig(
                     options=[
-                        SelectOptionDict(value=model, label=model)
+                        SelectOptionDict(
+                            value=model,
+                            label=model_label(
+                                model, recommended=model == DEFAULT_IMAGE_MODEL
+                            ),
+                        )
                         for model in image_models
                     ]
                 )

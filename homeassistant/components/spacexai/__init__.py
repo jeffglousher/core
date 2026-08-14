@@ -63,6 +63,7 @@ from .const import (
     LEGACY_DEFAULT_MODEL,
     LOGGER,
     SERVICE_GENERATE_VIDEO,
+    SERVICE_PUBLISH_MEDIA,
 )
 from .errors import (
     AccountMismatchError,
@@ -88,6 +89,7 @@ from .issue import (
     async_delete_model_not_entitled_issue,
     async_delete_subscription_issue,
 )
+from .media import async_provider_image_url, async_publish_media
 
 PLATFORMS = (Platform.AI_TASK, Platform.CONVERSATION, Platform.STT, Platform.TTS)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -99,6 +101,12 @@ SERVICE_GENERATE_VIDEO_SCHEMA = vol.Schema(
         vol.Optional(CONF_MODEL, default=DEFAULT_VIDEO_MODEL): cv.string,
         vol.Optional("image_url"): cv.string,
         vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1, max=15)),
+    }
+)
+SERVICE_PUBLISH_MEDIA_SCHEMA = vol.Schema(
+    {
+        vol.Required("media_source_id"): cv.string,
+        vol.Optional("filename"): cv.string,
     }
 )
 
@@ -129,11 +137,15 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 translation_placeholders={"model": model},
             )
 
+        image_url = call.data.get("image_url")
+        if image_url is not None:
+            image_url = await async_provider_image_url(hass, image_url)
+
         try:
             generated = await entry.runtime_data.client.async_generate_video(
                 model=model,
                 prompt=call.data[CONF_PROMPT],
-                image_url=call.data.get("image_url"),
+                image_url=image_url,
                 duration=call.data.get("duration"),
             )
         except SpaceXAIError as err:
@@ -148,12 +160,28 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             "model": generated.model,
         }
 
+    async def async_publish_media_service(call: ServiceCall) -> ServiceResponse:
+        """Copy an AI Task image into /local for Companion notifications."""
+        return await async_publish_media(
+            hass,
+            call.data["media_source_id"],
+            filename=call.data.get("filename"),
+        )
+
     async_register_admin_service(
         hass,
         DOMAIN,
         SERVICE_GENERATE_VIDEO,
         async_generate_video,
         schema=SERVICE_GENERATE_VIDEO_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    async_register_admin_service(
+        hass,
+        DOMAIN,
+        SERVICE_PUBLISH_MEDIA,
+        async_publish_media_service,
+        schema=SERVICE_PUBLISH_MEDIA_SCHEMA,
         supports_response=SupportsResponse.ONLY,
     )
     return True

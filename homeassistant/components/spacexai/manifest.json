@@ -1,7 +1,7 @@
 {
   "domain": "spacexai",
   "name": "SpaceXAI",
-  "after_dependencies": ["assist_pipeline", "intent"],
+  "after_dependencies": ["assist_pipeline", "intent", "media_source"],
   "codeowners": ["@jeffglousher"],
   "config_flow": true,
   "dependencies": ["application_credentials", "conversation"],

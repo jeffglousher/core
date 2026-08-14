@@ -147,6 +147,35 @@ VIDEO_MODELS = (
     "grok-imagine-video-1.5",
     "grok-imagine-video",
 )
+LEGACY_IMAGE_MODELS = frozenset(
+    {
+        "grok-imagine-image-quality",
+        "grok-imagine-image",
+    }
+)
+LEGACY_VIDEO_MODELS = frozenset({"grok-imagine-video"})
+MODEL_LABELS = {
+    "grok-4.6": "Grok 4.6",
+    "grok-4.5": "Grok 4.5",
+    "grok-imagine-image-2.0": "Imagine 2",
+    "grok-imagine-image-quality": "Imagine Quality",
+    "grok-imagine-image": "Imagine",
+    "grok-imagine-video-1.5": "Imagine Video 1.5",
+    "grok-imagine-video": "Imagine Video",
+}
+
+
+def model_label(model_id: str, *, recommended: bool = False) -> str:
+    """Return a plain-language picker label for a model id."""
+    label = MODEL_LABELS.get(model_id, model_id)
+    if recommended:
+        return f"{label} · recommended"
+    return label
+
+
+SERVICE_GENERATE_VIDEO = "generate_video"
+SERVICE_PUBLISH_MEDIA = "publish_media"
+PUBLISH_DIR = "spacexai"
 IMAGE_ASPECT_RATIOS = (
     "1:1",
     "3:2",
@@ -163,7 +192,6 @@ IMAGE_GENERATION_ACTIONS = (
     "generate",
     "edit",
 )
-SERVICE_GENERATE_VIDEO = "generate_video"
 TTS_VOICES = (
     ("eve", "Eve"),
     ("ara", "Ara"),

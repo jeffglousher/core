@@ -32,6 +32,7 @@ from homeassistant.components.spacexai.const import (
     TTS_URL,
     USERINFO_URL,
     VIDEOS_URL,
+    model_label,
 )
 from homeassistant.components.spacexai.errors import (
     AccountMismatchError,
@@ -214,8 +215,10 @@ def test_empty_catalog_allows_known_media_models() -> None:
     assert snapshot.has_video_model("grok-imagine-video-1.5")
     assert snapshot.has_video_model("grok-imagine-video")
     assert not snapshot.has_video_model("grok-imagine-video-unknown")
-    assert snapshot.selectable_image_models[0] == "grok-imagine-image-2.0"
-    assert snapshot.selectable_video_models[0] == "grok-imagine-video-1.5"
+    assert snapshot.selectable_image_models == ("grok-imagine-image-2.0",)
+    assert snapshot.selectable_video_models == ("grok-imagine-video-1.5",)
+    assert "grok-imagine-image-quality" not in snapshot.selectable_image_models
+    assert "grok-imagine-video" not in snapshot.selectable_video_models
 
 
 def test_documented_imagine_ids_stay_requestable() -> None:
@@ -245,9 +248,45 @@ def test_documented_imagine_ids_stay_requestable() -> None:
     assert not snapshot.has_image_model("grok-imagine-image-unknown")
     assert snapshot.has_video_model("grok-imagine-video")
     assert snapshot.has_video_model("grok-imagine-video-1.5")
-    assert snapshot.selectable_image_models[0] == "grok-imagine-image-2.0"
+    assert snapshot.selectable_image_models == ("grok-imagine-image-2.0",)
+    assert "grok-imagine-image-quality" not in snapshot.selectable_image_models
     assert "grok-imagine-image-2026-03-02" not in snapshot.selectable_image_models
+    assert snapshot.selectable_video_models == ("grok-imagine-video-1.5",)
+    assert "grok-imagine-video" not in snapshot.selectable_video_models
     assert "grok-imagine-video-1.5-preview" not in snapshot.selectable_video_models
+
+
+def test_picker_hides_legacy_imagine_models() -> None:
+    """Show Imagine 2 and newer catalog ids, not the older Imagine models."""
+    snapshot = ProviderSnapshot(
+        account=AccountInfo("sub", "Name", None),
+        models=(ModelInfo(id="grok-4.6", owner="xai"),),
+        image_models=(
+            ModelInfo(id="grok-imagine-image-2.0", owner="xai"),
+            ModelInfo(id="grok-imagine-image-quality", owner="xai"),
+            ModelInfo(id="grok-imagine-image-3.0", owner="xai"),
+        ),
+        video_models=(
+            ModelInfo(id="grok-imagine-video-1.5", owner="xai"),
+            ModelInfo(id="grok-imagine-video", owner="xai"),
+        ),
+    )
+    assert snapshot.selectable_image_models == (
+        "grok-imagine-image-2.0",
+        "grok-imagine-image-3.0",
+    )
+    assert snapshot.selectable_video_models == ("grok-imagine-video-1.5",)
+    assert snapshot.has_image_model("grok-imagine-image-quality")
+    assert snapshot.has_video_model("grok-imagine-video")
+
+
+def test_model_label_uses_plain_language() -> None:
+    """Show Imagine 2 and Grok 4.6 instead of raw ids."""
+    assert model_label("grok-imagine-image-2.0", recommended=True) == (
+        "Imagine 2 · recommended"
+    )
+    assert model_label("grok-4.6", recommended=True) == "Grok 4.6 · recommended"
+    assert model_label("grok-4.3") == "grok-4.3"
 
 
 def test_recommended_chat_model_follows_cli_catalog() -> None:

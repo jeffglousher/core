@@ -1,9 +1,11 @@
 """Tests for SpaceXAI admin services."""
 
-from unittest.mock import AsyncMock
+from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from homeassistant.components.media_source import PlayMedia
 from homeassistant.components.spacexai.client import (
     GeneratedVideo,
     ModelInfo,
@@ -171,3 +173,117 @@ async def test_generate_video_translates_provider_errors(
             blocking=True,
             return_response=True,
         )
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_generate_video_encodes_local_media_source(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    tmp_path: Path,
+) -> None:
+    """Encode a Home Assistant media-source image for image-to-video."""
+    entry = setup_integration
+    source = tmp_path / "still.jpg"
+    source.write_bytes(b"\xff\xd8\xffpayload")
+    entry.runtime_data.client.async_generate_video = AsyncMock(
+        return_value=GeneratedVideo(
+            url="https://vidgen.example/from-local.mp4",
+            model=DEFAULT_VIDEO_MODEL,
+        )
+    )
+
+    with patch(
+        "homeassistant.components.spacexai.media.media_source.async_resolve_media",
+        return_value=PlayMedia(
+            url="/ai_task/image/still.jpg",
+            mime_type="image/jpeg",
+            path=source,
+        ),
+    ):
+        response = await hass.services.async_call(
+            DOMAIN,
+            "generate_video",
+            {
+                "config_entry": entry.entry_id,
+                "prompt": "Animate this still",
+                "image_url": "media-source://ai_task/image/still.jpg",
+                "duration": 2,
+            },
+            blocking=True,
+            return_response=True,
+        )
+
+    assert response == {
+        "url": "https://vidgen.example/from-local.mp4",
+        "model": DEFAULT_VIDEO_MODEL,
+    }
+    image_url = entry.runtime_data.client.async_generate_video.await_args.kwargs[
+        "image_url"
+    ]
+    assert image_url.startswith("data:image/jpeg;base64,")
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_generate_video_rejects_local_path_escape(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+) -> None:
+    """Reject /local references that escape the www directory."""
+    Path(hass.config.path("www")).mkdir(parents=True, exist_ok=True)
+    Path(hass.config.path("secrets.yaml")).write_text("nope", encoding="utf-8")
+
+    with pytest.raises(ServiceValidationError) as raised:
+        await hass.services.async_call(
+            DOMAIN,
+            "generate_video",
+            {
+                "config_entry": setup_integration.entry_id,
+                "prompt": "Animate this still",
+                "image_url": "/local/../secrets.yaml",
+            },
+            blocking=True,
+            return_response=True,
+        )
+    assert raised.value.translation_key == "invalid_media_reference"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_publish_media_copies_to_local(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    tmp_path: Path,
+) -> None:
+    """Copy an AI Task image into /local for Companion notifications."""
+    source = tmp_path / "porch.jpg"
+    source.write_bytes(b"\xff\xd8\xffjpeg")
+    www = Path(hass.config.path("www"))
+    www.mkdir(parents=True, exist_ok=True)
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.media.media_source.async_resolve_media",
+            return_value=PlayMedia(
+                url="/ai_task/image/porch.jpg",
+                mime_type="image/jpeg",
+                path=source,
+            ),
+        ),
+        patch(
+            "homeassistant.components.spacexai.media.get_url",
+            return_value="http://10.0.0.5:8123",
+        ),
+    ):
+        response = await hass.services.async_call(
+            DOMAIN,
+            "publish_media",
+            {"media_source_id": "media-source://ai_task/image/porch.jpg"},
+            blocking=True,
+            return_response=True,
+        )
+
+    assert response == {
+        "filename": "porch.jpg",
+        "path": "/local/spacexai/porch.jpg",
+        "url": "http://10.0.0.5:8123/local/spacexai/porch.jpg",
+    }
+    assert (www / "spacexai" / "porch.jpg").read_bytes() == source.read_bytes()

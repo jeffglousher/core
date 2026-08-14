@@ -24,6 +24,9 @@
   "services": {
     "generate_video": {
       "service": "mdi:movie-open-outline"
+    },
+    "publish_media": {
+      "service": "mdi:folder-image"
     }
   }
 }
