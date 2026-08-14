@@ -3,14 +3,11 @@
 import json
 
 import pytest
-from syrupy.assertion import SnapshotAssertion
-from syrupy.filters import props
 
 from homeassistant.components.diagnostics import REDACTED
 from homeassistant.const import CONF_PROMPT
 from homeassistant.core import HomeAssistant
 
-from . import conversation_subentry
 from .conftest import ACCESS_TOKEN, ACCOUNT_ID, REFRESH_TOKEN
 
 from tests.common import MockConfigEntry
@@ -23,10 +20,13 @@ async def test_diagnostics_are_sanitized(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
     hass_client: ClientSessionGenerator,
-    snapshot: SnapshotAssertion,
 ) -> None:
-    """Config entry diagnostics redact secrets."""
-    subentry = conversation_subentry(mock_config_entry)
+    """Exclude OAuth credentials and redact account identity."""
+    subentry = next(
+        entry
+        for entry in mock_config_entry.subentries.values()
+        if entry.subentry_type == "conversation"
+    )
     hass.config_entries.async_update_subentry(
         mock_config_entry,
         subentry,
@@ -36,15 +36,30 @@ async def test_diagnostics_are_sanitized(
     diagnostics = await get_diagnostics_for_config_entry(
         hass, hass_client, mock_config_entry
     )
-
-    assert diagnostics == snapshot(exclude=props("expires_at"))
     assert diagnostics["account"] == {
         "account_id": REDACTED,
         "name": REDACTED,
         "email": REDACTED,
     }
+    assert diagnostics["auth_implementation"] == "spacexai"
+    assert "expires_at" in diagnostics["oauth"]
+    assert "token" not in diagnostics
+    assert "access_token" not in diagnostics["oauth"]
+    assert "refresh_token" not in diagnostics["oauth"]
+    assert diagnostics["available_models"] == ["grok-4.5", "grok-4.3"]
+    assert diagnostics["platforms"] == {
+        "conversation": True,
+        "ai_task": True,
+        "stt": True,
+        "tts": True,
+    }
+    assert diagnostics["conversation"][0]["model"] == "grok-4.5"
+    assert diagnostics["conversation"][0]["model_entitled"] is True
+    assert diagnostics["conversation"][0][CONF_PROMPT] == REDACTED
     assert diagnostics["ai_task"][0]["model"] == "grok-4.5"
     assert diagnostics["ai_task"][0]["model_entitled"] is True
+    assert diagnostics["stt"][0]["title"] == "Grok STT"
+    assert diagnostics["tts"][0]["title"] == "Grok TTS"
     serialized = json.dumps(diagnostics)
     assert ACCESS_TOKEN not in serialized
     assert REFRESH_TOKEN not in serialized

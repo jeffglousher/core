@@ -1,8 +1,6 @@
 rules:
   # Bronze
-  action-setup:
-    status: exempt
-    comment: Integration has no actions.
+  action-setup: done
   appropriate-polling:
     status: exempt
     comment: Integration does not poll.
@@ -11,9 +9,7 @@ rules:
   config-flow-test-coverage: done
   config-flow: done
   dependency-transparency: done
-  docs-actions:
-    status: exempt
-    comment: Integration has no actions.
+  docs-actions: done
   docs-conditions:
     status: exempt
     comment: Integration does not provide conditions.
@@ -35,8 +31,8 @@ rules:
 
   # Silver
   action-exceptions:
-    status: exempt
-    comment: Integration has no actions.
+    status: done
+    comment: spacexai.generate_video raises ServiceValidationError/HomeAssistantError with translation keys.
   config-entry-unloading: done
   docs-configuration-parameters: done
   docs-installation-parameters: done

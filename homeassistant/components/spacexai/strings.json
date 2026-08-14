@@ -26,7 +26,10 @@
       "default": "[%key:common::config_flow::create_entry::authenticated%]"
     },
     "error": {
-      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]"
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "control_with_provider_tools": "Enable this option to allow Home Assistant control while SpaceXAI provider tools are enabled, or disable either Home Assistant control or the provider tools.",
+      "custom_model_required": "Enter a custom model ID, or choose a discovered/fallback model.",
+      "web_search_domain_filters": "Use either allowed domains or excluded domains for web search, not both."
     },
     "progress": {
       "wait_for_device": "Open {verification_uri} and approve Home Assistant.\n\nIf asked for a code, enter:\n\n```{user_code}```\n\nThis login attempt expires in {expires_minutes} minutes."
@@ -34,24 +37,86 @@
     "step": {
       "conversation": {
         "data": {
+          "allow_control_with_provider_tools": "Allow Home Assistant control with provider tools",
           "code_interpreter": "Enable code interpreter",
+          "create_stt": "Create speech-to-text entity",
+          "create_tts": "Create text-to-speech entity",
+          "default_assist": "Use Grok as the preferred Assist pipeline",
+          "image_generation": "Enable image generation",
+          "image_generation_action": "Image generation action",
           "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
           "max_output_tokens": "Maximum response tokens",
           "model": "[%key:common::generic::model%]",
+          "model_custom": "Custom model ID",
           "prompt": "[%key:common::config_flow::data::prompt%]",
+          "recommended": "Use recommended settings",
+          "service_tier": "Processing speed",
+          "store_responses": "Store responses on SpaceXAI",
+          "temperature": "Temperature",
+          "top_p": "Top P",
           "web_search": "Enable web search",
-          "x_search": "Enable X search"
+          "web_search_allowed_domains": "Web search allowed domains",
+          "web_search_excluded_domains": "Web search excluded domains",
+          "web_search_image_search": "Enable web search image search",
+          "web_search_image_understanding": "Enable web search image understanding",
+          "x_search": "Enable X search",
+          "x_search_allowed_handles": "X search allowed handles",
+          "x_search_excluded_handles": "X search excluded handles",
+          "x_search_from_date": "X search from date",
+          "x_search_image_understanding": "Enable X search image understanding",
+          "x_search_to_date": "X search to date",
+          "x_search_video_understanding": "Enable X search video understanding"
         },
         "data_description": {
+          "allow_control_with_provider_tools": "Required when Home Assistant control and SpaceXAI provider tools (web search, X search, code interpreter, or image generation) are enabled together.",
           "code_interpreter": "Allow Grok to run Python on SpaceXAI servers to calculate, analyze, and transform data.",
+          "create_stt": "Create a SpaceXAI speech-to-text entity and wire it into the Grok Assist pipeline when Assist setup is enabled. You can still change engines later under Settings → Voice assistants.",
+          "create_tts": "Create a SpaceXAI text-to-speech entity and wire it into the Grok Assist pipeline when Assist setup is enabled. You can still change engines later under Settings → Voice assistants.",
+          "default_assist": "Creates a preferred Grok Assist pipeline using the SpaceXAI conversation agent and SpaceXAI speech engines when those entities are created.",
+          "image_generation": "Allow Grok to generate or edit images with SpaceXAI image tools.",
+          "image_generation_action": "How Grok should use the image generation tool. Auto lets the model choose.",
           "llm_hass_api": "Home Assistant APIs that Grok may use. Only explicitly exposed entities and tools are available.",
-          "max_output_tokens": "Maximum number of tokens Grok may generate for one response.",
-          "model": "Grok model discovered for the signed-in subscription.",
+          "max_output_tokens": "Upper limit for one response. This is a ceiling, not a target — short Assist answers stay short. Default is 3000 (same Assist ceiling as OpenAI Conversation).",
+          "model": "Discovered models come from your account. Fallback is always grok-4.5. Choose Custom model ID to type any other grok-* id.",
+          "model_custom": "Exact model id string. Example: grok-4.3 or grok-build-0.1.",
           "prompt": "Instructions that define how Grok should respond. This can be a template.",
+          "recommended": "Keep this on for a simple setup with Assist control and grok-4.5. Turn it off to choose discovered or fallback models, a custom model id, sampling, and tools.",
+          "service_tier": "Priority requests faster scheduling from SpaceXAI (payload service_tier=priority). Default for Assist. May use premium token pricing when priority is granted. Keep selectable either way.",
+          "store_responses": "When enabled, SpaceXAI may retain responses server-side. Leave off unless you need provider-side history.",
+          "temperature": "Sampling temperature (0–2). Default 1.0 matches the SpaceXAI API and Home Assistant's OpenAI Conversation integration.",
+          "top_p": "Nucleus sampling limit (0–1). Default 1.0 matches the SpaceXAI API and OpenAI Conversation.",
           "web_search": "Allow Grok to use SpaceXAI server-side web search before answering.",
-          "x_search": "Allow Grok to search public posts on X before answering."
+          "web_search_allowed_domains": "Optional comma-separated allowlist of domains for web search (maximum 5). Cannot be combined with excluded domains.",
+          "web_search_excluded_domains": "Optional comma-separated blocklist of domains for web search (maximum 5). Cannot be combined with allowed domains.",
+          "web_search_image_search": "Allow web search to find images as well as text results.",
+          "web_search_image_understanding": "Allow web search to analyze images found in search results.",
+          "x_search": "Allow Grok to search public posts on X before answering.",
+          "x_search_allowed_handles": "Optional comma-separated allowlist of X handles (maximum 20).",
+          "x_search_excluded_handles": "Optional comma-separated blocklist of X handles (maximum 20).",
+          "x_search_from_date": "Optional earliest date for X search results.",
+          "x_search_image_understanding": "Allow X search to analyze images found in posts.",
+          "x_search_to_date": "Optional latest date for X search results.",
+          "x_search_video_understanding": "Allow X search to analyze videos found in posts."
         },
-        "description": "Configure the Grok conversation agent for this SpaceXAI account."
+        "description": "Choose models, speech engines, tools, and whether Grok should become the preferred Assist pipeline."
+      },
+      "recommended": {
+        "title": "Recommended setup",
+        "description": "Creates a Grok conversation agent, AI Task, speech-to-text, and text-to-speech with Assist control and grok-4.5.",
+        "data": {
+          "default_assist": "[%key:component::spacexai::config::step::conversation::data::default_assist%]"
+        },
+        "data_description": {
+          "default_assist": "[%key:component::spacexai::config::step::conversation::data_description::default_assist%]"
+        }
+      },
+      "setup_mode": {
+        "title": "SpaceXAI",
+        "description": "SpaceXAI is signed in. Recommended setup creates conversation, AI Task, and speech engines in one step.",
+        "menu_options": {
+          "recommended": "Use recommended settings",
+          "customize": "Customize models and tools"
+        }
       },
       "device": {
         "title": "Approve SpaceXAI on another device"
@@ -100,6 +165,9 @@
         "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
       },
       "entry_type": "AI Task",
+      "error": {
+        "custom_model_required": "[%key:component::spacexai::config::error::custom_model_required%]"
+      },
       "initiate_flow": {
         "reconfigure": "Reconfigure AI Task",
         "user": "Add AI Task"
@@ -107,26 +175,54 @@
       "step": {
         "reconfigure": {
           "data": {
+            "image_aspect_ratio": "Image aspect ratio",
             "image_model": "Image model",
+            "image_resolution": "Image resolution",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
-            "model": "[%key:common::generic::model%]"
+            "model": "[%key:common::generic::model%]",
+            "model_custom": "[%key:component::spacexai::config::step::conversation::data::model_custom%]",
+            "store_responses": "[%key:component::spacexai::config::step::conversation::data::store_responses%]",
+            "temperature": "[%key:component::spacexai::config::step::conversation::data::temperature%]",
+            "top_p": "[%key:component::spacexai::config::step::conversation::data::top_p%]",
+            "service_tier": "[%key:component::spacexai::config::step::conversation::data::service_tier%]"
           },
           "data_description": {
+            "image_aspect_ratio": "Aspect ratio used for AI Task image generation.",
             "image_model": "Grok Imagine model used for AI Task image generation.",
-            "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
-            "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]"
+            "image_resolution": "Resolution used for AI Task image generation.",
+            "max_output_tokens": "Maximum tokens for one AI Task response. Default is 8192 so longer structured outputs can finish. Assist uses a lower ceiling.",
+            "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
+            "model_custom": "[%key:component::spacexai::config::step::conversation::data_description::model_custom%]",
+            "store_responses": "[%key:component::spacexai::config::step::conversation::data_description::store_responses%]",
+            "temperature": "[%key:component::spacexai::config::step::conversation::data_description::temperature%]",
+            "top_p": "[%key:component::spacexai::config::step::conversation::data_description::top_p%]",
+            "service_tier": "Processing speed for AI Task text generation. Defaults to Standard; Priority (fast) remains selectable."
           }
         },
         "user": {
           "data": {
+            "image_aspect_ratio": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data::image_aspect_ratio%]",
             "image_model": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data::image_model%]",
+            "image_resolution": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data::image_resolution%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
-            "model": "[%key:common::generic::model%]"
+            "model": "[%key:common::generic::model%]",
+            "model_custom": "[%key:component::spacexai::config::step::conversation::data::model_custom%]",
+            "store_responses": "[%key:component::spacexai::config::step::conversation::data::store_responses%]",
+            "temperature": "[%key:component::spacexai::config::step::conversation::data::temperature%]",
+            "top_p": "[%key:component::spacexai::config::step::conversation::data::top_p%]",
+            "service_tier": "[%key:component::spacexai::config::step::conversation::data::service_tier%]"
           },
           "data_description": {
+            "image_aspect_ratio": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data_description::image_aspect_ratio%]",
             "image_model": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data_description::image_model%]",
-            "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
-            "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]"
+            "image_resolution": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data_description::image_resolution%]",
+            "max_output_tokens": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data_description::max_output_tokens%]",
+            "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
+            "model_custom": "[%key:component::spacexai::config::step::conversation::data_description::model_custom%]",
+            "store_responses": "[%key:component::spacexai::config::step::conversation::data_description::store_responses%]",
+            "temperature": "[%key:component::spacexai::config::step::conversation::data_description::temperature%]",
+            "top_p": "[%key:component::spacexai::config::step::conversation::data_description::top_p%]",
+            "service_tier": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data_description::service_tier%]"
           }
         }
       }
@@ -145,6 +241,11 @@
         "unknown": "[%key:common::config_flow::error::unknown%]"
       },
       "entry_type": "Conversation agent",
+      "error": {
+        "control_with_provider_tools": "[%key:component::spacexai::config::error::control_with_provider_tools%]",
+        "custom_model_required": "[%key:component::spacexai::config::error::custom_model_required%]",
+        "web_search_domain_filters": "[%key:component::spacexai::config::error::web_search_domain_filters%]"
+      },
       "initiate_flow": {
         "reconfigure": "Reconfigure conversation agent",
         "user": "Add conversation agent"
@@ -152,43 +253,121 @@
       "step": {
         "reconfigure": {
           "data": {
+            "allow_control_with_provider_tools": "[%key:component::spacexai::config::step::conversation::data::allow_control_with_provider_tools%]",
             "code_interpreter": "[%key:component::spacexai::config::step::conversation::data::code_interpreter%]",
+            "image_generation": "[%key:component::spacexai::config::step::conversation::data::image_generation%]",
+            "image_generation_action": "[%key:component::spacexai::config::step::conversation::data::image_generation_action%]",
             "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
             "model": "[%key:common::generic::model%]",
+            "model_custom": "[%key:component::spacexai::config::step::conversation::data::model_custom%]",
             "prompt": "[%key:common::config_flow::data::prompt%]",
+            "recommended": "[%key:component::spacexai::config::step::conversation::data::recommended%]",
             "web_search": "[%key:component::spacexai::config::step::conversation::data::web_search%]",
-            "x_search": "[%key:component::spacexai::config::step::conversation::data::x_search%]"
+            "web_search_allowed_domains": "[%key:component::spacexai::config::step::conversation::data::web_search_allowed_domains%]",
+            "web_search_excluded_domains": "[%key:component::spacexai::config::step::conversation::data::web_search_excluded_domains%]",
+            "web_search_image_understanding": "[%key:component::spacexai::config::step::conversation::data::web_search_image_understanding%]",
+            "x_search": "[%key:component::spacexai::config::step::conversation::data::x_search%]",
+            "x_search_allowed_handles": "[%key:component::spacexai::config::step::conversation::data::x_search_allowed_handles%]",
+            "x_search_excluded_handles": "[%key:component::spacexai::config::step::conversation::data::x_search_excluded_handles%]",
+            "x_search_image_understanding": "[%key:component::spacexai::config::step::conversation::data::x_search_image_understanding%]",
+            "store_responses": "[%key:component::spacexai::config::step::conversation::data::store_responses%]",
+            "temperature": "[%key:component::spacexai::config::step::conversation::data::temperature%]",
+            "top_p": "[%key:component::spacexai::config::step::conversation::data::top_p%]",
+            "web_search_image_search": "[%key:component::spacexai::config::step::conversation::data::web_search_image_search%]",
+            "x_search_from_date": "[%key:component::spacexai::config::step::conversation::data::x_search_from_date%]",
+            "x_search_to_date": "[%key:component::spacexai::config::step::conversation::data::x_search_to_date%]",
+            "x_search_video_understanding": "[%key:component::spacexai::config::step::conversation::data::x_search_video_understanding%]",
+            "service_tier": "[%key:component::spacexai::config::step::conversation::data::service_tier%]"
           },
           "data_description": {
+            "allow_control_with_provider_tools": "[%key:component::spacexai::config::step::conversation::data_description::allow_control_with_provider_tools%]",
             "code_interpreter": "[%key:component::spacexai::config::step::conversation::data_description::code_interpreter%]",
+            "image_generation": "[%key:component::spacexai::config::step::conversation::data_description::image_generation%]",
+            "image_generation_action": "[%key:component::spacexai::config::step::conversation::data_description::image_generation_action%]",
             "llm_hass_api": "[%key:component::spacexai::config::step::conversation::data_description::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
+            "model_custom": "[%key:component::spacexai::config::step::conversation::data_description::model_custom%]",
             "prompt": "[%key:component::spacexai::config::step::conversation::data_description::prompt%]",
+            "recommended": "[%key:component::spacexai::config::step::conversation::data_description::recommended%]",
             "web_search": "[%key:component::spacexai::config::step::conversation::data_description::web_search%]",
-            "x_search": "[%key:component::spacexai::config::step::conversation::data_description::x_search%]"
-          }
+            "web_search_allowed_domains": "[%key:component::spacexai::config::step::conversation::data_description::web_search_allowed_domains%]",
+            "web_search_excluded_domains": "[%key:component::spacexai::config::step::conversation::data_description::web_search_excluded_domains%]",
+            "web_search_image_understanding": "[%key:component::spacexai::config::step::conversation::data_description::web_search_image_understanding%]",
+            "x_search": "[%key:component::spacexai::config::step::conversation::data_description::x_search%]",
+            "x_search_allowed_handles": "[%key:component::spacexai::config::step::conversation::data_description::x_search_allowed_handles%]",
+            "x_search_excluded_handles": "[%key:component::spacexai::config::step::conversation::data_description::x_search_excluded_handles%]",
+            "x_search_image_understanding": "[%key:component::spacexai::config::step::conversation::data_description::x_search_image_understanding%]",
+            "store_responses": "[%key:component::spacexai::config::step::conversation::data_description::store_responses%]",
+            "temperature": "[%key:component::spacexai::config::step::conversation::data_description::temperature%]",
+            "top_p": "[%key:component::spacexai::config::step::conversation::data_description::top_p%]",
+            "web_search_image_search": "[%key:component::spacexai::config::step::conversation::data_description::web_search_image_search%]",
+            "x_search_from_date": "[%key:component::spacexai::config::step::conversation::data_description::x_search_from_date%]",
+            "x_search_to_date": "[%key:component::spacexai::config::step::conversation::data_description::x_search_to_date%]",
+            "x_search_video_understanding": "[%key:component::spacexai::config::step::conversation::data_description::x_search_video_understanding%]",
+            "service_tier": "[%key:component::spacexai::config::step::conversation::data_description::service_tier%]"
+          },
+          "description": "[%key:component::spacexai::config::step::conversation::description%]"
         },
         "user": {
           "data": {
+            "allow_control_with_provider_tools": "[%key:component::spacexai::config::step::conversation::data::allow_control_with_provider_tools%]",
             "code_interpreter": "[%key:component::spacexai::config::step::conversation::data::code_interpreter%]",
+            "image_generation": "[%key:component::spacexai::config::step::conversation::data::image_generation%]",
+            "image_generation_action": "[%key:component::spacexai::config::step::conversation::data::image_generation_action%]",
             "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
             "model": "[%key:common::generic::model%]",
+            "model_custom": "[%key:component::spacexai::config::step::conversation::data::model_custom%]",
             "prompt": "[%key:common::config_flow::data::prompt%]",
+            "recommended": "[%key:component::spacexai::config::step::conversation::data::recommended%]",
             "web_search": "[%key:component::spacexai::config::step::conversation::data::web_search%]",
-            "x_search": "[%key:component::spacexai::config::step::conversation::data::x_search%]"
+            "web_search_allowed_domains": "[%key:component::spacexai::config::step::conversation::data::web_search_allowed_domains%]",
+            "web_search_excluded_domains": "[%key:component::spacexai::config::step::conversation::data::web_search_excluded_domains%]",
+            "web_search_image_understanding": "[%key:component::spacexai::config::step::conversation::data::web_search_image_understanding%]",
+            "x_search": "[%key:component::spacexai::config::step::conversation::data::x_search%]",
+            "x_search_allowed_handles": "[%key:component::spacexai::config::step::conversation::data::x_search_allowed_handles%]",
+            "x_search_excluded_handles": "[%key:component::spacexai::config::step::conversation::data::x_search_excluded_handles%]",
+            "x_search_image_understanding": "[%key:component::spacexai::config::step::conversation::data::x_search_image_understanding%]",
+            "store_responses": "[%key:component::spacexai::config::step::conversation::data::store_responses%]",
+            "temperature": "[%key:component::spacexai::config::step::conversation::data::temperature%]",
+            "top_p": "[%key:component::spacexai::config::step::conversation::data::top_p%]",
+            "web_search_image_search": "[%key:component::spacexai::config::step::conversation::data::web_search_image_search%]",
+            "x_search_from_date": "[%key:component::spacexai::config::step::conversation::data::x_search_from_date%]",
+            "x_search_to_date": "[%key:component::spacexai::config::step::conversation::data::x_search_to_date%]",
+            "x_search_video_understanding": "[%key:component::spacexai::config::step::conversation::data::x_search_video_understanding%]",
+            "service_tier": "[%key:component::spacexai::config::step::conversation::data::service_tier%]"
           },
           "data_description": {
+            "allow_control_with_provider_tools": "[%key:component::spacexai::config::step::conversation::data_description::allow_control_with_provider_tools%]",
             "code_interpreter": "[%key:component::spacexai::config::step::conversation::data_description::code_interpreter%]",
+            "image_generation": "[%key:component::spacexai::config::step::conversation::data_description::image_generation%]",
+            "image_generation_action": "[%key:component::spacexai::config::step::conversation::data_description::image_generation_action%]",
             "llm_hass_api": "[%key:component::spacexai::config::step::conversation::data_description::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
+            "model_custom": "[%key:component::spacexai::config::step::conversation::data_description::model_custom%]",
             "prompt": "[%key:component::spacexai::config::step::conversation::data_description::prompt%]",
+            "recommended": "[%key:component::spacexai::config::step::conversation::data_description::recommended%]",
             "web_search": "[%key:component::spacexai::config::step::conversation::data_description::web_search%]",
-            "x_search": "[%key:component::spacexai::config::step::conversation::data_description::x_search%]"
-          }
+            "web_search_allowed_domains": "[%key:component::spacexai::config::step::conversation::data_description::web_search_allowed_domains%]",
+            "web_search_excluded_domains": "[%key:component::spacexai::config::step::conversation::data_description::web_search_excluded_domains%]",
+            "web_search_image_understanding": "[%key:component::spacexai::config::step::conversation::data_description::web_search_image_understanding%]",
+            "x_search": "[%key:component::spacexai::config::step::conversation::data_description::x_search%]",
+            "x_search_allowed_handles": "[%key:component::spacexai::config::step::conversation::data_description::x_search_allowed_handles%]",
+            "x_search_excluded_handles": "[%key:component::spacexai::config::step::conversation::data_description::x_search_excluded_handles%]",
+            "x_search_image_understanding": "[%key:component::spacexai::config::step::conversation::data_description::x_search_image_understanding%]",
+            "store_responses": "[%key:component::spacexai::config::step::conversation::data_description::store_responses%]",
+            "temperature": "[%key:component::spacexai::config::step::conversation::data_description::temperature%]",
+            "top_p": "[%key:component::spacexai::config::step::conversation::data_description::top_p%]",
+            "web_search_image_search": "[%key:component::spacexai::config::step::conversation::data_description::web_search_image_search%]",
+            "x_search_from_date": "[%key:component::spacexai::config::step::conversation::data_description::x_search_from_date%]",
+            "x_search_to_date": "[%key:component::spacexai::config::step::conversation::data_description::x_search_to_date%]",
+            "x_search_video_understanding": "[%key:component::spacexai::config::step::conversation::data_description::x_search_video_understanding%]",
+            "service_tier": "[%key:component::spacexai::config::step::conversation::data_description::service_tier%]"
+          },
+          "description": "[%key:component::spacexai::config::step::conversation::description%]"
         }
       }
     },
@@ -251,6 +430,11 @@
         "name": "AI Task"
       }
     },
+    "conversation": {
+      "conversation": {
+        "name": "Conversation"
+      }
+    },
     "stt": {
       "stt": {
         "name": "Speech-to-text"
@@ -269,6 +453,9 @@
     "attachment_not_found": {
       "message": "Attachment `{path}` does not exist."
     },
+    "attachment_too_large": {
+      "message": "Attachment `{path}` exceeds the {max_mb} MB size limit."
+    },
     "attachment_unsupported_type": {
       "message": "Attachment `{path}` is not a supported image or PDF."
     },
@@ -280,6 +467,9 @@
     },
     "home_assistant_tool_failure": {
       "message": "A Home Assistant tool requested by {model} failed."
+    },
+    "invalid_config_entry": {
+      "message": "Invalid SpaceXAI config entry `{config_entry}`."
     },
     "invalid_model_tool_request": {
       "message": "{model} requested a Home Assistant tool with invalid arguments."
@@ -375,9 +565,49 @@
       },
       "title": "Configured SpaceXAI model is unavailable"
     },
+    "speech_api_access": {
+      "description": "This SpaceXAI subscription session could not use a speech or Imagine media API (api.x.ai). Chat may still work. Keep SpaceXAI STT/TTS selectable under Settings → Voice assistants, or use another engine until the account is entitled for that surface.",
+      "title": "SpaceXAI media API access was denied"
+    },
     "subscription_not_entitled": {
       "description": "The SpaceXAI account connected to Home Assistant is not eligible for subscription-backed third-party Grok access, so conversation agents for this account cannot be used.\n\n1. Open the SpaceXAI console (link below) and confirm the signed-in account has an active eligible subscription.\n2. If the subscription belongs to a different account, remove this integration entry and add it again with the eligible account.\n3. After the subscription is eligible, reload the integration or sign in again.\n\nConversation agents for this account become available once SpaceXAI accepts the account.",
       "title": "SpaceXAI subscription access is unavailable"
+    }
+  },
+  "services": {
+    "generate_video": {
+      "description": "Generate a video with SpaceXAI Imagine and return the provider URL.",
+      "fields": {
+        "config_entry": {
+          "description": "The SpaceXAI config entry to use for this action.",
+          "name": "Config entry"
+        },
+        "duration": {
+          "description": "Requested video duration in seconds.",
+          "name": "Duration"
+        },
+        "image_url": {
+          "description": "Optional reference image URL for image-to-video generation.",
+          "name": "Image URL"
+        },
+        "model": {
+          "description": "The Imagine video model to use.",
+          "name": "Model"
+        },
+        "prompt": {
+          "description": "The text prompt used to generate the video.",
+          "name": "Prompt"
+        }
+      },
+      "name": "Generate video"
+    }
+  },
+  "selector": {
+    "service_tier": {
+      "options": {
+        "default": "Standard",
+        "priority": "Priority (fast)"
+      }
     }
   }
 }

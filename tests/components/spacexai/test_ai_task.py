@@ -1,6 +1,7 @@
 """Tests for the SpaceXAI AI Task platform."""
 
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 from openai.types.responses import Response, ResponseCompletedEvent
@@ -10,7 +11,9 @@ import voluptuous as vol
 from homeassistant.components import ai_task, media_source
 from homeassistant.components.spacexai.client import GeneratedImage
 from homeassistant.components.spacexai.const import (
+    DEFAULT_IMAGE_ASPECT_RATIO,
     DEFAULT_IMAGE_MODEL,
+    DEFAULT_IMAGE_RESOLUTION,
     DEFAULT_MODEL,
     DOMAIN,
 )
@@ -307,6 +310,8 @@ async def test_generate_image(
     mock_generate.assert_awaited_once()
     assert mock_generate.await_args.kwargs["prompt"] == "Draw a rocket"
     assert mock_generate.await_args.kwargs["model"] == DEFAULT_IMAGE_MODEL
+    assert mock_generate.await_args.kwargs["aspect_ratio"] == DEFAULT_IMAGE_ASPECT_RATIO
+    assert mock_generate.await_args.kwargs["resolution"] == DEFAULT_IMAGE_RESOLUTION
     image_data = mock_upload.call_args[0][1]
     assert image_data.file.getvalue() == b"fake-image"
     assert image_data.content_type == "image/jpeg"
@@ -390,6 +395,10 @@ async def test_generate_data_with_attachments(
             ],
         ),
         patch("pathlib.Path.exists", return_value=True),
+        patch(
+            "pathlib.Path.stat",
+            return_value=SimpleNamespace(st_size=7),
+        ),
         patch("pathlib.Path.read_bytes", return_value=b"payload"),
     ):
         await ai_task.async_generate_data(
@@ -446,9 +455,13 @@ async def test_attachment_mime_type_is_guessed(
             ),
         ),
         patch("pathlib.Path.exists", return_value=True),
+        patch(
+            "pathlib.Path.stat",
+            return_value=SimpleNamespace(st_size=7),
+        ),
         patch("pathlib.Path.read_bytes", return_value=b"payload"),
         patch(
-            "homeassistant.components.spacexai.entity.guess_file_type",
+            "homeassistant.components.spacexai.files.guess_file_type",
             return_value=("image/jpeg", None),
         ),
     ):
@@ -494,6 +507,10 @@ async def test_attachment_rejections(
             ),
         ),
         patch("pathlib.Path.exists", return_value=exists),
+        patch(
+            "pathlib.Path.stat",
+            return_value=SimpleNamespace(st_size=7),
+        ),
         patch("pathlib.Path.read_bytes", return_value=b"payload"),
         pytest.raises(HomeAssistantError) as raised,
     ):

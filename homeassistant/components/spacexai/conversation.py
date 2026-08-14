@@ -1,6 +1,6 @@
 """Conversation platform for SpaceXAI."""
 
-from typing import Literal, cast, override
+from typing import Literal, override
 
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigSubentry
@@ -13,28 +13,23 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import entity_platform, llm
+from homeassistant.helpers import llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import SpaceXAIConfigEntry, async_capture_availability_epochs
+from . import SpaceXAIConfigEntry
 from .const import DOMAIN
 from .entity import SpaceXAIBaseLLMEntity
 from .errors import SpaceXAIError
-from .issue import async_delete_subscription_issue
 
 PARALLEL_UPDATES = 0
 
+# Assist's default LLM prompt does not include Core or provider model identity.
 _RUNTIME_IDENTITY_PROMPT = (
     "Runtime identity (answer truthfully when asked about versions):\n"
-    "- Home Assistant Core: {ha_version}\n"
+    f"- Home Assistant Core: {HA_VERSION}\n"
     "- Provider: SpaceXAI (Grok)\n"
     "- Conversation model: {model}"
 )
-
-
-def _prompt_safe_literal(value: str) -> str:
-    """Strip Jinja delimiter characters from provider-controlled literals."""
-    return value.replace("{", "").replace("}", "").replace("%", "").replace("#", "")
 
 
 async def async_setup_entry(
@@ -59,7 +54,7 @@ class SpaceXAIConversationEntity(
 ):
     """SpaceXAI Grok conversation agent."""
 
-    _attr_supports_streaming = False
+    _attr_supports_streaming = True
     _attr_translation_key = "conversation"
 
     def __init__(self, entry: SpaceXAIConfigEntry, subentry: ConfigSubentry) -> None:
@@ -77,41 +72,17 @@ class SpaceXAIConversationEntity(
         return MATCH_ALL
 
     @override
-    async def async_added_to_hass(self) -> None:
-        """Register the conversation agent when the entity is added."""
-        await super().async_added_to_hass()
-        conversation.async_set_agent(self.hass, self.entry, self)
-
-    @override
-    async def async_will_remove_from_hass(self) -> None:
-        """Keep an entry-id agent alias when sibling conversation entities remain."""
-        conversation.async_unset_agent(self.hass, self.entry)
-        for platform in entity_platform.async_get_platforms(self.hass, DOMAIN):
-            for entity in platform.entities.values():
-                if (
-                    entity is not self
-                    and isinstance(entity, conversation.AbstractConversationAgent)
-                    and getattr(entity, "entry", None) is self.entry
-                ):
-                    conversation.async_set_agent(self.hass, self.entry, entity)
-                    break
-        await super().async_will_remove_from_hass()
-
-    @override
     async def _async_handle_message(
         self,
         user_input: conversation.ConversationInput,
         chat_log: conversation.ChatLog,
     ) -> conversation.ConversationResult:
         """Process a message using Home Assistant-owned chat state."""
-        base_prompt = (
+        user_prompt = (
             self.subentry.data.get(CONF_PROMPT) or llm.DEFAULT_INSTRUCTIONS_PROMPT
         )
-        identity = _RUNTIME_IDENTITY_PROMPT.format(
-            ha_version=HA_VERSION,
-            model=_prompt_safe_literal(cast(str, self.subentry.data[CONF_MODEL])),
-        )
-        prompt = f"{base_prompt}\n\n{identity}"
+        identity = _RUNTIME_IDENTITY_PROMPT.format(model=self.subentry.data[CONF_MODEL])
+        prompt = f"{user_prompt}\n\n{identity}"
 
         try:
             await chat_log.async_provide_llm_data(
@@ -123,20 +94,15 @@ class SpaceXAIConversationEntity(
         except conversation.ConverseError as err:
             return err.as_conversation_result()
 
-        availability_epochs = async_capture_availability_epochs(self.hass, self.entry)
-        availability_epoch = self._availability_epoch
-        subscription_epoch = self.entry.runtime_data.subscription_epoch
         try:
             await self._async_handle_chat_log(chat_log)
         except SpaceXAIError as err:
             self._raise_provider_home_assistant_error(err)
         except HomeAssistantError:
+            # Already carries a translated, actionable message.
             raise
         except Exception as err:  # noqa: BLE001
             self._raise_unexpected_provider_failure(err)
 
-        if self._mark_available(availability_epoch, inference_ok=True):
-            if subscription_epoch == self.entry.runtime_data.subscription_epoch:
-                async_delete_subscription_issue(self.hass, self.entry.entry_id)
-            self._restore_entitled_entry_agents(availability_epochs)
+        self._mark_available()
         return conversation.async_get_result_from_chat_log(user_input, chat_log)
