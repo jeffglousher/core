@@ -219,7 +219,7 @@ async def test_generate_data_missing_assistant_content(
             entity_id=ENTITY_ID,
             instructions="Generate test data",
         )
-    assert raised.value.translation_key == "response_not_found"
+    assert raised.value.translation_key == "malformed_provider_response"
 
 
 @pytest.mark.usefixtures("setup_credentials")
@@ -315,6 +315,58 @@ async def test_generate_image(
     image_data = mock_upload.call_args[0][1]
     assert image_data.file.getvalue() == b"fake-image"
     assert image_data.content_type == "image/jpeg"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_generate_image_with_attachments_edits(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+) -> None:
+    """Edit an image when the AI Task includes image attachments."""
+    with (
+        patch(
+            "homeassistant.components.media_source.async_resolve_media",
+            return_value=media_source.PlayMedia(
+                url="http://example.com/bike.jpg",
+                mime_type="image/jpeg",
+                path=Path("bike.jpg"),
+            ),
+        ),
+        patch("pathlib.Path.exists", return_value=True),
+        patch(
+            "pathlib.Path.stat",
+            return_value=SimpleNamespace(st_size=7),
+        ),
+        patch("pathlib.Path.read_bytes", return_value=b"payload"),
+        patch(
+            "homeassistant.components.spacexai.client.SpaceXAIClient.async_edit_image",
+            new_callable=AsyncMock,
+            return_value=GeneratedImage(
+                image_data=b"edited-image",
+                mime_type="image/jpeg",
+                model=DEFAULT_IMAGE_MODEL,
+                revised_prompt="a red bicycle at noon",
+            ),
+        ) as mock_edit,
+        patch(
+            "homeassistant.components.media_source.local_source.LocalSource.async_upload_media",
+            return_value="media-source://ai_task/image/edited.jpg",
+        ),
+    ):
+        result = await ai_task.async_generate_image(
+            hass,
+            task_name="Edit Image",
+            entity_id=ENTITY_ID,
+            instructions="make it noon",
+            attachments=[{"media_content_id": "media-source://media/bike.jpg"}],
+        )
+    assert result["revised_prompt"] == "a red bicycle at noon"
+    mock_edit.assert_awaited_once()
+    assert mock_edit.await_args.kwargs["prompt"] == "make it noon"
+    assert mock_edit.await_args.kwargs["model"] == DEFAULT_IMAGE_MODEL
+    assert mock_edit.await_args.kwargs["images"] == [
+        "data:image/jpeg;base64,cGF5bG9hZA=="
+    ]
 
 
 @pytest.mark.usefixtures("setup_credentials")

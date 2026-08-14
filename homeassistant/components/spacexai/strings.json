@@ -531,6 +531,7 @@
   },
   "issues": {
     "model_not_entitled": {
+      "description": "The configured model {model} is no longer available to this SpaceXAI account. Use the repair to pick another model.",
       "fix_flow": {
         "abort": {
           "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",

@@ -56,11 +56,14 @@ from .errors import (
     ErrorContext,
     InvalidModelToolRequestError,
     MalformedProviderResponseError,
+    ModelNotEntitledError,
     Operation,
     OutputLimitError,
     PermanentProviderError,
+    QuotaLimitedError,
     RateLimitedError,
     SpaceXAIError,
+    SubscriptionNotEntitledError,
     TransientProviderError,
 )
 
@@ -85,13 +88,32 @@ def _stream_failure(
         provider_code=code,
         request_id=request_id,
     )
-    if code == "rate_limit_exceeded":
+    normalized = (code or "").lower()
+    if normalized in ("insufficient_quota", "billing_hard_limit_reached"):
+        return QuotaLimitedError(
+            "Provider reported a quota or billing limitation", context=context
+        )
+    if normalized in ("model_not_found", "model_not_available"):
+        return ModelNotEntitledError(
+            "Configured model is not available to this account", context=context
+        )
+    if normalized in (
+        "subscription_required",
+        "subscription_not_entitled",
+        "not_entitled",
+        "insufficient_permissions",
+    ):
+        return SubscriptionNotEntitledError(
+            "This SpaceXAI account cannot use Grok this way",
+            context=context,
+        )
+    if normalized == "rate_limit_exceeded":
         return RateLimitedError("Provider rate limit reached", context=context)
-    if code == "max_output_tokens":
+    if normalized == "max_output_tokens":
         return OutputLimitError(
             "Provider reached the configured output limit", context=context
         )
-    if code in ("server_error", "vector_store_timeout"):
+    if normalized in ("server_error", "vector_store_timeout"):
         return TransientProviderError(
             "Provider reported a transient failure", context=context
         )
@@ -153,6 +175,7 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
     assistant_open = False
     assistant_has_tool_calls = False
     reasoning_native_set = False
+    last_summary_index: int | None = None
     announced_tool_calls: dict[str, tuple[str, str]] = {}
     call_ids: set[str] = set()
     terminal = False
@@ -174,6 +197,11 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
 
             if isinstance(event, ResponseOutputItemAddedEvent):
                 if isinstance(event.item, ResponseFunctionToolCall):
+                    if announced_tool_calls or assistant_has_tool_calls:
+                        raise InvalidModelToolRequestError(
+                            "Provider emitted multiple tool calls in one response",
+                            context=ErrorContext(operation=Operation.TOOL, model=model),
+                        )
                     if not assistant_open:
                         yield {"role": "assistant"}
                         assistant_open = True
@@ -279,9 +307,13 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
                 continue
 
             if isinstance(event, ResponseReasoningSummaryTextDeltaEvent):
-                if not assistant_open:
+                if not assistant_open or (
+                    last_summary_index is not None
+                    and event.summary_index != last_summary_index
+                ):
                     yield {"role": "assistant"}
                     assistant_open = True
+                last_summary_index = event.summary_index
                 if event.delta:
                     yield {"thinking_content": event.delta}
                 continue
@@ -431,5 +463,10 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
         if not terminal:
             raise MalformedProviderResponseError(
                 "Provider stream ended without a terminal event",
+                context=ErrorContext(operation=Operation.RESPONSE, model=model),
+            )
+        if not assistant_open and not assistant_has_tool_calls:
+            raise MalformedProviderResponseError(
+                "Provider completed without response content",
                 context=ErrorContext(operation=Operation.RESPONSE, model=model),
             )

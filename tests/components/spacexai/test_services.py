@@ -4,7 +4,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from homeassistant.components.spacexai.client import GeneratedVideo
+from homeassistant.components.spacexai.client import (
+    GeneratedVideo,
+    ModelInfo,
+    ProviderSnapshot,
+)
 from homeassistant.components.spacexai.const import DEFAULT_VIDEO_MODEL, DOMAIN
 from homeassistant.components.spacexai.errors import (
     ErrorContext,
@@ -67,6 +71,36 @@ async def test_generate_video_rejects_unknown_entry(
             blocking=True,
             return_response=True,
         )
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_generate_video_rejects_non_entitled_model(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+) -> None:
+    """Reject video models that are not in the entitled catalog."""
+    entry = setup_integration
+    snapshot = entry.runtime_data.snapshot
+    entry.runtime_data.snapshot = ProviderSnapshot(
+        account=snapshot.account,
+        models=snapshot.models,
+        image_models=snapshot.image_models,
+        video_models=(ModelInfo(id=DEFAULT_VIDEO_MODEL, owner="xai"),),
+    )
+
+    with pytest.raises(ServiceValidationError) as raised:
+        await hass.services.async_call(
+            DOMAIN,
+            "generate_video",
+            {
+                "config_entry": entry.entry_id,
+                "prompt": "A bouncing red ball",
+                "model": "grok-imagine-video",
+            },
+            blocking=True,
+            return_response=True,
+        )
+    assert raised.value.translation_key == "model_not_entitled"
 
 
 @pytest.mark.usefixtures("setup_credentials")

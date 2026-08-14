@@ -11,6 +11,8 @@ import pytest
 from homeassistant import config_entries
 from homeassistant.components.application_credentials import (
     DOMAIN as APPLICATION_CREDENTIALS_DOMAIN,
+    ClientCredential,
+    async_import_client_credential,
 )
 from homeassistant.components.spacexai.client import (
     AccountInfo,
@@ -69,15 +71,18 @@ from homeassistant.components.spacexai.const import (
     DEFAULT_X_SEARCH,
     DEFAULT_X_SEARCH_VIDEO_UNDERSTANDING,
     DOMAIN,
+    GROK_CLI_OAUTH_CLIENT_ID,
     OAUTH_SCOPES,
     TOKEN_URL,
 )
 from homeassistant.components.spacexai.errors import (
+    AccountMismatchError,
     AuthenticationRejectedError,
     ConnectionFailureError,
     ErrorContext,
     MalformedProviderResponseError,
     ModelNotEntitledError,
+    NoConversationModelsError,
     Operation,
     PermanentProviderError,
     QuotaLimitedError,
@@ -505,6 +510,22 @@ async def test_duplicate_account(
             "unknown",
             id="unexpected-classified",
         ),
+        pytest.param(
+            AccountMismatchError(
+                "wrong account",
+                context=ErrorContext(operation=Operation.ACCOUNT),
+            ),
+            "account_mismatch",
+            id="account-mismatch",
+        ),
+        pytest.param(
+            NoConversationModelsError(
+                "no models",
+                context=ErrorContext(operation=Operation.MODELS),
+            ),
+            "no_conversation_models",
+            id="no-conversation-models",
+        ),
     ],
 )
 @pytest.mark.usefixtures(
@@ -731,6 +752,26 @@ async def test_subentry_add_and_reconfigure(
 
 
 @pytest.mark.usefixtures("setup_credentials")
+async def test_conversation_subentry_catalog_refresh_aborts(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+) -> None:
+    """Abort conversation setup when a later catalog refresh has no chat models."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    mock_validate.side_effect = NoConversationModelsError(
+        "no models",
+        context=ErrorContext(operation=Operation.MODELS),
+    )
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "conversation"),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "no_conversation_models"
+
+
+@pytest.mark.usefixtures("setup_credentials")
 async def test_conversation_subentry_requires_allow_control_with_provider_tools(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
@@ -899,6 +940,51 @@ async def test_missing_configuration(hass: HomeAssistant) -> None:
         result = await _start_flow(hass)
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "missing_configuration"
+
+
+@pytest.mark.usefixtures("current_request_with_host", "mock_setup_entry")
+async def test_grok_cli_skips_auth_menu(hass: HomeAssistant) -> None:
+    """Skip the auth menu when Application Credentials are the Grok CLI client."""
+    assert await async_setup_component(hass, APPLICATION_CREDENTIALS_DOMAIN, {})
+    await async_import_client_credential(
+        hass,
+        DOMAIN,
+        ClientCredential(GROK_CLI_OAUTH_CLIENT_ID, ""),
+        DOMAIN,
+    )
+
+    async def _poll(*args: object, **kwargs: object) -> dict[str, object]:
+        await asyncio.sleep(0.05)
+        return {
+            "access_token": ACCESS_TOKEN,
+            "refresh_token": "refresh-token",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        }
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_request_device_authorization",
+            new_callable=AsyncMock,
+            return_value=DeviceAuthorization(
+                device_code="device-code-value",
+                user_code="ABCD-1234",
+                verification_uri="https://accounts.x.ai/oauth2/device",
+                verification_uri_complete=(
+                    "https://accounts.x.ai/oauth2/device?user_code=ABCD-1234"
+                ),
+                expires_in=1800,
+                interval=5,
+            ),
+        ),
+        patch(
+            "homeassistant.components.spacexai.config_flow.async_poll_device_token",
+            new=_poll,
+        ),
+    ):
+        result = await _start_flow(hass)
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    assert result["progress_action"] == "wait_for_device"
 
 
 @pytest.mark.usefixtures("setup_credentials", "mock_setup_entry")

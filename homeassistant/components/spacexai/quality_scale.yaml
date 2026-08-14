@@ -21,7 +21,7 @@ rules:
     comment: Integration does not provide triggers.
   entity-event-setup:
     status: exempt
-    comment: Conversation entities do not subscribe to events.
+    comment: Conversation, AI Task, STT, and TTS entities do not subscribe to events.
   entity-unique-id: done
   has-entity-name: done
   runtime-data: done

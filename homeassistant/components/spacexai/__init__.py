@@ -187,6 +187,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
     )
     try:
         snapshot = await client.async_validate(expected_subject=entry.unique_id)
+        if snapshot.account.subject != entry.unique_id:
+            raise AccountMismatchError(
+                "Authenticated account does not match this config entry",
+                context=ErrorContext(operation=Operation.ACCOUNT),
+            )
     except AccountMismatchError as err:
         raise ConfigEntryAuthFailed(
             translation_domain=DOMAIN,
@@ -338,6 +343,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) ->
 async def async_remove_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> None:
     """Revoke the OAuth refresh token when an entry is removed."""
     async_delete_subscription_issue(hass, entry.entry_id)
+    for subentry in entry.subentries.values():
+        async_delete_model_not_entitled_issue(hass, subentry.subentry_id)
     async_clear_orphaned_model_repairs(hass, entry, include_current=True)
 
     token = entry.data.get("token")

@@ -39,7 +39,6 @@ from .const import (
     IMAGES_URL,
     MAX_IMAGE_BYTES,
     MAX_IMAGE_COUNT,
-    RESPONSE_TIMEOUT,
     REVOCATION_URL,
     STT_TIMEOUT_SECONDS,
     STT_URL,
@@ -204,9 +203,15 @@ class ProviderSnapshot:
             return False
         if any(model in item.selectable_ids for item in self.models):
             return True
-        if model == DEFAULT_MODEL:
-            return True
-        return model.startswith("grok-") and not model.startswith("grok-imagine")
+        if not self.models:
+            return model == DEFAULT_MODEL or (
+                model.startswith("grok-") and not model.startswith("grok-imagine")
+            )
+        return (
+            model.startswith("grok-")
+            and not model.startswith("grok-imagine")
+            and model != DEFAULT_MODEL
+        )
 
     def has_image_model(self, model: str) -> bool:
         """Return whether the account can use an image model."""
@@ -368,12 +373,11 @@ class SpaceXAIClient:
             "input": input,
             "tools": list(tools),
             "max_output_tokens": max_output_tokens,
-            "parallel_tool_calls": True,
+            "parallel_tool_calls": False,
             "prompt_cache_key": prompt_cache_key,
             "store": store,
             "include": include_values,
             "stream": True,
-            "timeout": float(RESPONSE_TIMEOUT),
         }
         if temperature is not None:
             create_args["temperature"] = temperature
@@ -816,9 +820,9 @@ class SpaceXAIClient:
         client = await self._async_get_sdk(token)
         try:
             page = await client.models.list(timeout=30.0)
+            return [model async for model in page]
         except (openai.OpenAIError, ValidationError) as err:
             raise self.translate_sdk_error(err, context) from err
-        return list(page.data)
 
     async def _async_get_sdk(self, token: str) -> openai.AsyncOpenAI:
         """Return the shared SDK client, locking only construction/mutation."""
@@ -1128,7 +1132,7 @@ def _detect_image_mime_type(image_data: bytes, first: Mapping[str, Any]) -> str:
         value = first.get(key)
         if isinstance(value, str) and value:
             return value
-    return "application/octet-stream"
+    return "image/jpeg"
 
 
 def _parse_generated_image(

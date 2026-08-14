@@ -62,6 +62,9 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
         chat_log: conversation.ChatLog,
     ) -> ai_task.GenDataTaskResult:
         """Handle a generate data task."""
+        availability_epoch, availability_epochs, subscription_epoch = (
+            self._capture_availability_context()
+        )
         try:
             await self._async_handle_chat_log(
                 chat_log,
@@ -77,7 +80,9 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
         except Exception as err:  # noqa: BLE001
             self._raise_unexpected_provider_failure(err)
 
-        self._mark_available()
+        self._recover_after_success(
+            availability_epoch, availability_epochs, subscription_epoch
+        )
 
         if not isinstance(chat_log.content[-1], conversation.AssistantContent):
             raise HomeAssistantError(
@@ -143,6 +148,9 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
             for attachment in image_attachments[:3]
         ]
 
+        availability_epoch, availability_epochs, subscription_epoch = (
+            self._capture_availability_context()
+        )
         try:
             if reference_uris:
                 generated = await self.entry.runtime_data.client.async_edit_image(
@@ -165,7 +173,9 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
         except Exception as err:  # noqa: BLE001
             self._raise_unexpected_provider_failure(err)
 
-        self._mark_available()
+        self._recover_after_success(
+            availability_epoch, availability_epochs, subscription_epoch
+        )
         chat_log.async_add_assistant_content_without_tools(
             conversation.AssistantContent(
                 agent_id=self.entity_id,

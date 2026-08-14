@@ -634,6 +634,61 @@ class SpaceXAIConfigFlow(AbstractOAuth2FlowHandler, domain=DOMAIN):
         }
 
 
+async def _async_refresh_loaded_snapshot(
+    hass: HomeAssistant, entry: SpaceXAIConfigEntry
+) -> ProviderSnapshot | str:
+    """Refresh the cached catalog. Return the snapshot or an abort reason."""
+    availability_epochs = async_capture_availability_epochs(hass, entry)
+    subscription_epoch = entry.runtime_data.subscription_epoch
+    catalog_epoch = async_begin_catalog_refresh(entry)
+    try:
+        snapshot = await entry.runtime_data.client.async_validate(
+            expected_subject=entry.unique_id
+        )
+    except (
+        AccountMismatchError,
+        AuthenticationRejectedError,
+        ReauthenticationRequiredError,
+        RefreshRejectedError,
+    ):
+        if catalog_epoch == entry.runtime_data.catalog_epoch:
+            entry.async_start_reauth(hass)
+        return "oauth_unauthorized"
+    except SubscriptionNotEntitledError:
+        if catalog_epoch == entry.runtime_data.catalog_epoch:
+            async_mark_subscription_not_entitled(hass, entry)
+        return "subscription_not_entitled"
+    except NoConversationModelsError:
+        return "no_conversation_models"
+    except QuotaLimitedError:
+        return "quota_limited"
+    except ModelNotEntitledError:
+        return "model_not_entitled"
+    except (
+        ConnectionFailureError,
+        RateLimitedError,
+        RequestTimeoutError,
+        TransientProviderError,
+    ):
+        return "cannot_connect"
+    except MalformedProviderResponseError:
+        return "malformed_provider_response"
+    except SpaceXAIError:
+        return "unknown"
+
+    async_reconcile_snapshot(
+        hass,
+        entry,
+        snapshot,
+        availability_epochs=availability_epochs,
+        subscription_epoch=subscription_epoch,
+        catalog_epoch=catalog_epoch,
+    )
+    if catalog_epoch != entry.runtime_data.catalog_epoch:
+        return entry.runtime_data.snapshot
+    return snapshot
+
+
 class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
     """Add or reconfigure a SpaceXAI conversation entity."""
 
@@ -663,7 +718,10 @@ class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
         if entry.state is not ConfigEntryState.LOADED:
             return self.async_abort(reason="entry_not_loaded")
 
-        snapshot = entry.runtime_data.snapshot
+        refreshed = await _async_refresh_loaded_snapshot(self.hass, entry)
+        if isinstance(refreshed, str):
+            return self.async_abort(reason=refreshed)
+        snapshot = refreshed
         errors: dict[str, str] = {}
         if user_input is None:
             options = (
@@ -760,7 +818,10 @@ class SpaceXAIAITaskSubentryFlow(ConfigSubentryFlow):
         if entry.state is not ConfigEntryState.LOADED:
             return self.async_abort(reason="entry_not_loaded")
 
-        snapshot = entry.runtime_data.snapshot
+        refreshed = await _async_refresh_loaded_snapshot(self.hass, entry)
+        if isinstance(refreshed, str):
+            return self.async_abort(reason=refreshed)
+        snapshot = refreshed
         errors: dict[str, str] = {}
         if user_input is None:
             options = (
@@ -1301,6 +1362,54 @@ def _conversation_schema(
             BooleanSelector()
         )
     return vol.Schema(schema)
+
+
+def _repair_conversation_schema(
+    snapshot: ProviderSnapshot,
+    llm_apis: list[SelectOptionDict],
+    suggested: Mapping[str, Any],
+) -> vol.Schema:
+    """Build the model-replacement repair form from the current catalog."""
+    model_ids = _discovered_model_ids(snapshot)
+    current = suggested.get(CONF_MODEL)
+    default_model = (
+        current
+        if isinstance(current, str) and current in model_ids
+        else (model_ids[0] if model_ids else DEFAULT_MODEL)
+    )
+    suggested_max_tokens = int(
+        suggested.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
+    )
+    raw_apis = suggested.get(CONF_LLM_HASS_API, [])
+    if isinstance(raw_apis, str):
+        raw_apis = [raw_apis]
+    available_api_ids = {option["value"] for option in llm_apis}
+    suggested_apis = [
+        api_id
+        for api_id in (raw_apis if isinstance(raw_apis, list) else [])
+        if api_id in available_api_ids
+    ]
+    return vol.Schema(
+        {
+            vol.Required(CONF_MODEL, default=default_model): SelectSelector(
+                SelectSelectorConfig(
+                    options=[
+                        SelectOptionDict(value=model_id, label=model_id)
+                        for model_id in model_ids
+                    ]
+                )
+            ),
+            vol.Optional(
+                CONF_LLM_HASS_API,
+                default=suggested_apis,
+            ): SelectSelector(SelectSelectorConfig(options=llm_apis, multiple=True)),
+            vol.Optional(
+                CONF_PROMPT,
+                description={"suggested_value": suggested.get(CONF_PROMPT)},
+            ): TemplateSelector(),
+            **_max_output_tokens_schema(suggested_max_tokens),
+        }
+    )
 
 
 def _ai_task_schema(
