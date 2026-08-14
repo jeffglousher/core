@@ -198,17 +198,20 @@ class ProviderSnapshot:
     def has_model(self, model: str) -> bool:
         """Return whether a chat model may be requested.
 
-        grok-4.6 is always allowed. Catalog hits and other grok-* chat ids are
-        allowed; Imagine ids are not. Unknown grok-* ids are checked at request
-        time.
+        Catalog hits are entitled. With an empty CLI catalog, grok-* chat ids
+        including grok-4.6 are allowed. Once the catalog is present, grok-4.6
+        must be listed; other grok-* chat ids stay requestable and are checked
+        at call time. Imagine ids are never chat models.
         """
-        if not model:
+        if not model or model.startswith("grok-imagine"):
             return False
-        if model == DEFAULT_MODEL:
-            return True
         if any(model in item.selectable_ids for item in self.models):
             return True
-        return model.startswith("grok-") and not model.startswith("grok-imagine")
+        if not model.startswith("grok-"):
+            return False
+        if not self.models:
+            return True
+        return model != DEFAULT_MODEL
 
     def has_image_model(self, model: str) -> bool:
         """Return whether an image model may be requested."""
@@ -244,7 +247,11 @@ class ProviderSnapshot:
     @property
     def selectable_chat_models(self) -> tuple[str, ...]:
         """Return chat model ids shown in the picker."""
-        return _picker_model_ids((DEFAULT_MODEL,), self.models)
+        if not self.models:
+            return (DEFAULT_MODEL,)
+        if any(DEFAULT_MODEL in item.selectable_ids for item in self.models):
+            return _picker_model_ids((DEFAULT_MODEL,), self.models)
+        return _catalog_model_ids(self.models)
 
     @property
     def selectable_image_models(self) -> tuple[str, ...]:

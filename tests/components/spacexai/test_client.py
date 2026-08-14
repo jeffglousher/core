@@ -250,15 +250,22 @@ def test_documented_imagine_ids_stay_requestable() -> None:
     assert "grok-imagine-video-1.5-preview" not in snapshot.selectable_video_models
 
 
-def test_recommended_chat_model_stays_entitled() -> None:
-    """grok-4.6 remains requestable even when the CLI catalog omits it."""
-    snapshot = ProviderSnapshot(
+def test_recommended_chat_model_follows_cli_catalog() -> None:
+    """Offer grok-4.6 when the CLI catalog is empty or lists it, not otherwise."""
+    empty = ProviderSnapshot(
+        account=AccountInfo("sub", "Name", None),
+        models=(),
+    )
+    assert empty.has_model("grok-4.6")
+    assert empty.selectable_chat_models == ("grok-4.6",)
+
+    listed = ProviderSnapshot(
         account=AccountInfo("sub", "Name", None),
         models=(ModelInfo(id="grok-4.3", owner="xai"),),
     )
-    assert snapshot.has_model("grok-4.6")
-    assert snapshot.selectable_chat_models[0] == "grok-4.6"
-    assert "grok-4.3" in snapshot.selectable_chat_models
+    assert not listed.has_model("grok-4.6")
+    assert listed.has_model("grok-4.3")
+    assert listed.selectable_chat_models == ("grok-4.3",)
 
 
 async def test_model_discovery_iterates_every_page(hass: HomeAssistant) -> None:

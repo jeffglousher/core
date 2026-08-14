@@ -970,8 +970,10 @@ def _discovered_model_ids(snapshot: ProviderSnapshot) -> list[str]:
     return list(snapshot.selectable_chat_models)
 
 
-def _default_chat_model(_snapshot: ProviderSnapshot) -> str:
-    """Return the recommended chat model."""
+def _default_chat_model(snapshot: ProviderSnapshot) -> str:
+    """Return grok-4.6 when the CLI catalog allows it, else the first listed id."""
+    if snapshot.selectable_chat_models:
+        return snapshot.selectable_chat_models[0]
     return DEFAULT_MODEL
 
 
@@ -987,7 +989,7 @@ def _model_selector_defaults(
     custom_model: str | None = None
     if suggested is not None:
         if isinstance(suggested_model := suggested.get(CONF_MODEL), str):
-            if suggested_model in discovered_set or suggested_model == DEFAULT_MODEL:
+            if suggested_model in discovered_set:
                 default_model = suggested_model
             elif suggested_model:
                 default_model = MODEL_CUSTOM_OPTION
