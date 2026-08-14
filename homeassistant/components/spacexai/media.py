@@ -90,7 +90,7 @@ async def async_persist_remote_media(
                 ";", maxsplit=1
             )[0].strip()
             payload = await _read_limited(response.content, MAX_VIDEO_BYTES, url)
-    except TimeoutError, ClientError as err:
+    except (TimeoutError, ClientError) as err:
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="video_persist_failed",
