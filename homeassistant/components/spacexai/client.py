@@ -27,7 +27,9 @@ from homeassistant.helpers.httpx_client import get_async_client
 from .const import (
     API_BASE_URL,
     CREATE_TIMEOUT,
+    GROK_CLI_REQUEST_HEADERS,
     HTTP_TIMEOUT_SECONDS,
+    RESPONSE_TIMEOUT,
     REVOCATION_URL,
     USERINFO_URL,
 )
@@ -38,7 +40,6 @@ from .errors import (
     ErrorContext,
     MalformedProviderResponseError,
     ModelNotEntitledError,
-    NoConversationModelsError,
     Operation,
     PermanentProviderError,
     QuotaLimitedError,
@@ -249,11 +250,6 @@ class SpaceXAIClient:
             raise self.translate_sdk_error(err, context) from err
 
         models.sort(key=lambda model: model.id)
-        if not models:
-            raise NoConversationModelsError(
-                "The account has no available conversation models",
-                context=ErrorContext(operation=Operation.MODELS),
-            )
         return tuple(models)
 
     async def async_validate(
@@ -266,7 +262,18 @@ class SpaceXAIClient:
                 "OAuth account does not match the config entry",
                 context=ErrorContext(operation=Operation.ACCOUNT),
             )
-        models = await self.async_get_models()
+        try:
+            models = await self.async_get_models()
+        except (
+            PermanentProviderError,
+            QuotaLimitedError,
+            RateLimitedError,
+            RequestTimeoutError,
+            TransientProviderError,
+            SubscriptionNotEntitledError,
+            MalformedProviderResponseError,
+        ):
+            models = ()
         return ProviderSnapshot(account=account, models=models)
 
     async def async_stream_response(
@@ -362,6 +369,7 @@ class SpaceXAIClient:
             self._sdk_client = openai.AsyncOpenAI(
                 api_key=access_token,
                 base_url=API_BASE_URL,
+                default_headers=GROK_CLI_REQUEST_HEADERS,
                 http_client=get_async_client(self._hass),
             )
             await self._hass.async_add_executor_job(self._sdk_client.platform_headers)
@@ -421,6 +429,18 @@ class SpaceXAIClient:
             )
             return error_type("Provider rejected authentication", context=context)
         if status == 402:
+            message = (_provider_error_message(body) or "").lower()
+            code = (context.provider_code or "").lower()
+            if (
+                "personal-team-blocked" in code
+                or "spending-limit" in code
+                or "subscription" in message
+                or "upgrade" in message
+            ):
+                return SubscriptionNotEntitledError(
+                    "Provider rejected the subscription OAuth surface",
+                    context=context,
+                )
             return QuotaLimitedError(
                 "Provider reported a quota or billing limitation", context=context
             )
@@ -431,11 +451,13 @@ class SpaceXAIClient:
                 and not _is_permission_denial(context.provider_code, body)
             ):
                 return SubscriptionNotEntitledError(
-                    "Account is not entitled for subscription-backed Grok access",
+                    "This SpaceXAI account cannot use Grok this way",
                     context=context,
                 )
+        if status == 426:
             return PermanentProviderError(
-                "Provider denied permission for the operation", context=context
+                "Provider rejected the OAuth client identity",
+                context=context,
             )
         if status == 404 and context.model is not None:
             return ModelNotEntitledError(
@@ -546,11 +568,22 @@ def _model_aliases(model: OpenAIModel) -> tuple[str, ...]:
 
 def _is_conversation_model(model: OpenAIModel) -> bool:
     """Return whether xAI model metadata identifies text output."""
+    if model.id.startswith("grok-imagine-"):
+        return False
     extra = model.model_extra or {}
     output_modalities = extra.get("output_modalities")
     if isinstance(output_modalities, list):
         return "text" in output_modalities
-    return isinstance(extra.get("completion_text_token_price"), int)
+    if isinstance(extra.get("completion_text_token_price"), int):
+        return True
+    return _is_sparse_chat_model_id(model.id)
+
+
+def _is_sparse_chat_model_id(model_id: str) -> bool:
+    """Return whether a model id looks like a Grok chat model without metadata."""
+    if not model_id.startswith("grok-"):
+        return False
+    return not model_id.startswith("grok-imagine-")
 
 
 async def _safe_json(response: Any) -> object | None:

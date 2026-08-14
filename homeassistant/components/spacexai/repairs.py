@@ -57,7 +57,7 @@ class ModelNotEntitledRepairFlow(RepairsFlow):
     async def async_step_replace_model(
         self, user_input: dict[str, Any] | None = None
     ) -> RepairsFlowResult:
-        """Select a currently entitled replacement model."""
+        """Select a replacement model this account can use."""
         if self.entry.state is not ConfigEntryState.LOADED:
             return self.async_abort(reason="entry_not_loaded")
 

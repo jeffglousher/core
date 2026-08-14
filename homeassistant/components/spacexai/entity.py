@@ -995,7 +995,7 @@ class SpaceXAIBaseLLMEntity(Entity):
     def _mark_available(
         self, epoch: int | None = None, *, inference_ok: bool = False
     ) -> bool:
-        """Recover only when the configured model is still entitled."""
+        """Recover only when the configured model is still available."""
         if epoch is not None and epoch != self._availability_epoch:
             return False
         if not self.entry.runtime_data.snapshot.has_model(self._model):

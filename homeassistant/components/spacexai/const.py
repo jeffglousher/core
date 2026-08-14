@@ -9,7 +9,16 @@ AUTHORIZE_URL = "https://auth.x.ai/oauth2/authorize"
 TOKEN_URL = "https://auth.x.ai/oauth2/token"
 USERINFO_URL = "https://auth.x.ai/oauth2/userinfo"
 REVOCATION_URL = "https://auth.x.ai/oauth2/revoke"
-API_BASE_URL = "https://api.x.ai/v1"
+DEVICE_CODE_URL = "https://auth.x.ai/oauth2/device/code"
+API_BASE_URL = "https://cli-chat-proxy.grok.com/v1"
+GROK_CLI_OAUTH_CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828"
+GROK_CLI_REQUEST_HEADERS = {
+    "Accept": "application/json",
+    "User-Agent": "xai-grok-cli",
+    "x-xai-token-auth": "xai-grok-cli",
+    "x-grok-client-identifier": "grok-shell",
+    "x-grok-client-version": "0.2.103",
+}
 
 OAUTH_SCOPES = (
     "openid",
@@ -18,6 +27,8 @@ OAUTH_SCOPES = (
     "offline_access",
     "grok-cli:access",
     "api:access",
+    "conversations:read",
+    "conversations:write",
 )
 
 CONF_MAX_OUTPUT_TOKENS = "max_output_tokens"
@@ -41,6 +52,7 @@ MAX_TOOL_ITERATIONS = 10
 CREATE_TIMEOUT = 30
 RESPONSE_TIMEOUT = 300
 CONVERSE_TIMEOUT = 600
+DEVICE_CODE_MAX_POLL_SECONDS = 900
 PROVIDER_WEB_SEARCH_TOOL = "web_search_call"
 PROVIDER_X_SEARCH_TOOL = "x_search_call"
 PROVIDER_CODE_INTERPRETER_TOOL = "code_interpreter"

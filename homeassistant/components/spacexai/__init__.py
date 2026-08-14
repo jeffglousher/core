@@ -255,7 +255,7 @@ def async_mark_subscription_not_entitled(
     entry.runtime_data.subscription_epoch += 1
     async_create_subscription_issue(hass, entry)
     err = SubscriptionNotEntitledError(
-        "Account is not entitled for subscription-backed Grok access",
+        "This SpaceXAI account cannot use Grok this way",
         context=ErrorContext(operation=operation),
     )
     for platform in entity_platform.async_get_platforms(hass, DOMAIN):
