@@ -87,6 +87,7 @@ from .const import (
     CONF_X_SEARCH,
     CONVERSE_TIMEOUT,
     DEFAULT_CODE_INTERPRETER,
+    DEFAULT_MODEL_PLACEHOLDER,
     DEFAULT_WEB_SEARCH,
     DEFAULT_X_SEARCH,
     DOMAIN,
@@ -764,22 +765,25 @@ class SpaceXAIBaseLLMEntity(Entity):
         self._account_wide_unavailable = False
         self._model_entitlement_blocked = False
         self._availability_epoch = 0
-        model = cast(str, subentry.data[CONF_MODEL])
-        self._attr_available = entry.runtime_data.snapshot.has_model(model)
+        configured_model = CONF_MODEL in subentry.data
+        model = cast(str, subentry.data.get(CONF_MODEL, DEFAULT_MODEL_PLACEHOLDER))
+        self._attr_available = (
+            entry.runtime_data.snapshot.has_model(model) if configured_model else True
+        )
         self._attr_unique_id = subentry.subentry_id
         self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, subentry.subentry_id)},
             name=subentry.title,
             manufacturer="SpaceXAI",
             model=model,
-            model_id=model,
+            model_id=model if configured_model else None,
             entry_type=dr.DeviceEntryType.SERVICE,
         )
 
     @property
     def _model(self) -> str:
-        """Return the configured model."""
-        return cast(str, self.subentry.data[CONF_MODEL])
+        """Return the configured model, or the brand name for speech entities."""
+        return cast(str, self.subentry.data.get(CONF_MODEL, DEFAULT_MODEL_PLACEHOLDER))
 
     @property
     def _max_output_tokens(self) -> int:

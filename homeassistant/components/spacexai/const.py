@@ -13,6 +13,8 @@ DEVICE_CODE_URL = "https://auth.x.ai/oauth2/device/code"
 API_BASE_URL = "https://cli-chat-proxy.grok.com/v1"
 DEVELOPER_API_BASE_URL = "https://api.x.ai/v1"
 IMAGES_URL = f"{DEVELOPER_API_BASE_URL}/images/generations"
+STT_URL = f"{DEVELOPER_API_BASE_URL}/stt"
+TTS_URL = f"{DEVELOPER_API_BASE_URL}/tts"
 GROK_CLI_OAUTH_CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828"
 GROK_CLI_REQUEST_HEADERS = {
     "Accept": "application/json",
@@ -38,12 +40,17 @@ CONF_WEB_SEARCH = "web_search"
 CONF_X_SEARCH = "x_search"
 CONF_CODE_INTERPRETER = "code_interpreter"
 CONF_IMAGE_MODEL = "image_model"
+CONF_DEFAULT_ASSIST = "default_assist"
+CONF_VOICE = "voice"
+CONF_TTS_SPEED = "tts_speed"
 
 ISSUE_MODEL_NOT_ENTITLED = "model_not_entitled"
 ISSUE_SUBSCRIPTION_NOT_ENTITLED = "subscription_not_entitled"
 
 DEFAULT_CONVERSATION_NAME = "Grok"
 DEFAULT_AI_TASK_NAME = "Grok AI Task"
+DEFAULT_STT_NAME = "Grok STT"
+DEFAULT_TTS_NAME = "Grok TTS"
 DEFAULT_MAX_OUTPUT_TOKENS = 2048
 DEFAULT_MODEL = "grok-4.5"
 DEFAULT_MODEL_PLACEHOLDER = "Grok"
@@ -51,13 +58,19 @@ DEFAULT_WEB_SEARCH = False
 DEFAULT_X_SEARCH = False
 DEFAULT_CODE_INTERPRETER = False
 DEFAULT_IMAGE_MODEL = "grok-imagine-image-quality"
+DEFAULT_DEFAULT_ASSIST = True
+DEFAULT_VOICE = "eve"
+DEFAULT_TTS_SPEED = 1.0
 HTTP_TIMEOUT_SECONDS = 30
 IMAGE_TIMEOUT_SECONDS = 120
+STT_TIMEOUT_SECONDS = 120
+TTS_TIMEOUT_SECONDS = 60
 MAX_TOOL_ITERATIONS = 10
 CREATE_TIMEOUT = 30
 RESPONSE_TIMEOUT = 300
 CONVERSE_TIMEOUT = 600
 DEVICE_CODE_MAX_POLL_SECONDS = 900
+MAX_STT_AUDIO_BYTES = 25 * 1024 * 1024
 PROVIDER_WEB_SEARCH_TOOL = "web_search_call"
 PROVIDER_X_SEARCH_TOOL = "x_search_call"
 PROVIDER_CODE_INTERPRETER_TOOL = "code_interpreter"
@@ -65,4 +78,81 @@ PROVIDER_SEARCH_TOOLS = frozenset({PROVIDER_WEB_SEARCH_TOOL, PROVIDER_X_SEARCH_T
 IMAGE_MODELS = (
     "grok-imagine-image-quality",
     "grok-imagine-image",
+)
+TTS_VOICES = (
+    ("eve", "Eve"),
+    ("ara", "Ara"),
+    ("rex", "Rex"),
+    ("sal", "Sal"),
+    ("leo", "Leo"),
+    ("luna", "Luna"),
+    ("orion", "Orion"),
+    ("atlas", "Atlas"),
+    ("iris", "Iris"),
+    ("helix", "Helix"),
+    ("carina", "Carina"),
+    ("altair", "Altair"),
+    ("zenith", "Zenith"),
+    ("perseus", "Perseus"),
+    ("helios", "Helios"),
+    ("lux", "Lux"),
+    ("kepler", "Kepler"),
+    ("rigel", "Rigel"),
+    ("cosmo", "Cosmo"),
+    ("celeste", "Celeste"),
+    ("ursa", "Ursa"),
+    ("sirius", "Sirius"),
+    ("lumen", "Lumen"),
+    ("castor", "Castor"),
+    ("naksh", "Naksh"),
+    ("zagan", "Zagan"),
+)
+STT_LANGUAGES = (
+    "ar-SA",
+    "cs-CZ",
+    "da-DK",
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "fa-IR",
+    "fil-PH",
+    "fr-FR",
+    "hi-IN",
+    "id-ID",
+    "it-IT",
+    "ja-JP",
+    "ko-KR",
+    "mk-MK",
+    "ms-MY",
+    "nl-NL",
+    "pl-PL",
+    "pt-PT",
+    "ro-RO",
+    "ru-RU",
+    "sv-SE",
+    "th-TH",
+    "tr-TR",
+    "vi-VN",
+)
+TTS_LANGUAGES = (
+    "en",
+    "ar-EG",
+    "ar-SA",
+    "ar-AE",
+    "bn",
+    "zh",
+    "fr",
+    "de",
+    "hi",
+    "id",
+    "it",
+    "ja",
+    "ko",
+    "pt-BR",
+    "pt-PT",
+    "ru",
+    "es-MX",
+    "es-ES",
+    "tr",
+    "vi",
 )

@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Protocol, cast
 
-from aiohttp import ClientError, ClientTimeout, ContentTypeError
+from aiohttp import ClientError, ClientTimeout, ContentTypeError, FormData
 import openai
 from openai import AsyncStream
 from openai.types import Model as OpenAIModel
@@ -34,6 +34,10 @@ from .const import (
     IMAGES_URL,
     RESPONSE_TIMEOUT,
     REVOCATION_URL,
+    STT_TIMEOUT_SECONDS,
+    STT_URL,
+    TTS_TIMEOUT_SECONDS,
+    TTS_URL,
     USERINFO_URL,
 )
 from .errors import (
@@ -57,6 +61,8 @@ from .errors import (
 
 HTTP_TIMEOUT = ClientTimeout(total=HTTP_TIMEOUT_SECONDS)
 IMAGE_TIMEOUT = ClientTimeout(total=IMAGE_TIMEOUT_SECONDS)
+STT_TIMEOUT = ClientTimeout(total=STT_TIMEOUT_SECONDS)
+TTS_TIMEOUT = ClientTimeout(total=TTS_TIMEOUT_SECONDS)
 
 
 @dataclass(frozen=True, slots=True)
@@ -386,6 +392,117 @@ class SpaceXAIClient:
             ) from err
 
         return _parse_generated_image(payload, model=model, context=context)
+
+    async def async_transcribe(
+        self,
+        *,
+        audio: bytes,
+        filename: str,
+        content_type: str,
+        language: str | None = None,
+    ) -> str:
+        """Transcribe audio with the SpaceXAI STT API."""
+        token = await self._token_provider.async_get_access_token()
+        context = ErrorContext(operation=Operation.STT)
+        session = async_get_clientsession(self._hass)
+        form = FormData()
+        if language:
+            form.add_field("language", language)
+            form.add_field("format", "true")
+        form.add_field(
+            "file",
+            audio,
+            filename=filename,
+            content_type=content_type,
+        )
+        try:
+            async with session.post(
+                STT_URL,
+                headers={"Authorization": f"Bearer {token}"},
+                data=form,
+                timeout=STT_TIMEOUT,
+            ) as response:
+                if response.status >= 400:
+                    body = await _safe_json(response)
+                    raise self._error_for_status(
+                        response.status,
+                        ErrorContext(
+                            operation=Operation.STT,
+                            status=response.status,
+                            provider_code=_provider_error_code(body),
+                        ),
+                        body=body,
+                    )
+                payload = await response.json()
+        except SpaceXAIError:
+            raise
+        except (ContentTypeError, TypeError, ValueError) as err:
+            raise MalformedProviderResponseError(
+                "STT endpoint returned invalid JSON", context=context
+            ) from err
+        except ClientError as err:
+            raise ConnectionFailureError(
+                "Could not connect to the STT endpoint", context=context
+            ) from err
+
+        if not isinstance(payload, Mapping):
+            raise MalformedProviderResponseError(
+                "STT endpoint returned a non-object response", context=context
+            )
+        text = payload.get("text")
+        if not isinstance(text, str) or not text:
+            raise MalformedProviderResponseError(
+                "STT endpoint omitted transcript text", context=context
+            )
+        return text
+
+    async def async_synthesize_speech(
+        self,
+        *,
+        text: str,
+        voice_id: str,
+        language: str,
+        speed: float = 1.0,
+        codec: str = "mp3",
+    ) -> bytes:
+        """Synthesize speech with the SpaceXAI TTS API."""
+        token = await self._token_provider.async_get_access_token()
+        context = ErrorContext(operation=Operation.TTS)
+        session = async_get_clientsession(self._hass)
+        try:
+            async with session.post(
+                TTS_URL,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "text": text,
+                    "voice_id": voice_id,
+                    "language": language,
+                    "speed": speed,
+                    "output_format": {"codec": codec},
+                },
+                timeout=TTS_TIMEOUT,
+            ) as response:
+                if response.status >= 400:
+                    body = await _safe_json(response)
+                    raise self._error_for_status(
+                        response.status,
+                        ErrorContext(
+                            operation=Operation.TTS,
+                            status=response.status,
+                            provider_code=_provider_error_code(body),
+                        ),
+                        body=body,
+                    )
+                return await response.read()
+        except SpaceXAIError:
+            raise
+        except ClientError as err:
+            raise ConnectionFailureError(
+                "Could not connect to the TTS endpoint", context=context
+            ) from err
 
     async def async_revoke(
         self,

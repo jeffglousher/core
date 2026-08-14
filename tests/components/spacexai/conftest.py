@@ -19,9 +19,13 @@ from homeassistant.components.spacexai.client import (
 from homeassistant.components.spacexai.const import (
     CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
+    CONF_TTS_SPEED,
+    CONF_VOICE,
     DEFAULT_IMAGE_MODEL,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
+    DEFAULT_TTS_SPEED,
+    DEFAULT_VOICE,
     DOMAIN,
 )
 from homeassistant.config_entries import ConfigSubentryData
@@ -91,6 +95,21 @@ def mock_config_entry(hass: HomeAssistant) -> MockConfigEntry:
                 },
                 subentry_type="ai_task_data",
                 title="Grok AI Task",
+                unique_id=None,
+            ),
+            ConfigSubentryData(
+                data={},
+                subentry_type="stt",
+                title="Grok STT",
+                unique_id=None,
+            ),
+            ConfigSubentryData(
+                data={
+                    CONF_VOICE: DEFAULT_VOICE,
+                    CONF_TTS_SPEED: DEFAULT_TTS_SPEED,
+                },
+                subentry_type="tts",
+                title="Grok TTS",
                 unique_id=None,
             ),
         ],
