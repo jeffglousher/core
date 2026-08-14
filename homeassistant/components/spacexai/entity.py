@@ -1,8 +1,11 @@
 """Shared SpaceXAI LLM entity helpers."""
 
 import asyncio
+import base64
 from collections.abc import AsyncGenerator, AsyncIterable, Callable, Iterable, Mapping
 import json
+from mimetypes import guess_type as guess_file_type
+from pathlib import Path
 import traceback
 from typing import Any, Literal, NoReturn, cast
 
@@ -55,6 +58,11 @@ from openai.types.responses.response_code_interpreter_tool_call_param import (
 from openai.types.responses.response_function_web_search_param import (
     ResponseFunctionWebSearchParam,
 )
+from openai.types.responses.response_input_file_param import ResponseInputFileParam
+from openai.types.responses.response_input_image_param import ResponseInputImageParam
+from openai.types.responses.response_input_message_content_list_param import (
+    ResponseInputMessageContentListParam,
+)
 from openai.types.responses.response_input_param import FunctionCallOutput
 from openai.types.responses.response_text_config_param import ResponseTextConfigParam
 from pydantic import ValidationError
@@ -64,7 +72,7 @@ from voluptuous_openapi import convert
 from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.const import CONF_MODEL
-from homeassistant.core import callback
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, entity_platform, llm
 from homeassistant.helpers.entity import Entity
@@ -692,6 +700,56 @@ async def _transform_stream(  # noqa: C901
         yield delta
 
 
+async def async_prepare_files_for_prompt(
+    hass: HomeAssistant, files: list[tuple[Path, str | None]]
+) -> ResponseInputMessageContentListParam:
+    """Encode local attachments for a multimodal user message."""
+
+    def append_files_to_content() -> ResponseInputMessageContentListParam:
+        content: ResponseInputMessageContentListParam = []
+
+        for file_path, mime_type in files:
+            if not file_path.exists():
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="attachment_not_found",
+                    translation_placeholders={"path": str(file_path)},
+                )
+
+            if mime_type is None:
+                mime_type = guess_file_type(file_path)[0]
+
+            if not mime_type or not mime_type.startswith(("image/", "application/pdf")):
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="attachment_unsupported_type",
+                    translation_placeholders={"path": str(file_path)},
+                )
+
+            base64_file = base64.b64encode(file_path.read_bytes()).decode("utf-8")
+
+            if mime_type.startswith("image/"):
+                content.append(
+                    ResponseInputImageParam(
+                        type="input_image",
+                        image_url=f"data:{mime_type};base64,{base64_file}",
+                        detail="auto",
+                    )
+                )
+            elif mime_type.startswith("application/pdf"):
+                content.append(
+                    ResponseInputFileParam(
+                        type="input_file",
+                        filename=str(file_path),
+                        file_data=f"data:{mime_type};base64,{base64_file}",
+                    )
+                )
+
+        return content
+
+    return await hass.async_add_executor_job(append_files_to_content)
+
+
 class SpaceXAIBaseLLMEntity(Entity):
     """Shared SpaceXAI LLM entity behavior."""
 
@@ -786,6 +844,26 @@ class SpaceXAIBaseLLMEntity(Entity):
                     "schema": _format_structured_output(structure, chat_log.llm_api),
                 }
             }
+
+        last_content = chat_log.content[-1]
+        if (
+            isinstance(last_content, conversation.UserContent)
+            and last_content.attachments
+        ):
+            files = await async_prepare_files_for_prompt(
+                self.hass,
+                [(a.path, a.mime_type) for a in last_content.attachments],
+            )
+            last_message = messages[-1]
+            assert (
+                last_message["type"] == "message"
+                and last_message["role"] == "user"
+                and isinstance(last_message["content"], str)
+            )
+            last_message["content"] = [
+                {"type": "input_text", "text": last_message["content"]},
+                *files,
+            ]
 
         try:
             async with asyncio.timeout(CONVERSE_TIMEOUT):

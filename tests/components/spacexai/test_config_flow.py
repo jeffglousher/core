@@ -23,10 +23,12 @@ from homeassistant.components.spacexai.client import (
 )
 from homeassistant.components.spacexai.const import (
     CONF_CODE_INTERPRETER,
+    CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
     DEFAULT_CODE_INTERPRETER,
+    DEFAULT_IMAGE_MODEL,
     DEFAULT_MAX_OUTPUT_TOKENS,
     DEFAULT_MODEL,
     DEFAULT_WEB_SEARCH,
@@ -196,6 +198,7 @@ async def test_full_flow(
     assert ai_task.data == {
         CONF_MODEL: CONVERSATION_DATA[CONF_MODEL],
         CONF_MAX_OUTPUT_TOKENS: CONVERSATION_DATA[CONF_MAX_OUTPUT_TOKENS],
+        CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
     }
     assert mock_validate.await_count == 2
 
@@ -1145,6 +1148,7 @@ async def test_ai_task_subentry_add(
         {
             CONF_MODEL: "grok-4.3",
             CONF_MAX_OUTPUT_TOKENS: 512,
+            CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -1190,12 +1194,14 @@ async def test_ai_task_subentry_reconfigure(
         {
             CONF_MODEL: "grok-4.3",
             CONF_MAX_OUTPUT_TOKENS: 1024,
+            CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
         },
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "reconfigure_successful"
     assert subentry.data[CONF_MODEL] == "grok-4.3"
     assert subentry.data[CONF_MAX_OUTPUT_TOKENS] == 1024
+    assert subentry.data[CONF_IMAGE_MODEL] == DEFAULT_IMAGE_MODEL
 
 
 def _device_authorization(*, user_code: str = "ABCD-1234") -> DeviceAuthorization:

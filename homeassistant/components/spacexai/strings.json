@@ -107,20 +107,24 @@
       "step": {
         "reconfigure": {
           "data": {
+            "image_model": "Image model",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
             "model": "[%key:common::generic::model%]"
           },
           "data_description": {
+            "image_model": "Grok Imagine model used for AI Task image generation.",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]"
           }
         },
         "user": {
           "data": {
+            "image_model": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data::image_model%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
             "model": "[%key:common::generic::model%]"
           },
           "data_description": {
+            "image_model": "[%key:component::spacexai::config_subentries::ai_task_data::step::reconfigure::data_description::image_model%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]"
           }
@@ -199,6 +203,12 @@
   "exceptions": {
     "account_mismatch": {
       "message": "The SpaceXAI account does not match the account configured in Home Assistant."
+    },
+    "attachment_not_found": {
+      "message": "Attachment `{path}` does not exist."
+    },
+    "attachment_unsupported_type": {
+      "message": "Attachment `{path}` is not a supported image or PDF."
     },
     "authentication_rejected": {
       "message": "SpaceXAI rejected authentication. Sign in again."
