@@ -91,8 +91,7 @@ from homeassistant.components.spacexai.errors import (
     SubscriptionNotEntitledError,
 )
 from homeassistant.components.spacexai.oauth_device import DeviceAuthorization
-from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL
-from homeassistant.helpers.selector import SelectSelector, CONF_PROMPT
+from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er, issue_registry as ir, llm
