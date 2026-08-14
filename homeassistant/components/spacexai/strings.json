@@ -530,6 +530,9 @@
     },
     "unexpected_provider_failure": {
       "message": "An unexpected error occurred while communicating with SpaceXAI using {model}."
+    },
+    "video_persist_failed": {
+      "message": "SpaceXAI generated the video, but Home Assistant could not save a local copy. The provider URL is still available for a short time: {url}"
     }
   },
   "issues": {
@@ -580,14 +583,18 @@
   },
   "services": {
     "generate_video": {
-      "description": "Generate a video with SpaceXAI Imagine and return the provider URL.",
+      "description": "Generate a video with SpaceXAI Imagine and save it under /local/spacexai before the provider URL expires.",
       "fields": {
+        "aspect_ratio": {
+          "description": "Optional output aspect ratio. Image-to-video defaults to the still's ratio unless this is set.",
+          "name": "Aspect ratio"
+        },
         "config_entry": {
           "description": "The SpaceXAI config entry to use for this action.",
           "name": "Config entry"
         },
         "duration": {
-          "description": "Requested video duration in seconds.",
+          "description": "Requested video duration in seconds (1-15).",
           "name": "Duration"
         },
         "image_url": {
@@ -601,6 +608,10 @@
         "prompt": {
           "description": "The text prompt used to generate the video.",
           "name": "Prompt"
+        },
+        "resolution": {
+          "description": "Optional output resolution. 1080p is available on Imagine Video 1.5.",
+          "name": "Resolution"
         }
       },
       "name": "Generate video"

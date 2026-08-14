@@ -567,6 +567,8 @@ class SpaceXAIClient:
         prompt: str,
         image_url: str | None = None,
         duration: int | None = None,
+        aspect_ratio: str | None = None,
+        resolution: str | None = None,
     ) -> GeneratedVideo:
         """Generate a video and poll until the provider marks it complete."""
         token = await self._token_provider.async_get_access_token()
@@ -580,6 +582,10 @@ class SpaceXAIClient:
             body["image"] = {"url": image_url}
         if duration is not None:
             body["duration"] = duration
+        if aspect_ratio is not None:
+            body["aspect_ratio"] = aspect_ratio
+        if resolution is not None:
+            body["resolution"] = resolution
         try:
             async with session.post(
                 VIDEOS_URL,

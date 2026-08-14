@@ -1489,7 +1489,7 @@ async def test_generate_video_refreshes_token_while_polling(
 async def test_generate_video_create_sends_image_and_duration(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:
-    """Send image-to-video source and duration on the Imagine create request."""
+    """Send image-to-video source, duration, and format on the Imagine create request."""
     aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
     aioclient_mock.get(
         f"{DEVELOPER_API_BASE_URL}/videos/req-1",
@@ -1504,6 +1504,8 @@ async def test_generate_video_create_sends_image_and_duration(
             prompt="animate this still",
             image_url="https://example.com/ball.jpg",
             duration=2,
+            aspect_ratio="16:9",
+            resolution="720p",
         )
     assert generated.url == "https://vidgen.example/from-image.mp4"
     request = aioclient_mock.mock_calls[0][2]
@@ -1511,3 +1513,5 @@ async def test_generate_video_create_sends_image_and_duration(
     assert request["prompt"] == "animate this still"
     assert request["image"] == {"url": "https://example.com/ball.jpg"}
     assert request["duration"] == 2
+    assert request["aspect_ratio"] == "16:9"
+    assert request["resolution"] == "720p"

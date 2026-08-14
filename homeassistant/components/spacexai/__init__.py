@@ -64,6 +64,8 @@ from .const import (
     LOGGER,
     SERVICE_GENERATE_VIDEO,
     SERVICE_PUBLISH_MEDIA,
+    VIDEO_ASPECT_RATIOS,
+    VIDEO_RESOLUTIONS,
 )
 from .errors import (
     AccountMismatchError,
@@ -89,7 +91,11 @@ from .issue import (
     async_delete_model_not_entitled_issue,
     async_delete_subscription_issue,
 )
-from .media import async_provider_image_url, async_publish_media
+from .media import (
+    async_persist_remote_media,
+    async_provider_image_url,
+    async_publish_media,
+)
 
 PLATFORMS = (Platform.AI_TASK, Platform.CONVERSATION, Platform.STT, Platform.TTS)
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -101,6 +107,8 @@ SERVICE_GENERATE_VIDEO_SCHEMA = vol.Schema(
         vol.Optional(CONF_MODEL, default=DEFAULT_VIDEO_MODEL): cv.string,
         vol.Optional("image_url"): cv.string,
         vol.Optional("duration"): vol.All(vol.Coerce(int), vol.Range(min=1, max=15)),
+        vol.Optional("aspect_ratio"): vol.In(VIDEO_ASPECT_RATIOS),
+        vol.Optional("resolution"): vol.In(VIDEO_RESOLUTIONS),
     }
 )
 SERVICE_PUBLISH_MEDIA_SCHEMA = vol.Schema(
@@ -115,7 +123,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up SpaceXAI services."""
 
     async def async_generate_video(call: ServiceCall) -> ServiceResponse:
-        """Generate a video with Imagine and return the provider URL."""
+        """Generate a video with Imagine and persist it under /local."""
         entry_id = call.data["config_entry"]
         entry = hass.config_entries.async_get_entry(entry_id)
         if (
@@ -147,6 +155,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 prompt=call.data[CONF_PROMPT],
                 image_url=image_url,
                 duration=call.data.get("duration"),
+                aspect_ratio=call.data.get("aspect_ratio"),
+                resolution=call.data.get("resolution"),
             )
         except SpaceXAIError as err:
             raise HomeAssistantError(
@@ -155,9 +165,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 translation_placeholders={"model": err.context.model or model},
             ) from err
 
+        published = await async_persist_remote_media(hass, generated.url)
         return {
-            "url": generated.url,
+            "filename": published["filename"],
             "model": generated.model,
+            "path": published["path"],
+            "provider_url": generated.url,
+            "url": published["url"],
         }
 
     async def async_publish_media_service(call: ServiceCall) -> ServiceResponse:

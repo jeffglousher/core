@@ -6,17 +6,24 @@ from pathlib import Path
 import re
 from shutil import copyfile
 
+from aiohttp import ClientError, ClientTimeout, StreamReader
+
 from homeassistant.components import media_source
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.network import NoURLAvailableError, get_url, is_hass_url
+from homeassistant.util import dt as dt_util
 from homeassistant.util import slugify
 import yarl
 
-from .const import DOMAIN, MAX_IMAGE_BYTES, PUBLISH_DIR
+from .const import DOMAIN, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, PUBLISH_DIR
 
 _SAFE_FILENAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _IMAGE_EXTENSIONS = frozenset({".jpg", ".jpeg", ".png", ".webp", ".gif"})
+_VIDEO_EXTENSIONS = frozenset({".mp4", ".webm"})
+_DOWNLOAD_TIMEOUT = ClientTimeout(total=120)
+_DOWNLOAD_CHUNK = 64 * 1024
 
 
 async def async_provider_image_url(hass: HomeAssistant, image_ref: str) -> str:
@@ -53,12 +60,48 @@ async def async_publish_media(
     dest_dir = www / PUBLISH_DIR
     dest = dest_dir / dest_name
     await hass.async_add_executor_job(_copy_publish, path, dest_dir, dest)
-    local_path = f"/local/{PUBLISH_DIR}/{dest_name}"
-    return {
-        "filename": dest_name,
-        "path": local_path,
-        "url": _absolute_url(hass, local_path),
-    }
+    return _published_result(hass, dest_name)
+
+
+async def async_persist_remote_media(
+    hass: HomeAssistant,
+    url: str,
+    *,
+    filename: str | None = None,
+) -> dict[str, str]:
+    """Download a provider media URL into /local before it expires."""
+    parsed = yarl.URL(url)
+    if parsed.scheme != "https" or not parsed.host:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="video_persist_failed",
+            translation_placeholders={"url": url},
+        )
+    session = async_get_clientsession(hass)
+    try:
+        async with session.get(url, timeout=_DOWNLOAD_TIMEOUT) as response:
+            if response.status >= 400:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="video_persist_failed",
+                    translation_placeholders={"url": url},
+                )
+            mime = (response.headers.get("Content-Type") or "video/mp4").split(
+                ";", maxsplit=1
+            )[0].strip()
+            payload = await _read_limited(response.content, MAX_VIDEO_BYTES, url)
+    except TimeoutError, ClientError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="video_persist_failed",
+            translation_placeholders={"url": url},
+        ) from err
+    dest_name = _persist_filename(filename, mime)
+    www = Path(hass.config.path("www"))
+    dest_dir = www / PUBLISH_DIR
+    dest = dest_dir / dest_name
+    await hass.async_add_executor_job(_write_publish, dest_dir, dest, payload)
+    return _published_result(hass, dest_name)
 
 
 async def async_resolve_local_image(
@@ -135,6 +178,57 @@ def _assert_readable_image(path: Path, mime: str) -> None:
         )
 
 
+async def _read_limited(content: StreamReader, max_bytes: int, url: str) -> bytes:
+    """Read a response body and reject oversized payloads."""
+    chunks: list[bytes] = []
+    total = 0
+    async for chunk in content.iter_chunked(_DOWNLOAD_CHUNK):
+        total += len(chunk)
+        if total > max_bytes:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="attachment_too_large",
+                translation_placeholders={
+                    "path": "video",
+                    "max_mb": str(max_bytes // (1024 * 1024)),
+                },
+            )
+        chunks.append(chunk)
+    if not chunks:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="video_persist_failed",
+            translation_placeholders={"url": url},
+        )
+    return b"".join(chunks)
+
+
+def _persist_filename(filename: str | None, mime: str) -> str:
+    """Return a unique safe filename for a downloaded video."""
+    ext = _video_extension_for_mime(mime)
+    if filename:
+        name = Path(filename).name
+        if _SAFE_FILENAME.match(name) and Path(name).suffix.lower() in _VIDEO_EXTENSIONS:
+            return name
+        stem = slugify(Path(name).stem) or "spacexai-video"
+        suffix = Path(name).suffix.lower()
+        if suffix not in _VIDEO_EXTENSIONS:
+            suffix = ext
+        return f"{stem}{suffix}"
+    stamp = dt_util.utcnow().strftime("%Y-%m-%d_%H%M%S")
+    return f"{stamp}_imagine_video{ext}"
+
+
+def _published_result(hass: HomeAssistant, dest_name: str) -> dict[str, str]:
+    """Return the Companion-facing /local publish payload."""
+    local_path = f"/local/{PUBLISH_DIR}/{dest_name}"
+    return {
+        "filename": dest_name,
+        "path": local_path,
+        "url": _absolute_url(hass, local_path),
+    }
+
+
 def _publish_filename(source: Path, filename: str | None, mime: str) -> str:
     """Return a safe filename under www/spacexai."""
     if filename:
@@ -162,11 +256,25 @@ def _extension_for_mime(mime: str) -> str:
     return ".jpg"
 
 
+def _video_extension_for_mime(mime: str) -> str:
+    """Return a filename extension for a video MIME type."""
+    if mime == "video/webm":
+        return ".webm"
+    return ".mp4"
+
+
 def _copy_publish(source: Path, dest_dir: Path, dest: Path) -> None:
     """Create the publish directory and copy the image."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     _safe_under(dest_dir, dest)
     copyfile(source, dest)
+
+
+def _write_publish(dest_dir: Path, dest: Path, payload: bytes) -> None:
+    """Create the publish directory and write downloaded media."""
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    _safe_under(dest_dir, dest)
+    dest.write_bytes(payload)
 
 
 def _safe_under(root: Path, candidate: Path) -> Path:

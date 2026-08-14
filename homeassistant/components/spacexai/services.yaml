@@ -23,6 +23,33 @@ generate_video:
       required: false
       selector:
         text:
+    duration:
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 15
+          mode: box
+    aspect_ratio:
+      required: false
+      selector:
+        select:
+          options:
+            - "1:1"
+            - "16:9"
+            - "9:16"
+            - "4:3"
+            - "3:4"
+            - "3:2"
+            - "2:3"
+    resolution:
+      required: false
+      selector:
+        select:
+          options:
+            - "480p"
+            - "720p"
+            - "1080p"
 publish_media:
   fields:
     media_source_id:
@@ -33,10 +60,3 @@ publish_media:
       required: false
       selector:
         text:
-    duration:
-      required: false
-      selector:
-        number:
-          min: 1
-          max: 15
-          mode: box

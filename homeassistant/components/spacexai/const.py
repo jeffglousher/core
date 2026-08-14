@@ -133,6 +133,7 @@ DEVICE_CODE_MAX_POLL_SECONDS = 900
 MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 MAX_STT_AUDIO_BYTES = 25 * 1024 * 1024
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
+MAX_VIDEO_BYTES = 100 * 1024 * 1024
 MAX_IMAGE_COUNT = 10
 PROVIDER_WEB_SEARCH_TOOL = "web_search_call"
 PROVIDER_X_SEARCH_TOOL = "x_search_call"
@@ -186,6 +187,20 @@ IMAGE_ASPECT_RATIOS = (
 IMAGE_RESOLUTIONS = (
     "1k",
     "2k",
+)
+VIDEO_ASPECT_RATIOS = (
+    "1:1",
+    "16:9",
+    "9:16",
+    "4:3",
+    "3:4",
+    "3:2",
+    "2:3",
+)
+VIDEO_RESOLUTIONS = (
+    "480p",
+    "720p",
+    "1080p",
 )
 IMAGE_GENERATION_ACTIONS = (
     "auto",
