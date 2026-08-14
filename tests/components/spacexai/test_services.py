@@ -136,7 +136,7 @@ async def test_generate_video_rejects_non_entitled_model(
             {
                 "config_entry": entry.entry_id,
                 "prompt": "A bouncing red ball",
-                "model": "grok-imagine-video",
+                "model": "grok-imagine-video-unknown",
             },
             blocking=True,
             return_response=True,
