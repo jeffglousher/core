@@ -544,6 +544,7 @@ homeassistant.components.snooz.*
 homeassistant.components.solarlog.*
 homeassistant.components.sonarr.*
 homeassistant.components.spaceapi.*
+homeassistant.components.spacexai.*
 homeassistant.components.speedtestdotnet.*
 homeassistant.components.spotify.*
 homeassistant.components.sql.*
