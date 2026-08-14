@@ -58,8 +58,9 @@ async def async_publish_media(
     dest_name = _publish_filename(path, filename, mime)
     www = Path(hass.config.path("www"))
     dest_dir = www / PUBLISH_DIR
-    dest = dest_dir / dest_name
-    await hass.async_add_executor_job(_copy_publish, path, dest_dir, dest)
+    dest_name = await hass.async_add_executor_job(
+        _copy_publish, path, dest_dir, dest_name
+    )
     return _published_result(hass, dest_name)
 
 
@@ -99,8 +100,9 @@ async def async_persist_remote_media(
     dest_name = _persist_filename(filename, mime)
     www = Path(hass.config.path("www"))
     dest_dir = www / PUBLISH_DIR
-    dest = dest_dir / dest_name
-    await hass.async_add_executor_job(_write_publish, dest_dir, dest, payload)
+    dest_name = await hass.async_add_executor_job(
+        _write_publish, dest_dir, dest_name, payload
+    )
     return _published_result(hass, dest_name)
 
 
@@ -263,18 +265,40 @@ def _video_extension_for_mime(mime: str) -> str:
     return ".mp4"
 
 
-def _copy_publish(source: Path, dest_dir: Path, dest: Path) -> None:
-    """Create the publish directory and copy the image."""
+def _unique_dest_name(dest_dir: Path, dest_name: str) -> str:
+    """Keep an existing file and append a timestamp when the name is taken."""
+    if not (dest_dir / dest_name).exists():
+        return dest_name
+    stem = Path(dest_name).stem
+    suffix = Path(dest_name).suffix
+    stamp = dt_util.utcnow().strftime("%Y-%m-%d_%H%M%S")
+    candidate = f"{stem}_{stamp}{suffix}"
+    if not (dest_dir / candidate).exists():
+        return candidate
+    index = 2
+    while (dest_dir / f"{stem}_{stamp}_{index}{suffix}").exists():
+        index += 1
+    return f"{stem}_{stamp}_{index}{suffix}"
+
+
+def _copy_publish(source: Path, dest_dir: Path, dest_name: str) -> str:
+    """Create the publish directory and copy the image without overwriting."""
     dest_dir.mkdir(parents=True, exist_ok=True)
+    dest_name = _unique_dest_name(dest_dir, dest_name)
+    dest = dest_dir / dest_name
     _safe_under(dest_dir, dest)
     copyfile(source, dest)
+    return dest_name
 
 
-def _write_publish(dest_dir: Path, dest: Path, payload: bytes) -> None:
-    """Create the publish directory and write downloaded media."""
+def _write_publish(dest_dir: Path, dest_name: str, payload: bytes) -> str:
+    """Create the publish directory and write downloaded media without overwriting."""
     dest_dir.mkdir(parents=True, exist_ok=True)
+    dest_name = _unique_dest_name(dest_dir, dest_name)
+    dest = dest_dir / dest_name
     _safe_under(dest_dir, dest)
     dest.write_bytes(payload)
+    return dest_name
 
 
 def _safe_under(root: Path, candidate: Path) -> Path:

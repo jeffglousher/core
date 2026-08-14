@@ -39,6 +39,7 @@ from homeassistant.components.spacexai.client import (
 from homeassistant.components.spacexai.const import (
     CONF_CODE_INTERPRETER,
     CONF_IMAGE_GENERATION,
+    CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
@@ -1574,6 +1575,34 @@ async def test_image_generation_tool_uses_imagine_2(
     assert {
         "type": "image_generation",
         "model": DEFAULT_IMAGE_MODEL,
+        "action": DEFAULT_IMAGE_GENERATION_ACTION,
+    } in mock_stream.call_args.kwargs["tools"]
+
+
+async def test_image_generation_tool_uses_configured_model(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+) -> None:
+    """Use the conversation image-model picker instead of a hardcoded Imagine id."""
+    subentry = conversation_subentry(setup_integration)
+    hass.config_entries.async_update_subentry(
+        setup_integration,
+        subentry,
+        data={
+            **subentry.data,
+            CONF_IMAGE_GENERATION: True,
+            CONF_IMAGE_MODEL: "grok-imagine-image-3.0",
+        },
+    )
+    await hass.config_entries.async_reload(setup_integration.entry_id)
+    await hass.async_block_till_done()
+
+    result = await converse(hass, "Draw a porch at dawn")
+    assert result.response.speech["plain"]["speech"] == "Hello from Grok"
+    assert {
+        "type": "image_generation",
+        "model": "grok-imagine-image-3.0",
         "action": DEFAULT_IMAGE_GENERATION_ACTION,
     } in mock_stream.call_args.kwargs["tools"]
 

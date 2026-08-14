@@ -54,6 +54,7 @@ from .const import (
     CONF_CODE_INTERPRETER,
     CONF_IMAGE_GENERATION,
     CONF_IMAGE_GENERATION_ACTION,
+    CONF_IMAGE_MODEL,
     CONF_MAX_OUTPUT_TOKENS,
     CONF_SERVICE_TIER,
     CONF_STORE_RESPONSES,
@@ -211,7 +212,7 @@ def _provider_tools_from_subentry(data: Mapping[str, Any]) -> list[dict[str, Any
         tools.append(
             {
                 "type": "image_generation",
-                "model": DEFAULT_IMAGE_MODEL,
+                "model": data.get(CONF_IMAGE_MODEL, DEFAULT_IMAGE_MODEL),
                 "action": data.get(
                     CONF_IMAGE_GENERATION_ACTION, DEFAULT_IMAGE_GENERATION_ACTION
                 ),

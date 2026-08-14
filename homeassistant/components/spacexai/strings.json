@@ -44,6 +44,7 @@
           "default_assist": "Use Grok as the preferred Assist pipeline",
           "image_generation": "Enable image generation",
           "image_generation_action": "Image generation action",
+          "image_model": "Image model",
           "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
           "max_output_tokens": "Maximum response tokens",
           "model": "[%key:common::generic::model%]",
@@ -75,6 +76,7 @@
           "default_assist": "Creates a preferred Grok Assist pipeline using the SpaceXAI conversation agent and SpaceXAI speech engines when those entities are created.",
           "image_generation": "Allow Grok to generate or edit images with SpaceXAI image tools.",
           "image_generation_action": "How Grok should use the image generation tool. Auto lets the model choose.",
+          "image_model": "Imagine model for in-chat image generation. Imagine 2 is the default. This is separate from the AI Task image model.",
           "llm_hass_api": "Home Assistant APIs that Grok may use. Only explicitly exposed entities and tools are available.",
           "max_output_tokens": "Upper limit for one response. Short answers stay short. Default is 3000.",
           "model": "Chat models this Grok account can use. Grok 4.6 is recommended. Choose Custom model ID for another grok-* id.",
@@ -257,6 +259,7 @@
             "code_interpreter": "[%key:component::spacexai::config::step::conversation::data::code_interpreter%]",
             "image_generation": "[%key:component::spacexai::config::step::conversation::data::image_generation%]",
             "image_generation_action": "[%key:component::spacexai::config::step::conversation::data::image_generation_action%]",
+            "image_model": "[%key:component::spacexai::config::step::conversation::data::image_model%]",
             "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
             "model": "[%key:common::generic::model%]",
@@ -285,6 +288,7 @@
             "code_interpreter": "[%key:component::spacexai::config::step::conversation::data_description::code_interpreter%]",
             "image_generation": "[%key:component::spacexai::config::step::conversation::data_description::image_generation%]",
             "image_generation_action": "[%key:component::spacexai::config::step::conversation::data_description::image_generation_action%]",
+            "image_model": "[%key:component::spacexai::config::step::conversation::data_description::image_model%]",
             "llm_hass_api": "[%key:component::spacexai::config::step::conversation::data_description::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
@@ -316,6 +320,7 @@
             "code_interpreter": "[%key:component::spacexai::config::step::conversation::data::code_interpreter%]",
             "image_generation": "[%key:component::spacexai::config::step::conversation::data::image_generation%]",
             "image_generation_action": "[%key:component::spacexai::config::step::conversation::data::image_generation_action%]",
+            "image_model": "[%key:component::spacexai::config::step::conversation::data::image_model%]",
             "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data::max_output_tokens%]",
             "model": "[%key:common::generic::model%]",
@@ -344,6 +349,7 @@
             "code_interpreter": "[%key:component::spacexai::config::step::conversation::data_description::code_interpreter%]",
             "image_generation": "[%key:component::spacexai::config::step::conversation::data_description::image_generation%]",
             "image_generation_action": "[%key:component::spacexai::config::step::conversation::data_description::image_generation_action%]",
+            "image_model": "[%key:component::spacexai::config::step::conversation::data_description::image_model%]",
             "llm_hass_api": "[%key:component::spacexai::config::step::conversation::data_description::llm_hass_api%]",
             "max_output_tokens": "[%key:component::spacexai::config::step::conversation::data_description::max_output_tokens%]",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
@@ -620,7 +626,7 @@
       "description": "Copy an AI Task image into /local so Companion notifications can fetch it.",
       "fields": {
         "filename": {
-          "description": "Optional filename under /local/spacexai. Defaults to the source name.",
+          "description": "Optional filename under /local/spacexai. Defaults to the source name. If that name already exists, a timestamp is appended so earlier notifications keep their image.",
           "name": "Filename"
         },
         "media_source_id": {

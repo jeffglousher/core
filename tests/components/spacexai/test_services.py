@@ -403,3 +403,57 @@ async def test_publish_media_copies_to_local(
         "url": "http://10.0.0.5:8123/local/spacexai/porch.jpg",
     }
     assert (www / "spacexai" / "porch.jpg").read_bytes() == source.read_bytes()
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_publish_media_keeps_existing_file(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    tmp_path: Path,
+) -> None:
+    """Append a timestamp when the publish filename already exists."""
+    source = tmp_path / "porch.jpg"
+    source.write_bytes(b"\xff\xd8\xffjpeg")
+    later = tmp_path / "later.jpg"
+    later.write_bytes(b"\xff\xd8\xfflater")
+    www = Path(hass.config.path("www"))
+    dest_dir = www / "spacexai"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    (dest_dir / "porch.jpg").write_bytes(b"keep-me")
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.media.media_source.async_resolve_media",
+            return_value=PlayMedia(
+                url="/ai_task/image/later.jpg",
+                mime_type="image/jpeg",
+                path=later,
+            ),
+        ),
+        patch(
+            "homeassistant.components.spacexai.media.get_url",
+            return_value="http://10.0.0.5:8123",
+        ),
+        patch(
+            "homeassistant.components.spacexai.media.dt_util.utcnow",
+            return_value=datetime(2026, 8, 14, 18, 0, tzinfo=UTC),
+        ),
+    ):
+        response = await hass.services.async_call(
+            DOMAIN,
+            "publish_media",
+            {
+                "media_source_id": "media-source://ai_task/image/later.jpg",
+                "filename": "porch.jpg",
+            },
+            blocking=True,
+            return_response=True,
+        )
+
+    assert response == {
+        "filename": "porch_2026-08-14_180000.jpg",
+        "path": "/local/spacexai/porch_2026-08-14_180000.jpg",
+        "url": "http://10.0.0.5:8123/local/spacexai/porch_2026-08-14_180000.jpg",
+    }
+    assert (dest_dir / "porch.jpg").read_bytes() == b"keep-me"
+    assert (dest_dir / "porch_2026-08-14_180000.jpg").read_bytes() == later.read_bytes()

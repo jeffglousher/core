@@ -4,16 +4,22 @@ rules:
   appropriate-polling:
     status: exempt
     comment: Integration does not poll.
-  brands: done
+  brands:
+    status: done
+    comment: Brand assets are in home-assistant/brands#10947. Official CDN 404 until that PR merges.
   common-modules: done
   config-flow-test-coverage: done
   config-flow: done
   dependency-transparency: done
-  docs-actions: done
+  docs-actions:
+    status: done
+    comment: Actions are documented in home-assistant.io#47349. Published URL 404 until that PR merges.
   docs-conditions:
     status: exempt
     comment: Integration does not provide conditions.
-  docs-high-level-description: done
+  docs-high-level-description:
+    status: done
+    comment: Docs draft is home-assistant.io#47349. Published URL 404 until that PR merges.
   docs-installation-instructions: done
   docs-removal-instructions: done
   docs-triggers:

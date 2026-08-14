@@ -122,6 +122,7 @@ CONVERSATION_DATA = {
     CONF_CODE_INTERPRETER: DEFAULT_CODE_INTERPRETER,
     CONF_IMAGE_GENERATION: DEFAULT_IMAGE_GENERATION,
     CONF_IMAGE_GENERATION_ACTION: DEFAULT_IMAGE_GENERATION_ACTION,
+    CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
     CONF_ALLOW_CONTROL_WITH_PROVIDER_TOOLS: DEFAULT_ALLOW_CONTROL_WITH_PROVIDER_TOOLS,
     CONF_MAX_OUTPUT_TOKENS: DEFAULT_MAX_OUTPUT_TOKENS,
     CONF_TEMPERATURE: DEFAULT_TEMPERATURE,
@@ -360,6 +361,7 @@ async def test_full_flow_recommended_settings(
     assert conversation.data[CONF_SERVICE_TIER] == DEFAULT_SERVICE_TIER
     assert conversation.data[CONF_STORE_RESPONSES] is DEFAULT_STORE_RESPONSES
     assert conversation.data[CONF_PROMPT] == llm.DEFAULT_INSTRUCTIONS_PROMPT
+    assert conversation.data[CONF_IMAGE_MODEL] == DEFAULT_IMAGE_MODEL
     mock_validate.assert_awaited_once()
 
 
@@ -717,6 +719,7 @@ async def test_subentry_add_and_reconfigure(
         CONF_CODE_INTERPRETER: False,
         CONF_IMAGE_GENERATION: False,
         CONF_IMAGE_GENERATION_ACTION: DEFAULT_IMAGE_GENERATION_ACTION,
+        CONF_IMAGE_MODEL: DEFAULT_IMAGE_MODEL,
         CONF_ALLOW_CONTROL_WITH_PROVIDER_TOOLS: False,
         CONF_TEMPERATURE: DEFAULT_TEMPERATURE,
         CONF_TOP_P: DEFAULT_TOP_P,
@@ -914,6 +917,30 @@ async def test_ai_task_image_picker_uses_plain_language(
         "value": DEFAULT_MODEL,
         "label": "Grok 4.6 · recommended",
     } in chat_options
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_conversation_image_picker_uses_plain_language(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_validate: AsyncMock,
+) -> None:
+    """Show Imagine 2 on the conversation image picker and hide older Imagine models."""
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "conversation"),
+        context={"source": config_entries.SOURCE_USER},
+    )
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {CONF_RECOMMENDED: False}
+    )
+    assert result["type"] is FlowResultType.FORM
+    options = _select_options(result["data_schema"], CONF_IMAGE_MODEL)
+    assert options[0] == {
+        "value": DEFAULT_IMAGE_MODEL,
+        "label": "Imagine 2 · recommended",
+    }
+    assert all(option["value"] != "grok-imagine-image-quality" for option in options)
 
 
 @pytest.mark.usefixtures("setup_credentials")
