@@ -9,13 +9,18 @@ import pytest
 import voluptuous as vol
 
 from homeassistant.components import ai_task, media_source
-from homeassistant.components.spacexai.client import GeneratedImage
+from homeassistant.components.spacexai.client import (
+    GeneratedImage,
+    ModelInfo,
+    ProviderSnapshot,
+)
 from homeassistant.components.spacexai.const import (
     DEFAULT_IMAGE_ASPECT_RATIO,
     DEFAULT_IMAGE_MODEL,
     DEFAULT_IMAGE_RESOLUTION,
     DEFAULT_MODEL,
     DOMAIN,
+    MAX_ATTACHMENT_BYTES,
 )
 from homeassistant.components.spacexai.errors import (
     ErrorContext,
@@ -534,10 +539,17 @@ async def test_attachment_mime_type_is_guessed(
 
 
 @pytest.mark.parametrize(
-    ("exists", "mime_type", "translation_key"),
+    ("exists", "mime_type", "size", "translation_key"),
     [
-        pytest.param(False, "image/jpeg", "attachment_not_found", id="missing"),
-        pytest.param(True, "text/csv", "attachment_unsupported_type", id="unsupported"),
+        pytest.param(False, "image/jpeg", 7, "attachment_not_found", id="missing"),
+        pytest.param(True, "text/csv", 7, "attachment_unsupported_type", id="unsupported"),
+        pytest.param(
+            True,
+            "image/jpeg",
+            MAX_ATTACHMENT_BYTES + 1,
+            "attachment_too_large",
+            id="too-large",
+        ),
     ],
 )
 @pytest.mark.usefixtures("setup_credentials")
@@ -546,6 +558,7 @@ async def test_attachment_rejections(
     setup_integration: MockConfigEntry,
     exists: bool,
     mime_type: str,
+    size: int,
     translation_key: str,
 ) -> None:
     """Reject attachments Home Assistant cannot forward to SpaceXAI."""
@@ -561,7 +574,7 @@ async def test_attachment_rejections(
         patch("pathlib.Path.exists", return_value=exists),
         patch(
             "pathlib.Path.stat",
-            return_value=SimpleNamespace(st_size=7),
+            return_value=SimpleNamespace(st_size=size),
         ),
         patch("pathlib.Path.read_bytes", return_value=b"payload"),
         pytest.raises(HomeAssistantError) as raised,
@@ -601,3 +614,26 @@ async def test_generate_image_translated_error_is_not_replaced(
             instructions="A red bicycle",
         )
     assert raised.value.translation_key == "attachment_not_found"
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_generate_image_rejects_unlisted_model_when_catalog_present(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+) -> None:
+    """When Imagine models are catalogued, only those ids stay selectable."""
+    snapshot = setup_integration.runtime_data.snapshot
+    setup_integration.runtime_data.snapshot = ProviderSnapshot(
+        account=snapshot.account,
+        models=snapshot.models,
+        image_models=(ModelInfo(id="grok-imagine-image", owner="xai"),),
+    )
+
+    with pytest.raises(HomeAssistantError) as raised:
+        await ai_task.async_generate_image(
+            hass,
+            task_name="Catalog Image",
+            entity_id=ENTITY_ID,
+            instructions="A red bicycle",
+        )
+    assert raised.value.translation_key == "model_not_entitled"

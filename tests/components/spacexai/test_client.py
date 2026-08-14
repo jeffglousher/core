@@ -13,6 +13,7 @@ import pytest
 
 from homeassistant.components.spacexai.client import (
     AccountInfo,
+    ModelInfo,
     OAuthAccessTokenProvider,
     ProviderSnapshot,
     SpaceXAIClient,
@@ -183,6 +184,34 @@ async def test_model_discovery_and_filtering(hass: HomeAssistant) -> None:
     )
     assert snapshot.has_model("grok-4.3-latest")
     assert not snapshot.has_model("grok-imagine-1")
+
+
+def test_empty_catalog_allows_known_media_models() -> None:
+    """Allow built-in Imagine ids when the account catalog lists no media models."""
+    snapshot = ProviderSnapshot(
+        account=AccountInfo("sub", "Name", None),
+        models=(ModelInfo(id="grok-4.5", owner="xai"),),
+    )
+    assert snapshot.has_image_model("grok-imagine-image-quality")
+    assert snapshot.has_image_model("grok-imagine-image")
+    assert not snapshot.has_image_model("grok-imagine-image-unknown")
+    assert snapshot.has_video_model("grok-imagine-video-1.5")
+    assert snapshot.has_video_model("grok-imagine-video")
+    assert not snapshot.has_video_model("grok-imagine-video-unknown")
+
+
+def test_listed_media_catalog_is_authoritative() -> None:
+    """Once Imagine models are discovered, only those catalog ids stay selectable."""
+    snapshot = ProviderSnapshot(
+        account=AccountInfo("sub", "Name", None),
+        models=(ModelInfo(id="grok-4.5", owner="xai"),),
+        image_models=(ModelInfo(id="grok-imagine-image", owner="xai"),),
+        video_models=(ModelInfo(id="grok-imagine-video", owner="xai"),),
+    )
+    assert snapshot.has_image_model("grok-imagine-image")
+    assert not snapshot.has_image_model("grok-imagine-image-quality")
+    assert snapshot.has_video_model("grok-imagine-video")
+    assert not snapshot.has_video_model("grok-imagine-video-1.5")
 
 
 async def test_model_discovery_iterates_every_page(hass: HomeAssistant) -> None:
@@ -1264,3 +1293,30 @@ async def test_generate_video_refreshes_token_while_polling(
     assert aioclient_mock.mock_calls[0][3]["Authorization"] == "Bearer token-start"
     assert aioclient_mock.mock_calls[1][3]["Authorization"] == "Bearer token-poll-1"
     assert aioclient_mock.mock_calls[2][3]["Authorization"] == "Bearer token-poll-2"
+
+
+async def test_generate_video_create_sends_image_and_duration(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Send image-to-video source and duration on the Imagine create request."""
+    aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
+    aioclient_mock.get(
+        f"{DEVELOPER_API_BASE_URL}/videos/req-1",
+        json={"status": "done", "video": {"url": "https://vidgen.example/from-image.mp4"}},
+    )
+    with patch(
+        "homeassistant.components.spacexai.client.asyncio.sleep",
+        new_callable=AsyncMock,
+    ):
+        generated = await _client(hass).async_generate_video(
+            model="grok-imagine-video-1.5",
+            prompt="animate this still",
+            image_url="https://example.com/ball.jpg",
+            duration=2,
+        )
+    assert generated.url == "https://vidgen.example/from-image.mp4"
+    request = aioclient_mock.mock_calls[0][2]
+    assert request["model"] == "grok-imagine-video-1.5"
+    assert request["prompt"] == "animate this still"
+    assert request["image"] == {"url": "https://example.com/ball.jpg"}
+    assert request["duration"] == 2

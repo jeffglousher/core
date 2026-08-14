@@ -55,6 +55,45 @@ async def test_generate_video_returns_provider_url(
 
 
 @pytest.mark.usefixtures("setup_credentials")
+async def test_generate_video_forwards_image_url(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+) -> None:
+    """Pass an image URL through to Imagine for image-to-video."""
+    entry = setup_integration
+    entry.runtime_data.client.async_generate_video = AsyncMock(
+        return_value=GeneratedVideo(
+            url="https://vidgen.example/from-image.mp4",
+            model=DEFAULT_VIDEO_MODEL,
+        )
+    )
+
+    response = await hass.services.async_call(
+        DOMAIN,
+        "generate_video",
+        {
+            "config_entry": entry.entry_id,
+            "prompt": "Animate this still",
+            "image_url": "https://example.com/ball.jpg",
+            "duration": 2,
+        },
+        blocking=True,
+        return_response=True,
+    )
+
+    assert response == {
+        "url": "https://vidgen.example/from-image.mp4",
+        "model": DEFAULT_VIDEO_MODEL,
+    }
+    entry.runtime_data.client.async_generate_video.assert_awaited_once_with(
+        model=DEFAULT_VIDEO_MODEL,
+        prompt="Animate this still",
+        image_url="https://example.com/ball.jpg",
+        duration=2,
+    )
+
+
+@pytest.mark.usefixtures("setup_credentials")
 async def test_generate_video_rejects_unknown_entry(
     hass: HomeAssistant,
     setup_integration: MockConfigEntry,
