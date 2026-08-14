@@ -3,8 +3,9 @@
 import asyncio
 from asyncio import Lock
 import base64
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+from time import monotonic
 from typing import Any, Protocol, cast
 
 from aiohttp import ClientError, ClientTimeout, ContentTypeError, FormData
@@ -28,10 +29,16 @@ from homeassistant.helpers.httpx_client import get_async_client
 from .const import (
     API_BASE_URL,
     CREATE_TIMEOUT,
+    DEFAULT_MODEL,
+    DEVELOPER_API_BASE_URL,
     GROK_CLI_REQUEST_HEADERS,
     HTTP_TIMEOUT_SECONDS,
+    IMAGE_MODELS,
     IMAGE_TIMEOUT_SECONDS,
+    IMAGES_EDIT_URL,
     IMAGES_URL,
+    MAX_IMAGE_BYTES,
+    MAX_IMAGE_COUNT,
     RESPONSE_TIMEOUT,
     REVOCATION_URL,
     STT_TIMEOUT_SECONDS,
@@ -39,6 +46,9 @@ from .const import (
     TTS_TIMEOUT_SECONDS,
     TTS_URL,
     USERINFO_URL,
+    VIDEO_MODELS,
+    VIDEO_TIMEOUT_SECONDS,
+    VIDEOS_URL,
 )
 from .errors import (
     AccountMismatchError,
@@ -61,8 +71,10 @@ from .errors import (
 
 HTTP_TIMEOUT = ClientTimeout(total=HTTP_TIMEOUT_SECONDS)
 IMAGE_TIMEOUT = ClientTimeout(total=IMAGE_TIMEOUT_SECONDS)
+VIDEO_TIMEOUT = ClientTimeout(total=VIDEO_TIMEOUT_SECONDS)
 STT_TIMEOUT = ClientTimeout(total=STT_TIMEOUT_SECONDS)
 TTS_TIMEOUT = ClientTimeout(total=TTS_TIMEOUT_SECONDS)
+_VIDEO_POLL_INTERVAL_SECONDS = 5.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,6 +85,14 @@ class GeneratedImage:
     mime_type: str
     model: str
     revised_prompt: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class GeneratedVideo:
+    """Completed video generation result."""
+
+    url: str
+    model: str
 
 
 class AccessTokenProvider(Protocol):
@@ -170,10 +190,42 @@ class ProviderSnapshot:
 
     account: AccountInfo
     models: tuple[ModelInfo, ...]
+    image_models: tuple[ModelInfo, ...] = ()
+    video_models: tuple[ModelInfo, ...] = ()
 
     def has_model(self, model: str) -> bool:
-        """Return whether the account is entitled to a model."""
-        return any(model in item.selectable_ids for item in self.models)
+        """Return whether the account may use a chat model.
+
+        Discovered catalog entries and the grok-4.5 fallback are known-good.
+        Manual custom chat ids (grok-*, excluding imagine media models) are
+        allowed and validated at request time.
+        """
+        if not model:
+            return False
+        if any(model in item.selectable_ids for item in self.models):
+            return True
+        if model == DEFAULT_MODEL:
+            return True
+        return model.startswith("grok-") and not model.startswith("grok-imagine")
+
+    def has_image_model(self, model: str) -> bool:
+        """Return whether the account can use an image model."""
+        if any(model in item.selectable_ids for item in self.image_models):
+            return True
+        return model in IMAGE_MODELS and not self.image_models
+
+    def has_video_model(self, model: str) -> bool:
+        """Return whether the account can use a video model."""
+        if any(model in item.selectable_ids for item in self.video_models):
+            return True
+        return model in VIDEO_MODELS and not self.video_models
+
+    @property
+    def selectable_image_models(self) -> tuple[str, ...]:
+        """Return selectable image model identifiers."""
+        if self.image_models:
+            return tuple(mid for m in self.image_models for mid in m.selectable_ids)
+        return IMAGE_MODELS
 
 
 class SpaceXAIClient:
@@ -251,39 +303,29 @@ class SpaceXAIClient:
 
     async def async_get_models(self) -> tuple[ModelInfo, ...]:
         """Return the OAuth-entitled Grok language models."""
-        token = await self._token_provider.async_get_access_token()
-        context = ErrorContext(operation=Operation.MODELS)
-        try:
-            async with self._sdk_lock:
-                client = await self._async_sdk_client(token)
-                page = await client.models.list(timeout=float(HTTP_TIMEOUT_SECONDS))
-                models = [
-                    ModelInfo(
-                        id=model.id,
-                        owner=model.owned_by,
-                        aliases=_model_aliases(model),
-                    )
-                    async for model in page
-                    if _is_conversation_model(model)
-                ]
-        except (openai.OpenAIError, ValidationError) as err:
-            raise self.translate_sdk_error(err, context) from err
-
-        models.sort(key=lambda model: model.id)
-        return tuple(models)
+        page = await self._async_list_provider_models()
+        return _conversation_models_from_page(page)
 
     async def async_validate(
         self, *, expected_subject: str | None = None
     ) -> ProviderSnapshot:
-        """Validate identity and discover entitled language models."""
+        """Validate identity and discover entitled language and media models."""
         account = await self.async_get_account()
         if expected_subject is not None and account.subject != expected_subject:
             raise AccountMismatchError(
                 "OAuth account does not match the config entry",
                 context=ErrorContext(operation=Operation.ACCOUNT),
             )
+        page: list[OpenAIModel] = []
         try:
-            models = await self.async_get_models()
+            page = await self._async_list_provider_models()
+        except (
+            AuthenticationRejectedError,
+            ReauthenticationRequiredError,
+            RefreshRejectedError,
+        ):
+            # Same OAuth session powers chat; do not mark setup healthy on auth fail.
+            raise
         except (
             PermanentProviderError,
             QuotaLimitedError,
@@ -293,8 +335,13 @@ class SpaceXAIClient:
             SubscriptionNotEntitledError,
             MalformedProviderResponseError,
         ):
-            models = ()
-        return ProviderSnapshot(account=account, models=models)
+            page = []
+        return ProviderSnapshot(
+            account=account,
+            models=_conversation_models_from_page(page),
+            image_models=_model_infos(page, _is_image_model),
+            video_models=_model_infos(page, _is_video_model),
+        )
 
     async def async_stream_response(
         self,
@@ -306,37 +353,47 @@ class SpaceXAIClient:
         prompt_cache_key: str,
         text: ResponseTextConfigParam | None = None,
         include: Sequence[str] | None = None,
+        temperature: float | None = None,
+        top_p: float | None = None,
+        store: bool = False,
+        service_tier: str | None = None,
     ) -> AsyncStream[ResponseStreamEvent]:
         """Start a streaming Responses API request."""
         token = await self._token_provider.async_get_access_token()
         context = ErrorContext(operation=Operation.RESPONSE, model=model)
         include_values = list(include or ("reasoning.encrypted_content",))
+        client = await self._async_get_sdk(token)
+        create_args: dict[str, Any] = {
+            "model": model,
+            "input": input,
+            "tools": list(tools),
+            "max_output_tokens": max_output_tokens,
+            "parallel_tool_calls": True,
+            "prompt_cache_key": prompt_cache_key,
+            "store": store,
+            "include": include_values,
+            "stream": True,
+            "timeout": float(RESPONSE_TIMEOUT),
+        }
+        if temperature is not None:
+            create_args["temperature"] = temperature
+        if top_p is not None:
+            create_args["top_p"] = top_p
+        if service_tier is not None:
+            # xAI Priority Processing — payload field, not a header.
+            create_args["service_tier"] = service_tier
+        if text is not None:
+            create_args["text"] = text
         try:
-            async with self._sdk_lock:
-                client = await self._async_sdk_client(token)
-                create_args: dict[str, Any] = {
-                    "model": model,
-                    "input": input,
-                    "tools": list(tools),
-                    "max_output_tokens": max_output_tokens,
-                    "parallel_tool_calls": False,
-                    "prompt_cache_key": prompt_cache_key,
-                    "store": False,
-                    "include": include_values,
-                    "stream": True,
-                }
-                if text is not None:
-                    create_args["text"] = text
-                try:
-                    async with asyncio.timeout(CREATE_TIMEOUT):
-                        return cast(
-                            AsyncStream[ResponseStreamEvent],
-                            await client.responses.create(**create_args),
-                        )
-                except TimeoutError as err:
-                    raise RequestTimeoutError(
-                        "Provider response timed out", context=context
-                    ) from err
+            async with asyncio.timeout(CREATE_TIMEOUT):
+                return cast(
+                    AsyncStream[ResponseStreamEvent],
+                    await client.responses.create(**create_args),
+                )
+        except TimeoutError as err:
+            raise RequestTimeoutError(
+                "Provider response timed out", context=context
+            ) from err
         except SpaceXAIError:
             raise
         except (openai.OpenAIError, ValidationError) as err:
@@ -347,11 +404,24 @@ class SpaceXAIClient:
         *,
         model: str,
         prompt: str,
+        aspect_ratio: str | None = None,
+        resolution: str | None = None,
+        n: int = 1,
     ) -> GeneratedImage:
         """Generate an image with the Imagine API."""
         token = await self._token_provider.async_get_access_token()
         context = ErrorContext(operation=Operation.IMAGE, model=model)
         session = async_get_clientsession(self._hass)
+        body: dict[str, Any] = {
+            "model": model,
+            "prompt": prompt,
+            "n": min(max(n, 1), MAX_IMAGE_COUNT),
+            "response_format": "b64_json",
+        }
+        if aspect_ratio is not None:
+            body["aspect_ratio"] = aspect_ratio
+        if resolution is not None:
+            body["resolution"] = resolution
         try:
             async with session.post(
                 IMAGES_URL,
@@ -359,25 +429,20 @@ class SpaceXAIClient:
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "model": model,
-                    "prompt": prompt,
-                    "n": 1,
-                    "response_format": "b64_json",
-                },
+                json=body,
                 timeout=IMAGE_TIMEOUT,
             ) as response:
                 if response.status >= 400:
-                    body = await _safe_json(response)
+                    body_error = await _safe_json(response)
                     raise self._error_for_status(
                         response.status,
                         ErrorContext(
                             operation=Operation.IMAGE,
                             model=model,
                             status=response.status,
-                            provider_code=_provider_error_code(body),
+                            provider_code=_provider_error_code(body_error),
                         ),
-                        body=body,
+                        body=body_error,
                     )
                 payload = await response.json()
         except SpaceXAIError:
@@ -392,6 +457,201 @@ class SpaceXAIClient:
             ) from err
 
         return _parse_generated_image(payload, model=model, context=context)
+
+    async def async_edit_image(
+        self,
+        *,
+        model: str,
+        prompt: str,
+        images: Sequence[str],
+    ) -> GeneratedImage:
+        """Edit an image with the Imagine edits API."""
+        token = await self._token_provider.async_get_access_token()
+        context = ErrorContext(operation=Operation.IMAGE, model=model)
+        session = async_get_clientsession(self._hass)
+        image_objects = [{"url": image, "type": "image_url"} for image in images]
+        body: dict[str, Any] = {
+            "model": model,
+            "prompt": prompt,
+            "response_format": "b64_json",
+        }
+        if len(image_objects) == 1:
+            body["image"] = image_objects[0]
+        else:
+            body["images"] = image_objects
+        try:
+            async with session.post(
+                IMAGES_EDIT_URL,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                json=body,
+                timeout=IMAGE_TIMEOUT,
+            ) as response:
+                if response.status >= 400:
+                    body_error = await _safe_json(response)
+                    raise self._error_for_status(
+                        response.status,
+                        ErrorContext(
+                            operation=Operation.IMAGE,
+                            model=model,
+                            status=response.status,
+                            provider_code=_provider_error_code(body_error),
+                        ),
+                        body=body_error,
+                    )
+                payload = await response.json()
+        except SpaceXAIError:
+            raise
+        except (ContentTypeError, TypeError, ValueError) as err:
+            raise MalformedProviderResponseError(
+                "Image edit endpoint returned invalid JSON", context=context
+            ) from err
+        except ClientError as err:
+            raise ConnectionFailureError(
+                "Could not connect to the image edit endpoint", context=context
+            ) from err
+
+        return _parse_generated_image(payload, model=model, context=context)
+
+    async def async_generate_video(
+        self,
+        *,
+        model: str,
+        prompt: str,
+        image_url: str | None = None,
+        duration: int | None = None,
+    ) -> GeneratedVideo:
+        """Generate a video and poll until the provider marks it complete."""
+        token = await self._token_provider.async_get_access_token()
+        context = ErrorContext(operation=Operation.VIDEO, model=model)
+        session = async_get_clientsession(self._hass)
+        body: dict[str, Any] = {
+            "model": model,
+            "prompt": prompt,
+        }
+        if image_url is not None:
+            body["image"] = {"url": image_url}
+        if duration is not None:
+            body["duration"] = duration
+        try:
+            async with session.post(
+                VIDEOS_URL,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                },
+                json=body,
+                timeout=VIDEO_TIMEOUT,
+            ) as response:
+                if response.status >= 400:
+                    body_error = await _safe_json(response)
+                    raise self._error_for_status(
+                        response.status,
+                        ErrorContext(
+                            operation=Operation.VIDEO,
+                            model=model,
+                            status=response.status,
+                            provider_code=_provider_error_code(body_error),
+                        ),
+                        body=body_error,
+                    )
+                payload = await response.json()
+        except SpaceXAIError:
+            raise
+        except (ContentTypeError, TypeError, ValueError) as err:
+            raise MalformedProviderResponseError(
+                "Video endpoint returned invalid JSON", context=context
+            ) from err
+        except ClientError as err:
+            raise ConnectionFailureError(
+                "Could not connect to the video endpoint", context=context
+            ) from err
+
+        if not isinstance(payload, Mapping):
+            raise MalformedProviderResponseError(
+                "Video endpoint returned a non-object response", context=context
+            )
+        request_id = payload.get("request_id")
+        if not isinstance(request_id, str) or not request_id:
+            raise MalformedProviderResponseError(
+                "Video endpoint omitted request_id", context=context
+            )
+
+        deadline = monotonic() + VIDEO_TIMEOUT_SECONDS
+        while True:
+            # Refresh each poll; video jobs can outlive a short-lived access token.
+            token = await self._token_provider.async_get_access_token()
+            try:
+                async with session.get(
+                    f"{DEVELOPER_API_BASE_URL}/videos/{request_id}",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=HTTP_TIMEOUT,
+                ) as response:
+                    if response.status >= 400:
+                        body_error = await _safe_json(response)
+                        raise self._error_for_status(
+                            response.status,
+                            ErrorContext(
+                                operation=Operation.VIDEO,
+                                model=model,
+                                status=response.status,
+                                provider_code=_provider_error_code(body_error),
+                                request_id=request_id,
+                            ),
+                            body=body_error,
+                        )
+                    status_payload = await response.json()
+            except SpaceXAIError:
+                raise
+            except (ContentTypeError, TypeError, ValueError) as err:
+                raise MalformedProviderResponseError(
+                    "Video status endpoint returned invalid JSON", context=context
+                ) from err
+            except ClientError as err:
+                raise ConnectionFailureError(
+                    "Could not connect to the video status endpoint", context=context
+                ) from err
+
+            if not isinstance(status_payload, Mapping):
+                raise MalformedProviderResponseError(
+                    "Video status endpoint returned a non-object response",
+                    context=context,
+                )
+            status = status_payload.get("status")
+            if status == "done":
+                video = status_payload.get("video")
+                if not isinstance(video, Mapping):
+                    raise MalformedProviderResponseError(
+                        "Video status endpoint omitted video object", context=context
+                    )
+                url = video.get("url")
+                if not isinstance(url, str) or not url:
+                    raise MalformedProviderResponseError(
+                        "Video status endpoint omitted video URL", context=context
+                    )
+                return GeneratedVideo(url=url, model=model)
+            if status in ("failed", "expired"):
+                raise PermanentProviderError(
+                    f"Video generation {status}",
+                    context=ErrorContext(
+                        operation=Operation.VIDEO,
+                        model=model,
+                        provider_code=status if isinstance(status, str) else None,
+                        request_id=request_id,
+                    ),
+                )
+            if monotonic() >= deadline:
+                raise RequestTimeoutError(
+                    "Video generation timed out",
+                    context=ErrorContext(
+                        operation=Operation.VIDEO,
+                        model=model,
+                        request_id=request_id,
+                    ),
+                )
+            await asyncio.sleep(_VIDEO_POLL_INTERVAL_SECONDS)
 
     async def async_transcribe(
         self,
@@ -418,7 +678,10 @@ class SpaceXAIClient:
         try:
             async with session.post(
                 STT_URL,
-                headers={"Authorization": f"Bearer {token}"},
+                headers={
+                    **GROK_CLI_REQUEST_HEADERS,
+                    "Authorization": f"Bearer {token}",
+                },
                 data=form,
                 timeout=STT_TIMEOUT,
             ) as response:
@@ -473,6 +736,7 @@ class SpaceXAIClient:
             async with session.post(
                 TTS_URL,
                 headers={
+                    **GROK_CLI_REQUEST_HEADERS,
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",
                 },
@@ -545,8 +809,27 @@ class SpaceXAIClient:
                 "Could not connect to the revocation endpoint", context=context
             ) from err
 
+    async def _async_list_provider_models(self) -> list[OpenAIModel]:
+        """Fetch the raw provider model catalog once."""
+        token = await self._token_provider.async_get_access_token()
+        context = ErrorContext(operation=Operation.MODELS)
+        client = await self._async_get_sdk(token)
+        try:
+            page = await client.models.list(timeout=30.0)
+        except (openai.OpenAIError, ValidationError) as err:
+            raise self.translate_sdk_error(err, context) from err
+        return list(page.data)
+
+    async def _async_get_sdk(self, token: str) -> openai.AsyncOpenAI:
+        """Return the shared SDK client, locking only construction/mutation."""
+        async with self._sdk_lock:
+            return await self._async_sdk_client(token)
+
     async def _async_sdk_client(self, access_token: str) -> openai.AsyncOpenAI:
-        """Return a reusable SDK client with the current OAuth token."""
+        """Return a reusable SDK client with the current OAuth token.
+
+        Caller must hold ``_sdk_lock``.
+        """
         if self._sdk_client is None:
             self._sdk_client = openai.AsyncOpenAI(
                 api_key=access_token,
@@ -748,9 +1031,30 @@ def _model_aliases(model: OpenAIModel) -> tuple[str, ...]:
     )
 
 
+def _model_infos(
+    models: Sequence[OpenAIModel],
+    predicate: Callable[[OpenAIModel], bool],
+) -> tuple[ModelInfo, ...]:
+    """Build sorted ModelInfo tuples for models matching a predicate."""
+    return tuple(
+        sorted(
+            (
+                ModelInfo(
+                    id=model.id,
+                    owner=model.owned_by,
+                    aliases=_model_aliases(model),
+                )
+                for model in models
+                if predicate(model)
+            ),
+            key=lambda model: model.id,
+        )
+    )
+
+
 def _is_conversation_model(model: OpenAIModel) -> bool:
     """Return whether xAI model metadata identifies text output."""
-    if model.id.startswith("grok-imagine-"):
+    if _is_image_model(model) or _is_video_model(model):
         return False
     extra = model.model_extra or {}
     output_modalities = extra.get("output_modalities")
@@ -765,7 +1069,36 @@ def _is_sparse_chat_model_id(model_id: str) -> bool:
     """Return whether a model id looks like a Grok chat model without metadata."""
     if not model_id.startswith("grok-"):
         return False
-    return not model_id.startswith("grok-imagine-")
+    if model_id.startswith("grok-imagine-"):
+        return False
+    return True
+
+
+def _conversation_models_from_page(
+    models: Sequence[OpenAIModel],
+) -> tuple[ModelInfo, ...]:
+    """Extract chat models, tolerating sparse model metadata."""
+    return _model_infos(models, _is_conversation_model)
+
+
+def _is_image_model(model: OpenAIModel) -> bool:
+    """Return whether xAI model metadata identifies image output."""
+    if model.id.startswith("grok-imagine-image"):
+        return True
+    extra = model.model_extra or {}
+    output_modalities = extra.get("output_modalities")
+    if not isinstance(output_modalities, list):
+        return False
+    return "image" in output_modalities and "video" not in output_modalities
+
+
+def _is_video_model(model: OpenAIModel) -> bool:
+    """Return whether xAI model metadata identifies video output."""
+    if model.id.startswith("grok-imagine-video"):
+        return True
+    extra = model.model_extra or {}
+    output_modalities = extra.get("output_modalities")
+    return isinstance(output_modalities, list) and "video" in output_modalities
 
 
 async def _safe_json(response: Any) -> object | None:
@@ -775,6 +1108,27 @@ async def _safe_json(response: Any) -> object | None:
     except ContentTypeError, TypeError, ValueError:
         return None
     return payload
+
+
+def _detect_image_mime_type(image_data: bytes, first: Mapping[str, Any]) -> str:
+    """Detect image MIME type from magic bytes or provider metadata."""
+    if image_data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if image_data.startswith(b"\x89PNG"):
+        return "image/png"
+    if (
+        len(image_data) >= 12
+        and image_data.startswith(b"RIFF")
+        and image_data[8:12] == b"WEBP"
+    ):
+        return "image/webp"
+    if image_data.startswith(b"GIF8"):
+        return "image/gif"
+    for key in ("content_type", "mime_type"):
+        value = first.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return "application/octet-stream"
 
 
 def _parse_generated_image(
@@ -809,10 +1163,14 @@ def _parse_generated_image(
         raise MalformedProviderResponseError(
             "Image endpoint returned invalid base64 data", context=context
         ) from err
+    if len(image_data) > MAX_IMAGE_BYTES:
+        raise MalformedProviderResponseError(
+            "Image endpoint returned an oversized image", context=context
+        )
     revised = first.get("revised_prompt")
     return GeneratedImage(
         image_data=image_data,
-        mime_type="image/jpeg",
+        mime_type=_detect_image_mime_type(image_data, first),
         model=model,
         revised_prompt=revised if isinstance(revised, str) else None,
     )
