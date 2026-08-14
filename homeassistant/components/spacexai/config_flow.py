@@ -113,7 +113,6 @@ from .const import (
     GROK_CLI_OAUTH_CLIENT_ID,
     IMAGE_ASPECT_RATIOS,
     IMAGE_GENERATION_ACTIONS,
-    IMAGE_MODELS,
     IMAGE_RESOLUTIONS,
     LOGGER,
     MODEL_CUSTOM_OPTION,
@@ -967,12 +966,12 @@ class SpaceXAITTSSubentryFlow(ConfigSubentryFlow):
 
 
 def _discovered_model_ids(snapshot: ProviderSnapshot) -> list[str]:
-    """Return discovered chat model ids in display order."""
-    return [model_id for model in snapshot.models for model_id in model.selectable_ids]
+    """Return chat model ids shown in the picker."""
+    return list(snapshot.selectable_chat_models)
 
 
 def _default_chat_model(_snapshot: ProviderSnapshot) -> str:
-    """Return the preferred chat model for recommended setup (grok-4.6)."""
+    """Return the recommended chat model."""
     return DEFAULT_MODEL
 
 
@@ -980,11 +979,7 @@ def _model_selector_defaults(
     snapshot: ProviderSnapshot,
     suggested: Mapping[str, Any] | None,
 ) -> tuple[str, int, list[SelectOptionDict], str | None]:
-    """Return default model, token limit, labeled options, and custom value.
-
-    Always surfaces discovered models and the grok-4.6 fallback as distinct
-    choices, plus a Custom option for a manual model id string.
-    """
+    """Return default model, token limit, labeled options, and custom value."""
     discovered = _discovered_model_ids(snapshot)
     discovered_set = set(discovered)
     default_model = _default_chat_model(snapshot)
@@ -1003,27 +998,15 @@ def _model_selector_defaults(
             suggested.get(CONF_MAX_OUTPUT_TOKENS, DEFAULT_MAX_OUTPUT_TOKENS)
         )
 
-    # Discovered models first; always include grok-4.6 as the sole fallback.
     options: list[SelectOptionDict] = [
-        SelectOptionDict(value=model_id, label=f"{model_id} · discovered")
-        for model_id in discovered
-        if model_id != DEFAULT_MODEL
-    ]
-    if DEFAULT_MODEL in discovered_set:
-        options.insert(
-            0,
-            SelectOptionDict(
-                value=DEFAULT_MODEL,
-                label=f"{DEFAULT_MODEL} · discovered / fallback",
+        SelectOptionDict(
+            value=model_id,
+            label=(
+                f"{model_id} · recommended" if model_id == DEFAULT_MODEL else model_id
             ),
         )
-    else:
-        options.append(
-            SelectOptionDict(
-                value=DEFAULT_MODEL,
-                label=f"{DEFAULT_MODEL} · fallback",
-            )
-        )
+        for model_id in discovered
+    ]
     options.append(
         SelectOptionDict(
             value=MODEL_CUSTOM_OPTION,
@@ -1425,7 +1408,7 @@ def _ai_task_schema(
     default_model, suggested_max_tokens, model_options, custom_model = (
         _model_selector_defaults(snapshot, defaults)
     )
-    image_models = snapshot.selectable_image_models or list(IMAGE_MODELS)
+    image_models = snapshot.selectable_image_models
     image_model = DEFAULT_IMAGE_MODEL
     if isinstance(suggested_image := defaults.get(CONF_IMAGE_MODEL), str):
         image_model = suggested_image

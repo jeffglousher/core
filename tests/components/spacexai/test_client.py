@@ -202,7 +202,7 @@ async def test_model_discovery_and_filtering(hass: HomeAssistant) -> None:
 
 
 def test_empty_catalog_allows_known_media_models() -> None:
-    """Allow built-in Imagine ids when the account catalog lists no media models."""
+    """Allow documented Imagine ids when the developer catalog is empty."""
     snapshot = ProviderSnapshot(
         account=AccountInfo("sub", "Name", None),
         models=(ModelInfo(id="grok-4.5", owner="xai"),),
@@ -218,21 +218,47 @@ def test_empty_catalog_allows_known_media_models() -> None:
     assert snapshot.selectable_video_models[0] == "grok-imagine-video-1.5"
 
 
-def test_listed_media_catalog_is_authoritative() -> None:
-    """Once Imagine models are discovered, only those catalog ids stay selectable."""
+def test_documented_imagine_ids_stay_requestable() -> None:
+    """Documented Imagine ids stay valid after a partial catalog refresh."""
     snapshot = ProviderSnapshot(
         account=AccountInfo("sub", "Name", None),
         models=(ModelInfo(id="grok-4.5", owner="xai"),),
-        image_models=(ModelInfo(id="grok-imagine-image", owner="xai"),),
-        video_models=(ModelInfo(id="grok-imagine-video", owner="xai"),),
+        image_models=(
+            ModelInfo(
+                id="grok-imagine-image",
+                owner="xai",
+                aliases=("grok-imagine-image-2026-03-02",),
+            ),
+        ),
+        video_models=(
+            ModelInfo(
+                id="grok-imagine-video",
+                owner="xai",
+                aliases=("grok-imagine-video-1.5-preview",),
+            ),
+        ),
     )
     assert snapshot.has_image_model("grok-imagine-image")
-    assert not snapshot.has_image_model("grok-imagine-image-2.0")
-    assert not snapshot.has_image_model("grok-imagine-image-quality")
+    assert snapshot.has_image_model("grok-imagine-image-2.0")
+    assert snapshot.has_image_model("grok-imagine-image-quality")
+    assert snapshot.has_image_model("grok-imagine-image-2026-03-02")
+    assert not snapshot.has_image_model("grok-imagine-image-unknown")
     assert snapshot.has_video_model("grok-imagine-video")
-    assert not snapshot.has_video_model("grok-imagine-video-1.5")
-    assert snapshot.selectable_image_models == ("grok-imagine-image",)
-    assert snapshot.selectable_video_models == ("grok-imagine-video",)
+    assert snapshot.has_video_model("grok-imagine-video-1.5")
+    assert snapshot.selectable_image_models[0] == "grok-imagine-image-2.0"
+    assert "grok-imagine-image-2026-03-02" not in snapshot.selectable_image_models
+    assert "grok-imagine-video-1.5-preview" not in snapshot.selectable_video_models
+
+
+def test_recommended_chat_model_stays_entitled() -> None:
+    """grok-4.6 remains requestable even when the CLI catalog omits it."""
+    snapshot = ProviderSnapshot(
+        account=AccountInfo("sub", "Name", None),
+        models=(ModelInfo(id="grok-4.3", owner="xai"),),
+    )
+    assert snapshot.has_model("grok-4.6")
+    assert snapshot.selectable_chat_models[0] == "grok-4.6"
+    assert "grok-4.3" in snapshot.selectable_chat_models
 
 
 async def test_model_discovery_iterates_every_page(hass: HomeAssistant) -> None:
@@ -477,10 +503,10 @@ async def test_async_validate_allows_catalog_failure(
     assert snapshot.video_models == ()
 
 
-async def test_async_validate_merges_developer_imagine_models(
+async def test_async_validate_keeps_chat_and_imagine_catalogs_separate(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:
-    """Combine CLI chat models with Imagine ids from the developer catalog."""
+    """Use CLI ids for chat and developer ids for Imagine, not a merged list."""
     aioclient_mock.get(
         USERINFO_URL,
         json={"sub": "account-123", "name": "Home User"},
@@ -495,13 +521,19 @@ async def test_async_validate_merges_developer_imagine_models(
                 "owned_by": "xai",
             },
             {
+                "id": "grok-imagine-image-2026-03-02",
+                "object": "model",
+                "created": 1,
+                "owned_by": "xai",
+            },
+            {
                 "id": "grok-imagine-video-1.5",
                 "object": "model",
                 "created": 1,
                 "owned_by": "xai",
             },
             {
-                "id": "grok-4.6",
+                "id": "grok-4.20-multi-agent-0309",
                 "object": "model",
                 "created": 1,
                 "owned_by": "xai",
@@ -526,10 +558,12 @@ async def test_async_validate_merges_developer_imagine_models(
     ):
         snapshot = await _client(hass).async_validate()
     assert [model.id for model in snapshot.models] == ["grok-4.6"]
-    assert [model.id for model in snapshot.image_models] == ["grok-imagine-image-2.0"]
-    assert [model.id for model in snapshot.video_models] == ["grok-imagine-video-1.5"]
+    assert "grok-4.20-multi-agent-0309" not in snapshot.catalog_chat_ids
+    assert snapshot.catalog_image_ids == ("grok-imagine-image-2.0",)
+    assert snapshot.catalog_video_ids == ("grok-imagine-video-1.5",)
     assert snapshot.has_image_model("grok-imagine-image-2.0")
-    assert not snapshot.has_image_model("grok-imagine-image-quality")
+    assert snapshot.has_image_model("grok-imagine-image-quality")
+    assert "grok-imagine-image-2026-03-02" not in snapshot.selectable_image_models
 
 
 async def test_async_validate_ignores_developer_catalog_failure(

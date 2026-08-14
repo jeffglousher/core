@@ -5,6 +5,7 @@ from asyncio import Lock
 import base64
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
+import re
 from time import monotonic
 from typing import Any, Protocol, cast
 
@@ -75,6 +76,7 @@ VIDEO_TIMEOUT = ClientTimeout(total=VIDEO_TIMEOUT_SECONDS)
 STT_TIMEOUT = ClientTimeout(total=STT_TIMEOUT_SECONDS)
 TTS_TIMEOUT = ClientTimeout(total=TTS_TIMEOUT_SECONDS)
 _VIDEO_POLL_INTERVAL_SECONDS = 5.0
+_SNAPSHOT_OR_DATED_MODEL_ID = re.compile(r"(?:-\d{4}-\d{2}-\d{2}|-\d{8})$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,51 +196,65 @@ class ProviderSnapshot:
     video_models: tuple[ModelInfo, ...] = ()
 
     def has_model(self, model: str) -> bool:
-        """Return whether the account may use a chat model.
+        """Return whether a chat model may be requested.
 
-        Discovered catalog entries and the grok-4.6 fallback are known-good.
-        Manual custom chat ids (grok-*, excluding imagine media models) are
-        allowed and validated at request time.
+        grok-4.6 is always allowed. Catalog hits and other grok-* chat ids are
+        allowed; Imagine ids are not. Unknown grok-* ids are checked at request
+        time.
         """
         if not model:
             return False
+        if model == DEFAULT_MODEL:
+            return True
         if any(model in item.selectable_ids for item in self.models):
             return True
-        if not self.models:
-            return model == DEFAULT_MODEL or (
-                model.startswith("grok-") and not model.startswith("grok-imagine")
-            )
-        return (
-            model.startswith("grok-")
-            and not model.startswith("grok-imagine")
-            and model != DEFAULT_MODEL
-        )
+        return model.startswith("grok-") and not model.startswith("grok-imagine")
 
     def has_image_model(self, model: str) -> bool:
-        """Return whether the account can use an image model."""
-        if any(model in item.selectable_ids for item in self.image_models):
+        """Return whether an image model may be requested."""
+        if not model:
+            return False
+        if model in IMAGE_MODELS:
             return True
-        return model in IMAGE_MODELS and not self.image_models
+        return any(model in item.selectable_ids for item in self.image_models)
 
     def has_video_model(self, model: str) -> bool:
-        """Return whether the account can use a video model."""
-        if any(model in item.selectable_ids for item in self.video_models):
+        """Return whether a video model may be requested."""
+        if not model:
+            return False
+        if model in VIDEO_MODELS:
             return True
-        return model in VIDEO_MODELS and not self.video_models
+        return any(model in item.selectable_ids for item in self.video_models)
+
+    @property
+    def catalog_chat_ids(self) -> tuple[str, ...]:
+        """Return stable chat model ids from the CLI catalog."""
+        return _catalog_model_ids(self.models)
+
+    @property
+    def catalog_image_ids(self) -> tuple[str, ...]:
+        """Return stable image model ids from the developer catalog."""
+        return _catalog_model_ids(self.image_models)
+
+    @property
+    def catalog_video_ids(self) -> tuple[str, ...]:
+        """Return stable video model ids from the developer catalog."""
+        return _catalog_model_ids(self.video_models)
+
+    @property
+    def selectable_chat_models(self) -> tuple[str, ...]:
+        """Return chat model ids shown in the picker."""
+        return _picker_model_ids((DEFAULT_MODEL,), self.models)
 
     @property
     def selectable_image_models(self) -> tuple[str, ...]:
-        """Return selectable image model identifiers."""
-        if self.image_models:
-            return tuple(mid for m in self.image_models for mid in m.selectable_ids)
-        return IMAGE_MODELS
+        """Return image model ids shown in the picker."""
+        return _picker_model_ids(IMAGE_MODELS, self.image_models)
 
     @property
     def selectable_video_models(self) -> tuple[str, ...]:
-        """Return selectable video model identifiers."""
-        if self.video_models:
-            return tuple(mid for m in self.video_models for mid in m.selectable_ids)
-        return VIDEO_MODELS
+        """Return video model ids shown in the picker."""
+        return _picker_model_ids(VIDEO_MODELS, self.video_models)
 
 
 class SpaceXAIClient:
@@ -349,14 +365,13 @@ class SpaceXAIClient:
             MalformedProviderResponseError,
         ):
             cli_page = []
-        # The CLI catalog is chat-only. Imagine ids live on the developer API.
+        # Chat uses the Grok CLI catalog. Imagine uses the developer catalog.
         developer_page = await self._async_list_developer_models_optional()
-        page = _merge_model_pages(cli_page, developer_page)
         return ProviderSnapshot(
             account=account,
-            models=_conversation_models_from_page(page),
-            image_models=_model_infos(page, _is_image_model),
-            video_models=_model_infos(page, _is_video_model),
+            models=_conversation_models_from_page(cli_page),
+            image_models=_model_infos(developer_page, _is_image_model),
+            video_models=_model_infos(developer_page, _is_video_model),
         )
 
     async def async_stream_response(
@@ -1130,27 +1145,30 @@ def _openai_models_from_payload(
     return models
 
 
-def _merge_model_pages(*pages: Sequence[OpenAIModel]) -> list[OpenAIModel]:
-    """Merge catalogs, preferring richer metadata for the same model id."""
-    merged: dict[str, OpenAIModel] = {}
-    for page in pages:
-        for model in page:
-            existing = merged.get(model.id)
-            if existing is None or _model_metadata_rank(model) > _model_metadata_rank(
-                existing
-            ):
-                merged[model.id] = model
-    return list(merged.values())
+def _is_public_model_id(model_id: str) -> bool:
+    """Hide dated snapshots and rolling aliases from pickers."""
+    if model_id.endswith(("-latest", "-preview")):
+        return False
+    return _SNAPSHOT_OR_DATED_MODEL_ID.search(model_id) is None
 
 
-def _model_metadata_rank(model: OpenAIModel) -> int:
-    """Prefer media classification, then explicit chat metadata."""
-    if _is_image_model(model) or _is_video_model(model):
-        return 2
-    extra = model.model_extra or {}
-    if extra.get("output_modalities") or extra.get("completion_text_token_price"):
-        return 1
-    return 0
+def _catalog_model_ids(models: Sequence[ModelInfo]) -> tuple[str, ...]:
+    """Return stable primary catalog ids, hiding dated snapshots."""
+    return tuple(model.id for model in models if _is_public_model_id(model.id))
+
+
+def _picker_model_ids(
+    documented: tuple[str, ...],
+    discovered: Sequence[ModelInfo],
+) -> tuple[str, ...]:
+    """Documented ids first, then other stable catalog ids."""
+    seen = set(documented)
+    extra = [
+        model_id
+        for model_id in _catalog_model_ids(discovered)
+        if model_id not in seen
+    ]
+    return (*documented, *extra)
 
 
 def _model_aliases(model: OpenAIModel) -> tuple[str, ...]:

@@ -9,12 +9,9 @@ import pytest
 import voluptuous as vol
 
 from homeassistant.components import ai_task, media_source
-from homeassistant.components.spacexai.client import (
-    GeneratedImage,
-    ModelInfo,
-    ProviderSnapshot,
-)
+from homeassistant.components.spacexai.client import GeneratedImage
 from homeassistant.components.spacexai.const import (
+    CONF_IMAGE_MODEL,
     DEFAULT_IMAGE_ASPECT_RATIO,
     DEFAULT_IMAGE_MODEL,
     DEFAULT_IMAGE_RESOLUTION,
@@ -617,16 +614,20 @@ async def test_generate_image_translated_error_is_not_replaced(
 
 
 @pytest.mark.usefixtures("setup_credentials")
-async def test_generate_image_rejects_unlisted_model_when_catalog_present(
+async def test_generate_image_rejects_unknown_imagine_model(
     hass: HomeAssistant,
     setup_integration: MockConfigEntry,
 ) -> None:
-    """When Imagine models are catalogued, only those ids stay selectable."""
-    snapshot = setup_integration.runtime_data.snapshot
-    setup_integration.runtime_data.snapshot = ProviderSnapshot(
-        account=snapshot.account,
-        models=snapshot.models,
-        image_models=(ModelInfo(id="grok-imagine-image", owner="xai"),),
+    """Reject Imagine ids that are neither documented nor catalogued."""
+    subentry = next(
+        entry
+        for entry in setup_integration.subentries.values()
+        if entry.subentry_type == "ai_task_data"
+    )
+    hass.config_entries.async_update_subentry(
+        setup_integration,
+        subentry,
+        data={**subentry.data, CONF_IMAGE_MODEL: "grok-imagine-image-unknown"},
     )
 
     with pytest.raises(HomeAssistantError) as raised:

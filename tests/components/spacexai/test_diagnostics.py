@@ -46,14 +46,16 @@ async def test_diagnostics_are_sanitized(
     assert "token" not in diagnostics
     assert "access_token" not in diagnostics["oauth"]
     assert "refresh_token" not in diagnostics["oauth"]
-    assert diagnostics["available_models"] == ["grok-4.6", "grok-4.3"]
-    assert diagnostics["available_image_models"] == []
-    assert diagnostics["available_video_models"] == []
-    assert diagnostics["selectable_image_models"][0] == "grok-imagine-image-2.0"
-    assert diagnostics["selectable_video_models"][0] == "grok-imagine-video-1.5"
-    assert diagnostics["fallback_chat_model"] == "grok-4.6"
-    assert diagnostics["fallback_image_model"] == "grok-imagine-image-2.0"
-    assert diagnostics["fallback_video_model"] == "grok-imagine-video-1.5"
+    assert diagnostics["catalog"] == {
+        "chat": ["grok-4.6", "grok-4.3"],
+        "image": [],
+        "video": [],
+    }
+    assert diagnostics["fallbacks"] == {
+        "chat": "grok-4.6",
+        "image": "grok-imagine-image-2.0",
+        "video": "grok-imagine-video-1.5",
+    }
     assert diagnostics["platforms"] == {
         "conversation": True,
         "ai_task": True,
@@ -65,6 +67,7 @@ async def test_diagnostics_are_sanitized(
     assert diagnostics["conversation"][0][CONF_PROMPT] == REDACTED
     assert diagnostics["ai_task"][0]["model"] == "grok-4.6"
     assert diagnostics["ai_task"][0]["model_entitled"] is True
+    assert diagnostics["ai_task"][0]["image_model_entitled"] is True
     assert diagnostics["stt"][0]["title"] == "Grok STT"
     assert diagnostics["tts"][0]["title"] == "Grok TTS"
     serialized = json.dumps(diagnostics)

@@ -7,7 +7,12 @@ from homeassistant.const import CONF_MODEL
 from homeassistant.core import HomeAssistant
 
 from . import SpaceXAIConfigEntry, SpaceXAIData
-from .const import DEFAULT_IMAGE_MODEL, DEFAULT_MODEL, DEFAULT_VIDEO_MODEL
+from .const import (
+    CONF_IMAGE_MODEL,
+    DEFAULT_IMAGE_MODEL,
+    DEFAULT_MODEL,
+    DEFAULT_VIDEO_MODEL,
+)
 
 TO_REDACT = {"account_id", "email", "name", "prompt"}
 
@@ -32,14 +37,16 @@ async def async_get_config_entry_diagnostics(
             "expires_at": entry.data["token"].get("expires_at"),
             "scope": entry.data["token"].get("scope"),
         },
-        "available_models": [model.id for model in runtime.snapshot.models],
-        "available_image_models": [model.id for model in runtime.snapshot.image_models],
-        "available_video_models": [model.id for model in runtime.snapshot.video_models],
-        "selectable_image_models": list(runtime.snapshot.selectable_image_models),
-        "selectable_video_models": list(runtime.snapshot.selectable_video_models),
-        "fallback_chat_model": DEFAULT_MODEL,
-        "fallback_image_model": DEFAULT_IMAGE_MODEL,
-        "fallback_video_model": DEFAULT_VIDEO_MODEL,
+        "catalog": {
+            "chat": list(runtime.snapshot.catalog_chat_ids),
+            "image": list(runtime.snapshot.catalog_image_ids),
+            "video": list(runtime.snapshot.catalog_video_ids),
+        },
+        "fallbacks": {
+            "chat": DEFAULT_MODEL,
+            "image": DEFAULT_IMAGE_MODEL,
+            "video": DEFAULT_VIDEO_MODEL,
+        },
         "platforms": {
             "conversation": "conversation" in subentry_types,
             "ai_task": "ai_task_data" in subentry_types,
@@ -70,6 +77,10 @@ def _subentry_diagnostics(
         if CONF_MODEL in subentry.data:
             payload["model_entitled"] = runtime.snapshot.has_model(
                 subentry.data[CONF_MODEL]
+            )
+        if CONF_IMAGE_MODEL in subentry.data:
+            payload["image_model_entitled"] = runtime.snapshot.has_image_model(
+                subentry.data[CONF_IMAGE_MODEL]
             )
         results.append(async_redact_data(payload, TO_REDACT))
     return results
