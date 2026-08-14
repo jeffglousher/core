@@ -729,8 +729,7 @@ class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
                 if is_new
                 else dict(self._get_reconfigure_subentry().data)
             )
-            # New agents default to recommended (minimal UI). Reconfigure of
-            # older subentries without the flag shows the full form.
+            # New agents start recommended; older ones without the flag show the full form.
             options.setdefault(CONF_RECOMMENDED, is_new)
             self._last_rendered_recommended = bool(options[CONF_RECOMMENDED])
             current_model = options.get(CONF_MODEL)

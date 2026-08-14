@@ -9,7 +9,7 @@
       "missing_configuration": "[%key:common::config_flow::abort::oauth2_missing_configuration%]",
       "missing_credentials": "[%key:common::config_flow::abort::oauth2_missing_credentials%]",
       "model_not_entitled": "The configured Grok model is no longer available to this account.",
-      "no_conversation_models": "This SpaceXAI account has no entitled text/conversation models available.",
+      "no_conversation_models": "This SpaceXAI account has no conversation models available.",
       "no_url_available": "[%key:common::config_flow::abort::oauth2_no_url_available%]",
       "oauth_error": "[%key:common::config_flow::abort::oauth2_error%]",
       "oauth_failed": "[%key:common::config_flow::abort::oauth2_failed%]",
@@ -18,7 +18,7 @@
       "oauth_unauthorized": "[%key:common::config_flow::abort::oauth2_unauthorized%]",
       "quota_limited": "SpaceXAI reported an account quota or billing limitation. Review the account in SpaceXAI before trying again.",
       "reauth_successful": "[%key:common::config_flow::abort::reauth_successful%]",
-      "subscription_not_entitled": "This SpaceXAI account is not eligible for subscription-backed third-party Grok access.",
+      "subscription_not_entitled": "This SpaceXAI account cannot use Grok this way.",
       "unknown": "[%key:common::config_flow::error::unknown%]",
       "user_rejected_authorize": "[%key:common::config_flow::abort::oauth2_user_rejected_authorize%]"
     },
@@ -76,15 +76,15 @@
           "image_generation": "Allow Grok to generate or edit images with SpaceXAI image tools.",
           "image_generation_action": "How Grok should use the image generation tool. Auto lets the model choose.",
           "llm_hass_api": "Home Assistant APIs that Grok may use. Only explicitly exposed entities and tools are available.",
-          "max_output_tokens": "Upper limit for one response. This is a ceiling, not a target — short Assist answers stay short. Default is 3000 (same Assist ceiling as OpenAI Conversation).",
-          "model": "Discovered models come from your account. Fallback is always grok-4.5. Choose Custom model ID to type any other grok-* id.",
-          "model_custom": "Exact model id string. Example: grok-4.3 or grok-build-0.1.",
-          "prompt": "Instructions that define how Grok should respond. This can be a template.",
-          "recommended": "Keep this on for a simple setup with Assist control and grok-4.5. Turn it off to choose discovered or fallback models, a custom model id, sampling, and tools.",
-          "service_tier": "Priority requests faster scheduling from SpaceXAI (payload service_tier=priority). Default for Assist. May use premium token pricing when priority is granted. Keep selectable either way.",
-          "store_responses": "When enabled, SpaceXAI may retain responses server-side. Leave off unless you need provider-side history.",
-          "temperature": "Sampling temperature (0–2). Default 1.0 matches the SpaceXAI API and Home Assistant's OpenAI Conversation integration.",
-          "top_p": "Nucleus sampling limit (0–1). Default 1.0 matches the SpaceXAI API and OpenAI Conversation.",
+          "max_output_tokens": "Upper limit for one response. Short answers stay short. Default is 3000.",
+          "model": "Models come from the signed-in account. grok-4.5 is always listed. Choose Custom model ID to type another grok-* id.",
+          "model_custom": "Exact model id, such as grok-4.3 or grok-build-0.1.",
+          "prompt": "Instructions for how Grok should respond. This can be a template.",
+          "recommended": "Keep this on for Assist control and grok-4.5. Turn it off to choose the model, sampling, and tools.",
+          "service_tier": "Priority asks SpaceXAI to schedule the request faster. This is the Assist default and may cost more when granted.",
+          "store_responses": "When enabled, SpaceXAI may keep responses. Leave this off unless you need that history.",
+          "temperature": "Sampling temperature (0–2). Default is 1.0.",
+          "top_p": "Nucleus sampling limit (0–1). Default is 1.0.",
           "web_search": "Allow Grok to use SpaceXAI server-side web search before answering.",
           "web_search_allowed_domains": "Optional comma-separated allowlist of domains for web search (maximum 5). Cannot be combined with excluded domains.",
           "web_search_excluded_domains": "Optional comma-separated blocklist of domains for web search (maximum 5). Cannot be combined with allowed domains.",
@@ -147,7 +147,7 @@
         "title": "[%key:common::config_flow::title::reauth%]"
       },
       "user": {
-        "description": "Sign in with a SpaceXAI subscription account. Device code is recommended and works on phones. Browser redirect only works with an OAuth client that registers the Home Assistant redirect URI.",
+        "description": "Sign in with your SpaceXAI account. Device code works on phones. Browser sign-in needs an OAuth client that registers the Home Assistant redirect.",
         "menu_options": {
           "browser": "Sign in with browser redirect (requires HA redirect URI)",
           "device": "Sign in with device code (recommended)"
@@ -190,7 +190,7 @@
             "image_aspect_ratio": "Aspect ratio used for AI Task image generation.",
             "image_model": "Grok Imagine model used for AI Task image generation.",
             "image_resolution": "Resolution used for AI Task image generation.",
-            "max_output_tokens": "Maximum tokens for one AI Task response. Default is 8192 so longer structured outputs can finish. Assist uses a lower ceiling.",
+            "max_output_tokens": "Maximum tokens for one AI Task response. Default is 8192.",
             "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
             "model_custom": "[%key:component::spacexai::config::step::conversation::data_description::model_custom%]",
             "store_responses": "[%key:component::spacexai::config::step::conversation::data_description::store_responses%]",
@@ -460,7 +460,7 @@
       "message": "Attachment `{path}` is not a supported image or PDF."
     },
     "authentication_rejected": {
-      "message": "SpaceXAI rejected authentication. Reauthenticate the integration."
+      "message": "SpaceXAI rejected authentication. Sign in again."
     },
     "connection_failure": {
       "message": "Home Assistant could not connect to SpaceXAI while using {model}."
@@ -481,10 +481,10 @@
       "message": "SpaceXAI returned an unexpected response from {model}."
     },
     "model_not_entitled": {
-      "message": "The SpaceXAI account is not entitled to use {model}."
+      "message": "This SpaceXAI account cannot use {model}."
     },
     "no_conversation_models": {
-      "message": "This SpaceXAI account has no entitled text/conversation models available."
+      "message": "This SpaceXAI account has no conversation models available."
     },
     "oauth_implementation_unavailable": {
       "message": "[%key:common::exceptions::oauth2_implementation_unavailable::message%]"
@@ -505,16 +505,16 @@
       "message": "SpaceXAI is rate limiting requests to {model}. Try again later."
     },
     "reauthentication_required": {
-      "message": "The SpaceXAI session is no longer valid. Reauthenticate the integration."
+      "message": "The SpaceXAI session is no longer valid. Sign in again."
     },
     "refresh_rejected": {
-      "message": "SpaceXAI rejected the session refresh. Reauthenticate the integration."
+      "message": "SpaceXAI rejected the session refresh. Sign in again."
     },
     "response_not_found": {
       "message": "SpaceXAI did not return an assistant response for the AI Task."
     },
     "subscription_not_entitled": {
-      "message": "This SpaceXAI account is not eligible for subscription-backed Grok access."
+      "message": "This SpaceXAI account cannot use Grok this way."
     },
     "timeout": {
       "message": "SpaceXAI did not finish the response from {model} in time."
@@ -531,7 +531,7 @@
   },
   "issues": {
     "model_not_entitled": {
-      "description": "The configured model {model} is no longer available to this SpaceXAI account. Use the repair flow to select a currently entitled model.",
+      "description": "The configured model {model} is no longer available to this SpaceXAI account. Use the repair to pick another model.",
       "fix_flow": {
         "abort": {
           "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
@@ -560,18 +560,18 @@
               "model": "[%key:component::spacexai::config::step::conversation::data_description::model%]",
               "prompt": "[%key:component::spacexai::config::step::conversation::data_description::prompt%]"
             },
-            "description": "The conversation agent is configured to use `{model}`, which is not available to this SpaceXAI account. Assist cannot use this agent until a currently entitled model is selected.\n\n1. Choose a replacement from the models currently entitled to the account.\n2. Submit the form to update the conversation agent.\n\nThe agent becomes available after a currently entitled model is saved."
+            "description": "The conversation agent is set to `{model}`, which this SpaceXAI account cannot use. Assist cannot use this agent until you pick another model.\n\n1. Choose a replacement from the models available to the account.\n2. Submit the form to update the conversation agent.\n\nThe agent becomes available after that model is saved."
           }
         }
       },
       "title": "Configured SpaceXAI model is unavailable"
     },
     "speech_api_access": {
-      "description": "This SpaceXAI subscription session could not use a speech or Imagine media API (api.x.ai). Chat may still work. Keep SpaceXAI STT/TTS selectable under Settings → Voice assistants, or use another engine until the account is entitled for that surface.",
+      "description": "This SpaceXAI account could not use speech or Imagine. Chat may still work. Keep SpaceXAI STT/TTS selectable under Settings → Voice assistants, or use another engine.",
       "title": "SpaceXAI media API access was denied"
     },
     "subscription_not_entitled": {
-      "description": "The SpaceXAI account connected to Home Assistant is not eligible for subscription-backed third-party Grok access, so conversation agents for this account cannot be used.\n\n1. Open the SpaceXAI console (link below) and confirm the signed-in account has an active eligible subscription.\n2. If the subscription belongs to a different account, remove this integration entry and add it again with the eligible account.\n3. After the subscription is eligible, reload the integration or sign in again.\n\nConversation agents for this account become available once SpaceXAI accepts the account.",
+      "description": "The signed-in SpaceXAI account cannot use Grok this way, so conversation agents stay unavailable.\n\n1. Check the plan in the SpaceXAI console (link below).\n2. If the plan is on a different account, remove this integration and add it again with that account.\n3. Reload the integration or sign in again after the account can use Grok.\n\nConversation agents become available once SpaceXAI accepts the account.",
       "title": "SpaceXAI subscription access is unavailable"
     }
   },

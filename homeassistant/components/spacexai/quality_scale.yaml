@@ -30,9 +30,7 @@ rules:
   unique-config-entry: done
 
   # Silver
-  action-exceptions:
-    status: done
-    comment: spacexai.generate_video raises ServiceValidationError/HomeAssistantError with translation keys.
+  action-exceptions: done
   config-entry-unloading: done
   docs-configuration-parameters: done
   docs-installation-parameters: done

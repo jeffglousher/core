@@ -91,19 +91,19 @@ class AccountMismatchError(SpaceXAIError):
 
 
 class SubscriptionNotEntitledError(SpaceXAIError):
-    """The account lacks subscription-backed API access."""
+    """The account cannot use Grok this way."""
 
     category = ErrorCategory.SUBSCRIPTION_NOT_ENTITLED
 
 
 class NoConversationModelsError(SpaceXAIError):
-    """The account has no entitled text/conversation models."""
+    """The account has no conversation models available."""
 
     category = ErrorCategory.NO_CONVERSATION_MODELS
 
 
 class ModelNotEntitledError(SpaceXAIError):
-    """The account is not entitled to the configured model."""
+    """The account cannot use the configured model."""
 
     category = ErrorCategory.MODEL_NOT_ENTITLED
 

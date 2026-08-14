@@ -104,7 +104,7 @@ def _stream_failure(
         "insufficient_permissions",
     ):
         return SubscriptionNotEntitledError(
-            "Account is not entitled for subscription-backed Grok access",
+            "This SpaceXAI account cannot use Grok this way",
             context=context,
         )
     if normalized == "rate_limit_exceeded":

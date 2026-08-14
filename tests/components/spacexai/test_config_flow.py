@@ -153,7 +153,6 @@ async def _configure_custom_conversation(
 ) -> dict[str, Any]:
     """Open customize and submit conversation options."""
     result = await _choose_customize(hass, result)
-    # Install customize uses force_custom (no recommended toggle in the schema).
     payload = {
         key: value for key, value in user_input.items() if key != CONF_RECOMMENDED
     }

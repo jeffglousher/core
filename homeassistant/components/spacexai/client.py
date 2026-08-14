@@ -920,12 +920,12 @@ class SpaceXAIClient:
                 and not _is_permission_denial(context.provider_code, body)
             ):
                 return SubscriptionNotEntitledError(
-                    "Account is not entitled for subscription-backed Grok access",
+                    "This SpaceXAI account cannot use Grok this way",
                     context=context,
                 )
         if status == 426:
             return PermanentProviderError(
-                "Provider rejected the Grok CLI client identity headers",
+                "Provider rejected the OAuth client identity",
                 context=context,
             )
         if status == 404 and context.model is not None:
@@ -1081,7 +1081,7 @@ def _is_sparse_chat_model_id(model_id: str) -> bool:
 def _conversation_models_from_page(
     models: Sequence[OpenAIModel],
 ) -> tuple[ModelInfo, ...]:
-    """Extract chat models, tolerating sparse CLI-proxy metadata."""
+    """Extract chat models, tolerating sparse model metadata."""
     return _model_infos(models, _is_conversation_model)
 
 

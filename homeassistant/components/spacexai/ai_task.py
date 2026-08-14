@@ -125,7 +125,7 @@ class SpaceXAITaskEntity(ai_task.AITaskEntity, SpaceXAIBaseLLMEntity):
         if not snapshot.has_image_model(image_model):
             self._raise_provider_home_assistant_error(
                 ModelNotEntitledError(
-                    "The account is not entitled to the configured image model",
+                    "This SpaceXAI account cannot use the configured image model",
                     context=ErrorContext(operation=Operation.IMAGE, model=image_model),
                 )
             )
