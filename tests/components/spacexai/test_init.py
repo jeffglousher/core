@@ -370,7 +370,7 @@ async def test_remove_cleans_account_repairs(
         hass,
         "spacexai",
         model_issue,
-        is_fixable=False,
+        is_fixable=True,
         severity=ir.IssueSeverity.ERROR,
         translation_key="model_not_entitled",
         translation_placeholders={"model": "grok-old"},
