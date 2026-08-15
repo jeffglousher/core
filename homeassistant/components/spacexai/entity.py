@@ -50,6 +50,7 @@ from . import (
     async_capture_availability_epochs,
     async_mark_subscription_not_entitled,
 )
+from .client import ProviderSnapshot
 from .const import (
     CONF_CODE_INTERPRETER,
     CONF_IMAGE_GENERATION,
@@ -169,7 +170,9 @@ def _format_tool(
     )
 
 
-def _provider_tools_from_subentry(data: Mapping[str, Any]) -> list[dict[str, Any]]:
+def _provider_tools_from_subentry(
+    data: Mapping[str, Any], snapshot: ProviderSnapshot
+) -> list[dict[str, Any]]:
     """Build server-side provider tools from conversation subentry options."""
     tools: list[dict[str, Any]] = []
 
@@ -209,15 +212,22 @@ def _provider_tools_from_subentry(data: Mapping[str, Any]) -> list[dict[str, Any
         tools.append({"type": "code_interpreter"})
 
     if data.get(CONF_IMAGE_GENERATION, DEFAULT_IMAGE_GENERATION):
-        tools.append(
-            {
-                "type": "image_generation",
-                "model": data.get(CONF_IMAGE_MODEL, DEFAULT_IMAGE_MODEL),
-                "action": data.get(
-                    CONF_IMAGE_GENERATION_ACTION, DEFAULT_IMAGE_GENERATION_ACTION
-                ),
-            }
-        )
+        image_model = data.get(CONF_IMAGE_MODEL, DEFAULT_IMAGE_MODEL)
+        if snapshot.has_image_model(image_model):
+            tools.append(
+                {
+                    "type": "image_generation",
+                    "model": image_model,
+                    "action": data.get(
+                        CONF_IMAGE_GENERATION_ACTION, DEFAULT_IMAGE_GENERATION_ACTION
+                    ),
+                }
+            )
+        else:
+            LOGGER.debug(
+                "Skipping image generation tool; model is not available to this account: %s",
+                image_model,
+            )
 
     return tools
 
@@ -432,7 +442,11 @@ class SpaceXAIBaseLLMEntity(Entity):
                 dict(_format_tool(tool, chat_log.llm_api.custom_serializer))
                 for tool in chat_log.llm_api.tools
             ]
-        tools.extend(_provider_tools_from_subentry(self.subentry.data))
+        tools.extend(
+            _provider_tools_from_subentry(
+                self.subentry.data, self.entry.runtime_data.snapshot
+            )
+        )
         include = ["reasoning.encrypted_content"]
         if self.subentry.data.get(CONF_CODE_INTERPRETER, DEFAULT_CODE_INTERPRETER):
             include.append("code_interpreter_call.outputs")

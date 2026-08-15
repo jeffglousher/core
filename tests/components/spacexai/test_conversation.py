@@ -1600,6 +1600,13 @@ async def test_image_generation_tool_uses_configured_model(
     )
     await hass.config_entries.async_reload(setup_integration.entry_id)
     await hass.async_block_till_done()
+    snapshot = setup_integration.runtime_data.snapshot
+    setup_integration.runtime_data.snapshot = ProviderSnapshot(
+        account=snapshot.account,
+        models=snapshot.models,
+        image_models=(ModelInfo(id="grok-imagine-image-3.0", owner="xai"),),
+        video_models=snapshot.video_models,
+    )
 
     result = await converse(hass, "Draw a porch at dawn")
     assert result.response.speech["plain"]["speech"] == "Hello from Grok"
@@ -1608,6 +1615,33 @@ async def test_image_generation_tool_uses_configured_model(
         "model": "grok-imagine-image-3.0",
         "action": DEFAULT_IMAGE_GENERATION_ACTION,
     } in mock_stream.call_args.kwargs["tools"]
+
+
+async def test_image_generation_tool_omits_unknown_imagine_model(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+) -> None:
+    """Do not send an Imagine id the account cannot use."""
+    subentry = conversation_subentry(setup_integration)
+    hass.config_entries.async_update_subentry(
+        setup_integration,
+        subentry,
+        data={
+            **subentry.data,
+            CONF_IMAGE_GENERATION: True,
+            CONF_IMAGE_MODEL: "grok-imagine-image-unknown",
+        },
+    )
+    await hass.config_entries.async_reload(setup_integration.entry_id)
+    await hass.async_block_till_done()
+
+    result = await converse(hass, "Draw a porch at dawn")
+    assert result.response.speech["plain"]["speech"] == "Hello from Grok"
+    assert all(
+        tool.get("type") != "image_generation"
+        for tool in mock_stream.call_args.kwargs["tools"]
+    )
 
 
 async def test_image_generation_native_follows_reasoning(
