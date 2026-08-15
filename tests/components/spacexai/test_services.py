@@ -466,3 +466,140 @@ async def test_publish_media_keeps_existing_file(
     }
     assert (dest_dir / "porch.jpg").read_bytes() == b"keep-me"
     assert (dest_dir / "porch_2026-08-14_180000.jpg").read_bytes() == later.read_bytes()
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_publish_media_rejects_filename_escape(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    tmp_path: Path,
+) -> None:
+    """Keep a requested filename under /local/spacexai."""
+    source = tmp_path / "porch.jpg"
+    source.write_bytes(b"\xff\xd8\xffjpeg")
+    www = Path(hass.config.path("www"))
+    dest_dir = www / "spacexai"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    (dest_dir / "escape.jpg").unlink(missing_ok=True)
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.media.media_source.async_resolve_media",
+            return_value=PlayMedia(
+                url="/ai_task/image/porch.jpg",
+                mime_type="image/jpeg",
+                path=source,
+            ),
+        ),
+        patch(
+            "homeassistant.components.spacexai.media.get_url",
+            return_value="http://10.0.0.5:8123",
+        ),
+    ):
+        response = await hass.services.async_call(
+            DOMAIN,
+            "publish_media",
+            {
+                "media_source_id": "media-source://ai_task/image/porch.jpg",
+                "filename": "../escape.jpg",
+            },
+            blocking=True,
+            return_response=True,
+        )
+
+    assert response["filename"] == "escape.jpg"
+    assert response["path"] == "/local/spacexai/escape.jpg"
+    assert (dest_dir / "escape.jpg").read_bytes() == source.read_bytes()
+    assert not (www / "escape.jpg").exists()
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_generate_video_keeps_existing_persist_file(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """Append a timestamp when the default persist filename already exists."""
+    entry = setup_integration
+    entry.runtime_data.client.async_generate_video = AsyncMock(
+        return_value=GeneratedVideo(
+            url="https://vidgen.example/video.mp4",
+            model=DEFAULT_VIDEO_MODEL,
+        )
+    )
+    payload = b"\x00\x00\x00\x18ftypmp42later"
+    aioclient_mock.get(
+        "https://vidgen.example/video.mp4",
+        content=payload,
+        headers={"Content-Type": "video/mp4"},
+    )
+    dest_dir = Path(hass.config.path("www")) / "spacexai"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    for leftover in dest_dir.glob("2026-08-14_180000_imagine_video*.mp4"):
+        leftover.unlink()
+    existing = dest_dir / "2026-08-14_180000_imagine_video.mp4"
+    existing.write_bytes(b"keep-me")
+
+    with (
+        patch(
+            "homeassistant.components.spacexai.media.dt_util.utcnow",
+            return_value=datetime(2026, 8, 14, 18, 0, 0, tzinfo=UTC),
+        ),
+        patch(
+            "homeassistant.components.spacexai.media.get_url",
+            return_value="http://10.0.0.5:8123",
+        ),
+    ):
+        response = await hass.services.async_call(
+            DOMAIN,
+            "generate_video",
+            {
+                "config_entry": entry.entry_id,
+                "prompt": "A bouncing red ball",
+            },
+            blocking=True,
+            return_response=True,
+        )
+
+    assert response["filename"] == "2026-08-14_180000_imagine_video_2026-08-14_180000.mp4"
+    assert existing.read_bytes() == b"keep-me"
+    assert (
+        dest_dir / "2026-08-14_180000_imagine_video_2026-08-14_180000.mp4"
+    ).read_bytes() == payload
+
+
+@pytest.mark.usefixtures("setup_credentials")
+async def test_generate_video_rejects_oversized_download(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    aioclient_mock: AiohttpClientMocker,
+) -> None:
+    """Reject a provider video that exceeds the local persist cap."""
+    entry = setup_integration
+    entry.runtime_data.client.async_generate_video = AsyncMock(
+        return_value=GeneratedVideo(
+            url="https://vidgen.example/huge.mp4",
+            model=DEFAULT_VIDEO_MODEL,
+        )
+    )
+    aioclient_mock.get(
+        "https://vidgen.example/huge.mp4",
+        content=b"x" * 17,
+        headers={"Content-Type": "video/mp4"},
+    )
+
+    with (
+        patch("homeassistant.components.spacexai.media.MAX_VIDEO_BYTES", 16),
+        pytest.raises(HomeAssistantError) as raised,
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            "generate_video",
+            {
+                "config_entry": entry.entry_id,
+                "prompt": "A bouncing red ball",
+            },
+            blocking=True,
+            return_response=True,
+        )
+    assert raised.value.translation_key == "video_too_large"

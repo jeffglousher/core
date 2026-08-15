@@ -1669,6 +1669,70 @@ async def test_image_generation_native_follows_reasoning(
 
     result = await converse(hass, "Draw a red circle")
     assert result.response.speech["plain"]["speech"] == "Here is the circle"
+    chat_log = hass.data[conversation.chat_log.DATA_CHAT_LOGS][result.conversation_id]
+    native_messages = [
+        content
+        for content in chat_log.content
+        if isinstance(content, conversation.AssistantContent) and content.native
+    ]
+    assert any(
+        isinstance(content.native, ResponseReasoningItem) for content in native_messages
+    )
+    assert any(
+        isinstance(content.native, ImageGenerationCall) for content in native_messages
+    )
+    assert len(native_messages) >= 2
+
+
+async def test_image_only_completion_is_valid_content(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+) -> None:
+    """Accept a completed Imagine call with no trailing assistant text."""
+    subentry = conversation_subentry(setup_integration)
+    hass.config_entries.async_update_subentry(
+        setup_integration,
+        subentry,
+        data={**subentry.data, CONF_IMAGE_GENERATION: True},
+    )
+    await hass.config_entries.async_reload(setup_integration.entry_id)
+    await hass.async_block_till_done()
+
+    image = ImageGenerationCall.model_validate(
+        {
+            "id": "img_only",
+            "result": "iVBORw0KGgo=",
+            "status": "completed",
+            "type": "image_generation_call",
+        }
+    )
+    mock_stream.return_value = EventStream(
+        [
+            ResponseOutputItemAddedEvent(
+                item=image,
+                output_index=0,
+                sequence_number=0,
+                type="response.output_item.added",
+            ),
+            ResponseOutputItemDoneEvent(
+                item=image,
+                output_index=0,
+                sequence_number=1,
+                type="response.output_item.done",
+            ),
+            completed_event(2),
+        ]
+    )
+
+    result = await converse(hass, "Draw a red circle")
+    assert result.response.response_type is not intent.IntentResponseType.ERROR
+    chat_log = hass.data[conversation.chat_log.DATA_CHAT_LOGS][result.conversation_id]
+    assert any(
+        isinstance(content, conversation.AssistantContent)
+        and isinstance(content.native, ImageGenerationCall)
+        for content in chat_log.content
+    )
 
 
 async def test_code_interpreter_tool_is_server_side(

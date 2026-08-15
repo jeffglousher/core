@@ -539,6 +539,9 @@
     },
     "video_persist_failed": {
       "message": "SpaceXAI generated the video, but Home Assistant could not save a local copy. The provider URL is still available for a short time: {url}"
+    },
+    "video_too_large": {
+      "message": "The generated video exceeds the {max_mb} MB size limit."
     }
   },
   "issues": {

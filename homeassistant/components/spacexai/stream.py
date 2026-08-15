@@ -174,6 +174,7 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
     """Transform a Responses API stream into Home Assistant chat deltas."""
     assistant_open = False
     assistant_has_tool_calls = False
+    assistant_has_content = False
     reasoning_native_set = False
     last_summary_index: int | None = None
     announced_tool_calls: dict[str, tuple[str, str]] = {}
@@ -304,6 +305,7 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
                     assistant_open = True
                 if event.delta:
                     yield {"content": event.delta}
+                    assistant_has_content = True
                 continue
 
             if isinstance(event, ResponseReasoningSummaryTextDeltaEvent):
@@ -316,6 +318,7 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
                 last_summary_index = event.summary_index
                 if event.delta:
                     yield {"thinking_content": event.delta}
+                    assistant_has_content = True
                 continue
 
             if isinstance(event, ResponseOutputItemDoneEvent):
@@ -324,6 +327,7 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
                         yield {"role": "assistant"}
                     yield {"native": event.item}
                     reasoning_native_set = True
+                    assistant_has_content = True
                 elif isinstance(event.item, ResponseFunctionWebSearch) or _item_type(
                     event.item
                 ) in (PROVIDER_WEB_SEARCH_TOOL, PROVIDER_X_SEARCH_TOOL):
@@ -375,6 +379,7 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
                     # content. Image calls need their own message.
                     yield {"role": "assistant"}
                     yield {"native": event.item}
+                    assistant_has_content = True
                     assistant_open = False
                     assistant_has_tool_calls = False
                     reasoning_native_set = False
@@ -465,7 +470,11 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
                 "Provider stream ended without a terminal event",
                 context=ErrorContext(operation=Operation.RESPONSE, model=model),
             )
-        if not assistant_open and not assistant_has_tool_calls:
+        if (
+            not assistant_open
+            and not assistant_has_tool_calls
+            and not assistant_has_content
+        ):
             raise MalformedProviderResponseError(
                 "Provider completed without response content",
                 context=ErrorContext(operation=Operation.RESPONSE, model=model),

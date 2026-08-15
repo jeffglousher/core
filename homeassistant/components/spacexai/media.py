@@ -189,9 +189,8 @@ async def _read_limited(content: StreamReader, max_bytes: int, url: str) -> byte
         if total > max_bytes:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
-                translation_key="attachment_too_large",
+                translation_key="video_too_large",
                 translation_placeholders={
-                    "path": "video",
                     "max_mb": str(max_bytes // (1024 * 1024)),
                 },
             )
