@@ -1,5 +1,6 @@
 """Tests for SpaceXAI admin services."""
 
+from collections.abc import Generator
 from contextlib import AbstractContextManager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,6 +31,18 @@ PERSISTED_VIDEO = {
     "path": "/local/spacexai/2026-08-14_180000_imagine_video.mp4",
     "url": "http://10.0.0.5:8123/local/spacexai/2026-08-14_180000_imagine_video.mp4",
 }
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_local_media(hass: HomeAssistant) -> Generator[None]:
+    """Remove published media and path-escape bait from the shared test config."""
+    yield
+    Path(hass.config.path("secrets.yaml")).unlink(missing_ok=True)
+    dest_dir = Path(hass.config.path("www")) / "spacexai"
+    if dest_dir.exists():
+        for leftover in dest_dir.iterdir():
+            leftover.unlink()
+        dest_dir.rmdir()
 
 
 def _persist_patch() -> AbstractContextManager[AsyncMock]:
