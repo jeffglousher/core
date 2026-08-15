@@ -1,76 +1,77 @@
 retrieved_at: 2026-08-15
+hash_note: sha256 of the Git blob (LF) stored in this branch
 sources:
   - id: development_checklist
     title: Development checklist
     url: https://developers.home-assistant.io/docs/development_checklist
     snapshot: snapshots/development_checklist.md
-    sha256: 07e27ab4b11819caabd4effb3a11164be8865d7d59f035414a27a7ca00118e40
+    sha256: 423261c08060a81e6571aadc161dc604cc1ccb87c57b8bdd07fc3a583a848291
 
   - id: creating_component_code_review
     title: Checklist for creating a component
     url: https://developers.home-assistant.io/docs/creating_component_code_review
     snapshot: snapshots/creating_component_code_review.md
-    sha256: 7e556655bb181dcecc48d6f8ce555dc1efc9848c9408b44442828a78eccda1d1
+    sha256: 64af13cfdcc576a13d4ee04825899919cae4b7e035d90726a62d7e04708c0a0f
 
   - id: development_submitting
     title: Submit your work
     url: https://developers.home-assistant.io/docs/development_submitting
     snapshot: snapshots/development_submitting.md
-    sha256: f01fc4a91297a818959644cd0c1a35459efef18572d20cb9f5afaed1ef40f974
+    sha256: 77166bb09d241298da184b6730b94331d1d7d99638f2e0648dff20de7333cd31
 
   - id: review_process
     title: Pull request review process
     url: https://developers.home-assistant.io/docs/review-process
     snapshot: snapshots/review_process.md
-    sha256: a822db8580553687e47662a40273fc8fd40c6d990e90339fece80a2d025a13ff
+    sha256: f4e888324aa49151357eaa50515eb2c4342f2c399f99c3e226eb2d481370c473
 
   - id: development_guidelines
     title: Style guidelines
     url: https://developers.home-assistant.io/docs/development_guidelines
     snapshot: snapshots/development_guidelines.md
-    sha256: 9f0500e1cb1d1f53b8dfcd4882df06af71ada250b8c5b81702b51fd3452d016e
+    sha256: 0f4fe8c9f0b2d3a800e160f281f195116ecb18df0a17abcbed47b9146bd81214
 
   - id: development_testing
     title: Testing your code
     url: https://developers.home-assistant.io/docs/development_testing
     snapshot: snapshots/development_testing.md
-    sha256: 4ddad61c951e4f9ca7b514a75285aa09b385bd3673592a00af957d06efbf8d69
+    sha256: 21d0b20e258558b1ebb9cf6a27bd31b5bf4e165a9002c2e3c0c58bcdc86fbf91
 
   - id: ai_policy
     title: AI Policy
     url: https://developers.home-assistant.io/docs/ai_policy
     snapshot: snapshots/ai_policy.md
-    sha256: 5ebcedddcd00514c1c71fbdd09977287b486388170d6857d3016dc84d92a6812
+    sha256: 93fa2ab0ec6a486d383dc9827c37d9db717b6dcdc4c1433d1961fa09dacce149
 
   - id: quality_scale_rules
     title: Integration quality scale rules
     url: https://developers.home-assistant.io/docs/core/integration-quality-scale/rules
     snapshot: snapshots/quality_scale_rules.md
-    sha256: e0789f567ba7779668b1a5dddb0a21c34955f59c693958778b97f6367f50d577
+    sha256: 64305e698ab8ed6345e8a4be5f6b9594eec32b220bb2b3b349c3a0ca423f76f1
 
   - id: creating_integration_manifest
     title: Integration manifest
     url: https://developers.home-assistant.io/docs/creating_integration_manifest
     snapshot: snapshots/creating_integration_manifest.md
-    sha256: 2c03a3eea3fb7dbcc56005e1bc19e5704d203d878551f794fff5806f23ec4e6f
+    sha256: 04833218463452d5f462ded09a88766042be49b0d5b76d5307b1c5e24b0926e3
 
   - id: api_lib_index
     title: Building a Python library for an API
     url: https://developers.home-assistant.io/docs/api_lib_index
     snapshot: snapshots/api_lib_index.md
-    sha256: 8a45443d06d36102c8cc996aa4143f14788bbceeaba17ea816e2746eb7c5af1c
+    sha256: e0caf19919cb614378de1019915dca4ccfc960377b66e71743bb8045d0857fc3
 
   - id: dependency_transparency
     title: Dependency transparency
     url: https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/dependency-transparency
     snapshot: snapshots/dependency_transparency.md
-    sha256: 3c41a39284b335880b8c58a5eba272eb90634189f93f3fe6a53e1b78b08cbf18
+    sha256: 606770a233ef74ca72097332cd704e4153f70fc0e9782a53b17b2b505a16b386
 
   - id: test_coverage
     title: Above 95% test coverage for all integration modules
     url: https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/test-coverage
     snapshot: snapshots/test_coverage.md
-    sha256: cede8ff3041cca251e1d1daaf6821492820205714212b9a89578c3590d8b273a
+    sha256: 912584799add9cf99e22a2d74884b7f39f769eed2027b803a8ae025e442553e0
 
   - id: local_ai_policy
     title: Open Home Foundation AI Policy (repo)
