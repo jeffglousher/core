@@ -3,7 +3,7 @@
 ## Conformance pass (2026-08-15)
 
 OKF v2 landed on this kit branch (`okf/v2/WAKE.md`). Confirmed code fix
-is the `cursor/spacexai-conformance-2f69` tip on `#37`: conversation
+is fork `#38` (`cursor/spacexai-conformance-2f69`) on `#37`: conversation
 image tools now honor `snapshot.has_image_model()` the same way AI Task
 already did.
 

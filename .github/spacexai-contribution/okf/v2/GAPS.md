@@ -77,7 +77,7 @@ Fork Core-bound:
 - `#35` stacked tip 1–6 (review slices, not the combined view)
 - `#36` grok-46 (parent of `#37`; do not rewrite)
 - `#37` media-friction — required CI green; do not mark ready
-- conformance tip — base `#37` / `cursor/spacexai-media-friction-2f69`
+- `#38` conformance tip — base `#37` / `cursor/spacexai-media-friction-2f69`
 
 Fork meta: `#15` contribution-kit.
 

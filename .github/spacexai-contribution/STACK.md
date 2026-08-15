@@ -35,7 +35,7 @@ Official Core `#178765` is conversation-only — **do not touch**.
 | `#35` | `cursor/spacexai-super-stack-2f69` | `#17` | Stacked tip 1–6 (review slices) |
 | `#36` | `cursor/spacexai-grok-46-2f69` | `#35` | Grok 4.6 / Imagine 2 defaults |
 | `#37` | `cursor/spacexai-media-friction-2f69` | `#36` | Media persist + image-stream friction. Required CI green. Do not mark ready |
-| tip | `cursor/spacexai-conformance-2f69` | `#37` | Confirmed send-time image-tool entitlement |
+| `#38` | `cursor/spacexai-conformance-2f69` | `#37` | Confirmed send-time image-tool entitlement |
 | `#15` | `cursor/spacexai-contribution-kit-2f69` | `up-base` | This kit only |
 
 Do **not** merge `#37` into `#36`. Do **not** put kit / OKF / `.cursor/` files on Core-bound slices.

@@ -13,7 +13,7 @@ Canonical AI policy: [Open Home Foundation AI Policy](https://developers.home-as
 | Track | State |
 | --- | --- |
 | Upstream-ready stack | `cursor/spacexai-up-*-2f69` on `jeffglousher/core` (base = current `upstream/dev`) |
-| Fork draft PRs | `#14` `#24` `#23` `#18` `#17` `#28`–`#32` `#34`–`#37` + kit `#15`; conformance tip on `#37`. Legacy `#1`–`#7`/`#12`/`#13` closed. See [`okf/v2/GAPS.md`](okf/v2/GAPS.md) |
+| Fork draft PRs | `#14` `#24` `#23` `#18` `#17` `#28`–`#32` `#34`–`#38` + kit `#15`. Legacy `#1`–`#7`/`#12`/`#13` closed. See [`okf/v2/GAPS.md`](okf/v2/GAPS.md) |
 | Brands + CLA | [home-assistant/brands#10947](https://github.com/home-assistant/brands/pull/10947) ready-for-review — **sign CLA here** |
 | Docs | Draft [home-assistant.io#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
 | Rebase onto `upstream/dev` | **DONE** @ `96092a2d` (full `up-*` rebuild 2026-08-11) |
