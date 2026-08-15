@@ -1,0 +1,23 @@
+---
+description: SpaceXAI OKF wake gate — read official HA contribution rules before changing the stack
+alwaysApply: true
+---
+
+# SpaceXAI OKF wake
+
+Before changing `spacexai` or its fork PRs, read:
+
+`.github/spacexai-contribution/okf/v2/WAKE.md`
+
+If that path is missing on this branch:
+
+`git show origin/cursor/spacexai-contribution-kit-2f69:.github/spacexai-contribution/okf/v2/WAKE.md`
+
+Do not put OKF, kit, or `.cursor/` files on Core-bound slices (`#14`,
+`#23`–`#24`, `#28`–`#32`, `#34`–`#37`, official `#178765`).
+
+Do not extract a PyPI `spacexai` library this pass. Do not drop OAuth
+`conversations:read/write` without a reauth plan. Do not mark `#37`
+ready or merge waves.
+
+New commits: HA imperative, no trailing period.

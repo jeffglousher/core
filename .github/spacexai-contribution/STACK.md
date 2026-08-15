@@ -12,6 +12,34 @@ This folder is the **human-facing contribution kit** (fork meta only). It is **n
 | Docs | `home-assistant/home-assistant.io` → `current` | `source/_integrations/spacexai.markdown` from [`docs/spacexai.markdown`](docs/spacexai.markdown) | Front matter `ha_quality_scale: bronze` on docs PR; platinum on Core wave 8 |
 | OAuth | xAI allowlist | Dedicated Home Assistant public client ID | **BLOCKER** until issued |
 
+## Live PR map (2026-08-15)
+
+OKF v2 wake file: [`okf/v2/WAKE.md`](okf/v2/WAKE.md). Gap list: [`okf/v2/GAPS.md`](okf/v2/GAPS.md).
+
+Official Core `#178765` is conversation-only — **do not touch**.
+
+| PR | Branch | Base | Role |
+| --- | --- | --- | --- |
+| official `#178765` | n/a | `dev` | Conversation-only. Do not touch |
+| `#14` | `cursor/spacexai-up-conversation-2f69` | `dev` | Wave 1 bronze Conversation |
+| `#24` | `cursor/spacexai-gold-diagnostics-2f69` | `#14` | Diagnostics / icons |
+| `#23` | `cursor/spacexai-up-runtime-entitlement-2f69` | `#24` | Catalog entitlement / repairs |
+| `#18` | `cursor/spacexai-up-ai-task-2f69` | `#23` | AI Task |
+| `#17` | `cursor/spacexai-up-capabilities-2f69` | `#18` | Server tools |
+| `#28` | `cursor/spacexai-up-device-code-2f69` | `#17` | Device-code + CLI OAuth |
+| `#29` | `cursor/spacexai-up-hardening-2f69` | `#28` | Attachments / Imagine |
+| `#30` | `cursor/spacexai-up-full-capabilities-2f69` | `#29` | STT / TTS / Assist |
+| `#31` | `cursor/spacexai-up-optimized-surface-2f69` | `#30` | Optimized surface |
+| `#32` | `cursor/spacexai-up-runtime-repair-2f69` | `#31` | Runtime repair |
+| `#34` | `cursor/spacexai-up-platinum-2f69` | `#32` | Platinum declaration |
+| `#35` | `cursor/spacexai-super-stack-2f69` | `#17` | Stacked tip 1–6 (review slices) |
+| `#36` | `cursor/spacexai-grok-46-2f69` | `#35` | Grok 4.6 / Imagine 2 defaults |
+| `#37` | `cursor/spacexai-media-friction-2f69` | `#36` | Media persist + image-stream friction. Required CI green. Do not mark ready |
+| tip | `cursor/spacexai-conformance-2f69` | `#37` | Confirmed send-time image-tool entitlement |
+| `#15` | `cursor/spacexai-contribution-kit-2f69` | `up-base` | This kit only |
+
+Do **not** merge `#37` into `#36`. Do **not** put kit / OKF / `.cursor/` files on Core-bound slices.
+
 ## Upstream-ready Core stack (canonical)
 
 Rebuilt from current `upstream/dev` (`cursor/spacexai-up-base-2f69`). Fork-only paths stripped. Former brands/docs flip folded into wave 1. Wave 1 is **bronze-first Conversation** (no tip `quality_scale` claims, no unrelated `requirements_all` churn, no Assist `after_dependencies` until the STT/TTS wave).

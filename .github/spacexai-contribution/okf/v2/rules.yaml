@@ -1,0 +1,133 @@
+# MUST/SHOULD extracted from OKF v2 snapshots. Retrieved 2026-08-15.
+rules:
+  - id: pypi-protocol-library
+    source: development_checklist / creating_component_code_review / api_lib_index
+    severity: MUST
+    stack_implication: >
+      Official rule wants protocol code on PyPI. SpaceXAI keeps a thin
+      openai==2.45.0 wrapper, matching openai_conversation. Do not extract
+      a spacexai library this pass. Document the peer exception in GAPS.md.
+
+  - id: sdist-and-issue-tracker
+    source: development_checklist / api_lib_index
+    severity: MUST
+    stack_implication: openai on PyPI ships sdists and has an issue tracker.
+
+  - id: pin-requirements
+    source: creating_component_code_review / creating_integration_manifest
+    severity: MUST
+    stack_implication: manifest.json pins openai==2.45.0; keep gen_requirements_all in sync.
+
+  - id: ruff-format
+    source: development_checklist / development_guidelines
+    severity: MUST
+    stack_implication: Format with ruff. Run prek before claiming a slice ready.
+
+  - id: docs-and-brands
+    source: development_checklist / quality_scale brands / docs-*
+    severity: MUST
+    stack_implication: >
+      brands#10947 and docs#47349 are open; published URLs 404. Keep
+      quality_scale.yaml done plus comments. Do not flip to todo on Core slices.
+
+  - id: small-prs
+    source: creating_component_code_review / review_process
+    severity: MUST
+    stack_implication: >
+      Official Core gets wave 1 only after brands/docs/OAuth. Local stacked
+      drafts are staging, not the official queue.
+
+  - id: no-dependent-prs
+    source: creating_component_code_review / review_process
+    severity: MUST
+    stack_implication: >
+      Forbidden on home-assistant/core. Fork staging may stay stacked.
+      Do not retarget dependents until the parent Core PR exists.
+
+  - id: max-five-open-prs
+    source: review_process
+    severity: MUST
+    stack_implication: >
+      More than five open Core PRs will be rejected. Keep extra waves as
+      fork drafts until earlier waves merge.
+
+  - id: base-on-dev
+    source: development_submitting
+    severity: MUST
+    stack_implication: Wave 1 retargets home-assistant/core dev. Later waves retarget the previous Core PR branch.
+
+  - id: commit-imperative-no-period
+    source: development_submitting
+    severity: MUST
+    stack_implication: New commits use HA imperative voice and no trailing period.
+
+  - id: pr-template-intact
+    source: development_submitting / local PULL_REQUEST_TEMPLATE
+    severity: MUST
+    stack_implication: Never delete template sections or unchecked boxes.
+
+  - id: tests-use-public-api
+    source: development_testing
+    severity: SHOULD
+    stack_implication: >
+      Prefer hass.services / config entries / states. Peer
+      openai_conversation still unit-tests _format_structured_output.
+      Keep _format_tool and _stream_failure unit tests; do not rename
+      those helpers just to satisfy the guideline.
+
+  - id: no-test-branching
+    source: AGENTS.md
+    severity: SHOULD
+    stack_implication: Split or parametrize instead of if/else in test bodies.
+
+  - id: coverage-95
+    source: test_coverage
+    severity: MUST
+    stack_implication: Silver/Platinum claim requires >95% on integration modules.
+
+  - id: bronze-before-new-integration
+    source: creating_integration_manifest / quality_scale_rules
+    severity: MUST
+    stack_implication: First official Core PR is bronze Conversation, not the platinum tip.
+
+  - id: no-autonomous-contribution
+    source: ai_policy / AI_POLICY.md / AGENTS.md
+    severity: MUST
+    stack_implication: >
+      Human must review, understand, and be able to explain every change.
+      Do not open official issues/PRs or post review comments autonomously.
+
+  - id: human-explains-pr
+    source: ai_policy / PULL_REQUEST_TEMPLATE
+    severity: MUST
+    stack_implication: Human rewrites official PR bodies and checks the understand-the-code box.
+
+  - id: no-rewrite-pushed-history
+    source: AGENTS.md
+    severity: MUST
+    stack_implication: Do not amend, squash, or rebase commits already pushed to an open PR branch.
+
+  - id: omit-core-version-key
+    source: creating_integration_manifest
+    severity: MUST
+    stack_implication: Core manifest omits version. Live HAOS overlay may add version 0.8.1 locally only.
+
+  - id: admin-sensitive-services
+    source: AGENTS.md
+    severity: MUST
+    stack_implication: generate_video and publish_media stay on async_register_admin_service.
+
+  - id: dependency-transparency
+    source: dependency_transparency
+    severity: MUST
+    stack_implication: openai==2.45.0 is OSI-licensed, PyPI, tagged, CI-published.
+
+  - id: do-not-ping-reviewers
+    source: review_process
+    severity: MUST
+    stack_implication: No reviewer pings on official or fork PRs.
+
+  - id: one-thing-per-pr
+    source: review_process
+    severity: SHOULD
+    stack_implication: Conformance tip is hygiene only. Do not fold kit files or wave merges into it.

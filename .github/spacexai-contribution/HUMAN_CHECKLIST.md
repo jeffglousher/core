@@ -13,7 +13,7 @@ Canonical AI policy: [Open Home Foundation AI Policy](https://developers.home-as
 | Track | State |
 | --- | --- |
 | Upstream-ready stack | `cursor/spacexai-up-*-2f69` on `jeffglousher/core` (base = current `upstream/dev`) |
-| Fork draft PRs | `#14`→`#18`→`#17`→`#16`→`#21`→`#19`→`#22`→`#20` (+ kit `#15`); legacy `#1`–`#7`/`#12`/`#13` closed |
+| Fork draft PRs | `#14` `#24` `#23` `#18` `#17` `#28`–`#32` `#34`–`#37` + kit `#15`; conformance tip on `#37`. Legacy `#1`–`#7`/`#12`/`#13` closed. See [`okf/v2/GAPS.md`](okf/v2/GAPS.md) |
 | Brands + CLA | [home-assistant/brands#10947](https://github.com/home-assistant/brands/pull/10947) ready-for-review — **sign CLA here** |
 | Docs | Draft [home-assistant.io#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
 | Rebase onto `upstream/dev` | **DONE** @ `96092a2d` (full `up-*` rebuild 2026-08-11) |
@@ -142,8 +142,8 @@ Notes: [TRACKING.md](TRACKING.md).
 | Hassfest quality_scale (up tip) | Invalid integrations: 0 |
 | Brands draft PR | [#10947](https://github.com/home-assistant/brands/pull/10947) |
 | Docs draft PR | [#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
-| Contribution kit meta | [`#15`](https://github.com/jeffglousher/core/pull/15) `cursor/spacexai-contribution-kit-2f69` |
-| Upstream-ready fork drafts | `#14` `#18` `#17` `#16` `#21` `#19` `#22` `#20` (see TRACKING) |
+| Contribution kit meta | [`#15`](https://github.com/jeffglousher/core/pull/15) `cursor/spacexai-contribution-kit-2f69` (OKF v2 + WAKE) |
+| Upstream-ready fork drafts | `#14` `#24` `#23` `#18` `#17` `#28`–`#32` `#34`–`#37` + conformance tip (see [`okf/v2/GAPS.md`](okf/v2/GAPS.md)) |
 
 ---
 

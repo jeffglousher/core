@@ -1,0 +1,91 @@
+retrieved_at: 2026-08-15
+sources:
+  - id: development_checklist
+    title: Development checklist
+    url: https://developers.home-assistant.io/docs/development_checklist
+    snapshot: snapshots/development_checklist.md
+    sha256: 07e27ab4b11819caabd4effb3a11164be8865d7d59f035414a27a7ca00118e40
+
+  - id: creating_component_code_review
+    title: Checklist for creating a component
+    url: https://developers.home-assistant.io/docs/creating_component_code_review
+    snapshot: snapshots/creating_component_code_review.md
+    sha256: 7e556655bb181dcecc48d6f8ce555dc1efc9848c9408b44442828a78eccda1d1
+
+  - id: development_submitting
+    title: Submit your work
+    url: https://developers.home-assistant.io/docs/development_submitting
+    snapshot: snapshots/development_submitting.md
+    sha256: f01fc4a91297a818959644cd0c1a35459efef18572d20cb9f5afaed1ef40f974
+
+  - id: review_process
+    title: Pull request review process
+    url: https://developers.home-assistant.io/docs/review-process
+    snapshot: snapshots/review_process.md
+    sha256: a822db8580553687e47662a40273fc8fd40c6d990e90339fece80a2d025a13ff
+
+  - id: development_guidelines
+    title: Style guidelines
+    url: https://developers.home-assistant.io/docs/development_guidelines
+    snapshot: snapshots/development_guidelines.md
+    sha256: 9f0500e1cb1d1f53b8dfcd4882df06af71ada250b8c5b81702b51fd3452d016e
+
+  - id: development_testing
+    title: Testing your code
+    url: https://developers.home-assistant.io/docs/development_testing
+    snapshot: snapshots/development_testing.md
+    sha256: 4ddad61c951e4f9ca7b514a75285aa09b385bd3673592a00af957d06efbf8d69
+
+  - id: ai_policy
+    title: AI Policy
+    url: https://developers.home-assistant.io/docs/ai_policy
+    snapshot: snapshots/ai_policy.md
+    sha256: 5ebcedddcd00514c1c71fbdd09977287b486388170d6857d3016dc84d92a6812
+
+  - id: quality_scale_rules
+    title: Integration quality scale rules
+    url: https://developers.home-assistant.io/docs/core/integration-quality-scale/rules
+    snapshot: snapshots/quality_scale_rules.md
+    sha256: e0789f567ba7779668b1a5dddb0a21c34955f59c693958778b97f6367f50d577
+
+  - id: creating_integration_manifest
+    title: Integration manifest
+    url: https://developers.home-assistant.io/docs/creating_integration_manifest
+    snapshot: snapshots/creating_integration_manifest.md
+    sha256: 2c03a3eea3fb7dbcc56005e1bc19e5704d203d878551f794fff5806f23ec4e6f
+
+  - id: api_lib_index
+    title: Building a Python library for an API
+    url: https://developers.home-assistant.io/docs/api_lib_index
+    snapshot: snapshots/api_lib_index.md
+    sha256: 8a45443d06d36102c8cc996aa4143f14788bbceeaba17ea816e2746eb7c5af1c
+
+  - id: dependency_transparency
+    title: Dependency transparency
+    url: https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/dependency-transparency
+    snapshot: snapshots/dependency_transparency.md
+    sha256: 3c41a39284b335880b8c58a5eba272eb90634189f93f3fe6a53e1b78b08cbf18
+
+  - id: test_coverage
+    title: Above 95% test coverage for all integration modules
+    url: https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/test-coverage
+    snapshot: snapshots/test_coverage.md
+    sha256: cede8ff3041cca251e1d1daaf6821492820205714212b9a89578c3590d8b273a
+
+  - id: local_ai_policy
+    title: Open Home Foundation AI Policy (repo)
+    url: repo://AI_POLICY.md
+    snapshot: snapshots/local_AI_POLICY.md
+    sha256: 8a98323297b5fa98ed90f771d5e6829181493a01b1801b0d4fb606ee68257fae
+
+  - id: local_pr_template
+    title: Core pull request template
+    url: repo://.github/PULL_REQUEST_TEMPLATE.md
+    snapshot: snapshots/local_PULL_REQUEST_TEMPLATE.md
+    sha256: a71a725dbfe2b5d8065e1b4e40437c64f9e63606112d415ec940348e9aa59438
+
+  - id: local_agents
+    title: GitHub Copilot and Claude Code instructions
+    url: repo://AGENTS.md
+    snapshot: snapshots/local_AGENTS.md
+    sha256: 571e48dec15772b199601a3f073b2c928dbc550b1a9529023aef46c883ef277d

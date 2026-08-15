@@ -5,9 +5,11 @@ individual stacked contribution.
 
 | Path | Purpose |
 | --- | --- |
+| [`okf/v2/WAKE.md`](okf/v2/WAKE.md) | **First file every later agent reads** — official HA rules + hard stops |
+| [`okf/v2/`](okf/v2/) | OKF v2 snapshots, hashes, MUST/SHOULD rules, gap list (2026-08-15) |
 | [`HUMAN_CHECKLIST.md`](HUMAN_CHECKLIST.md) | **You (human)** — blockers, order, boxes only you can check |
 | [`UPSTREAM.md`](UPSTREAM.md) | How to retarget clean branches onto `home-assistant/core` |
-| [`STACK.md`](STACK.md) | Wave plan, validations, quality-scale flip PRs |
+| [`STACK.md`](STACK.md) | Wave plan, live PR map, validations |
 | [`TRACKING.md`](TRACKING.md) | Live smoke + external/Core draft PR links |
 | [`brands/`](brands/) | Ready-to-PR Home Assistant brands assets + source notes |
 | [`docs/spacexai.markdown`](docs/spacexai.markdown) | Drop-in page for `home-assistant.io` (`current`) |

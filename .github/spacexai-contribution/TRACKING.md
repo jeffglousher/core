@@ -1,5 +1,18 @@
 # SpaceXAI open tracking (fork issues)
 
+## Conformance pass (2026-08-15)
+
+OKF v2 landed on this kit branch (`okf/v2/WAKE.md`). Confirmed code fix
+is the `cursor/spacexai-conformance-2f69` tip on `#37`: conversation
+image tools now honor `snapshot.has_image_model()` the same way AI Task
+already did.
+
+Live PR map and scored HA-rule collisions: [`okf/v2/GAPS.md`](okf/v2/GAPS.md),
+[`STACK.md`](STACK.md).
+
+Do not mark `#37` ready. Do not merge `#37` into `#36`. Official
+`#178765` stays untouched. Brands CDN and docs URL still 404.
+
 Issues are enabled on `jeffglousher/core` for product gaps that need live
 subscription verification before docs can promise them.
 
