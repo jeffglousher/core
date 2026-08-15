@@ -371,13 +371,13 @@ async def _transform_stream(  # noqa: C901 - Keep stream state in one parser.
                     isinstance(event.item, ImageGenerationCall)
                     or _item_type(event.item) == "image_generation_call"
                 ):
-                    if not assistant_open:
-                        yield {"role": "assistant"}
-                        assistant_open = True
+                    # Reasoning may already have set native on the open assistant
+                    # content. Image calls need their own message.
+                    yield {"role": "assistant"}
                     yield {"native": event.item}
-                    # Next text/message should open a fresh assistant content.
                     assistant_open = False
                     assistant_has_tool_calls = False
+                    reasoning_native_set = False
                 continue
 
             if isinstance(event, ResponseCompletedEvent):

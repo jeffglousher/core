@@ -24,6 +24,7 @@ from openai.types.responses import (
     ResponseTextDeltaEvent,
     ResponseWebSearchCallSearchingEvent,
 )
+from openai.types.responses.response_output_item import ImageGenerationCall
 from pydantic import ValidationError
 import pytest
 from syrupy.assertion import SnapshotAssertion
@@ -1605,6 +1606,69 @@ async def test_image_generation_tool_uses_configured_model(
         "model": "grok-imagine-image-3.0",
         "action": DEFAULT_IMAGE_GENERATION_ACTION,
     } in mock_stream.call_args.kwargs["tools"]
+
+
+async def test_image_generation_native_follows_reasoning(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    mock_stream: AsyncMock,
+) -> None:
+    """Keep Imagine native on its own assistant message after reasoning."""
+    subentry = conversation_subentry(setup_integration)
+    hass.config_entries.async_update_subentry(
+        setup_integration,
+        subentry,
+        data={**subentry.data, CONF_IMAGE_GENERATION: True},
+    )
+    await hass.config_entries.async_reload(setup_integration.entry_id)
+    await hass.async_block_till_done()
+
+    reasoning = ResponseReasoningItem(
+        id="reasoning-1",
+        summary=[],
+        encrypted_content="encrypted-plan",
+        type="reasoning",
+    )
+    image = ImageGenerationCall.model_validate(
+        {
+            "id": "img_1",
+            "result": "iVBORw0KGgo=",
+            "status": "completed",
+            "type": "image_generation_call",
+        }
+    )
+    mock_stream.return_value = EventStream(
+        [
+            ResponseOutputItemAddedEvent(
+                item=reasoning,
+                output_index=0,
+                sequence_number=0,
+                type="response.output_item.added",
+            ),
+            ResponseOutputItemDoneEvent(
+                item=reasoning,
+                output_index=0,
+                sequence_number=1,
+                type="response.output_item.done",
+            ),
+            ResponseOutputItemAddedEvent(
+                item=image,
+                output_index=1,
+                sequence_number=2,
+                type="response.output_item.added",
+            ),
+            ResponseOutputItemDoneEvent(
+                item=image,
+                output_index=1,
+                sequence_number=3,
+                type="response.output_item.done",
+            ),
+            *message_events("Here is the circle", complete=True),
+        ]
+    )
+
+    result = await converse(hass, "Draw a red circle")
+    assert result.response.speech["plain"]["speech"] == "Here is the circle"
 
 
 async def test_code_interpreter_tool_is_server_side(
