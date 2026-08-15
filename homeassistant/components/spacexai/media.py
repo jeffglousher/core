@@ -7,15 +7,15 @@ import re
 from shutil import copyfile
 
 from aiohttp import ClientError, ClientTimeout, StreamReader
+import yarl
 
 from homeassistant.components import media_source
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.network import NoURLAvailableError, get_url, is_hass_url
-from homeassistant.util import dt as dt_util
-from homeassistant.util import slugify
-import yarl
+from homeassistant.util import dt as dt_util, slugify
+from homeassistant.util.json import JsonObjectType
 
 from .const import DOMAIN, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, PUBLISH_DIR
 
@@ -52,7 +52,7 @@ async def async_publish_media(
     media_source_id: str,
     *,
     filename: str | None = None,
-) -> dict[str, str]:
+) -> JsonObjectType:
     """Copy a media-source image into /local so Companion can fetch it."""
     path, mime = await async_resolve_local_image(hass, media_source_id)
     dest_name = _publish_filename(path, filename, mime)
@@ -69,7 +69,7 @@ async def async_persist_remote_media(
     url: str,
     *,
     filename: str | None = None,
-) -> dict[str, str]:
+) -> JsonObjectType:
     """Download a provider media URL into /local before it expires."""
     parsed = yarl.URL(url)
     if parsed.scheme != "https" or not parsed.host:
@@ -87,9 +87,11 @@ async def async_persist_remote_media(
                     translation_key="video_persist_failed",
                     translation_placeholders={"url": url},
                 )
-            mime = (response.headers.get("Content-Type") or "video/mp4").split(
-                ";", maxsplit=1
-            )[0].strip()
+            mime = (
+                (response.headers.get("Content-Type") or "video/mp4")
+                .split(";", maxsplit=1)[0]
+                .strip()
+            )
             payload = await _read_limited(response.content, MAX_VIDEO_BYTES, url)
     except (TimeoutError, ClientError) as err:
         raise HomeAssistantError(
@@ -209,7 +211,10 @@ def _persist_filename(filename: str | None, mime: str) -> str:
     ext = _video_extension_for_mime(mime)
     if filename:
         name = Path(filename).name
-        if _SAFE_FILENAME.match(name) and Path(name).suffix.lower() in _VIDEO_EXTENSIONS:
+        if (
+            _SAFE_FILENAME.match(name)
+            and Path(name).suffix.lower() in _VIDEO_EXTENSIONS
+        ):
             return name
         stem = slugify(Path(name).stem) or "spacexai-video"
         suffix = Path(name).suffix.lower()
@@ -220,7 +225,7 @@ def _persist_filename(filename: str | None, mime: str) -> str:
     return f"{stamp}_imagine_video{ext}"
 
 
-def _published_result(hass: HomeAssistant, dest_name: str) -> dict[str, str]:
+def _published_result(hass: HomeAssistant, dest_name: str) -> JsonObjectType:
     """Return the Companion-facing /local publish payload."""
     local_path = f"/local/{PUBLISH_DIR}/{dest_name}"
     return {
@@ -234,7 +239,10 @@ def _publish_filename(source: Path, filename: str | None, mime: str) -> str:
     """Return a safe filename under www/spacexai."""
     if filename:
         name = Path(filename).name
-        if _SAFE_FILENAME.match(name) and Path(name).suffix.lower() in _IMAGE_EXTENSIONS:
+        if (
+            _SAFE_FILENAME.match(name)
+            and Path(name).suffix.lower() in _IMAGE_EXTENSIONS
+        ):
             return name
         stem = slugify(Path(name).stem) or "spacexai-notify"
         ext = Path(name).suffix.lower()

@@ -234,11 +234,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
     )
     try:
         snapshot = await client.async_validate(expected_subject=entry.unique_id)
-        if snapshot.account.subject != entry.unique_id:
-            raise AccountMismatchError(
-                "Authenticated account does not match this config entry",
-                context=ErrorContext(operation=Operation.ACCOUNT),
-            )
     except AccountMismatchError as err:
         raise ConfigEntryAuthFailed(
             translation_domain=DOMAIN,
@@ -302,6 +297,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
             translation_key="malformed_provider_response",
             translation_placeholders={"model": DEFAULT_MODEL_PLACEHOLDER},
         ) from err
+
+    if snapshot.account.subject != entry.unique_id:
+        raise ConfigEntryAuthFailed(
+            translation_domain=DOMAIN,
+            translation_key="account_mismatch",
+        )
 
     entry.runtime_data = SpaceXAIData(
         client=client,

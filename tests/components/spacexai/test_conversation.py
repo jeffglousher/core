@@ -52,7 +52,6 @@ from homeassistant.components.spacexai.const import (
 )
 from homeassistant.components.spacexai.conversation import SpaceXAIConversationEntity
 from homeassistant.components.spacexai.entity import _format_tool
-from homeassistant.components.spacexai.stream import _stream_failure
 from homeassistant.components.spacexai.errors import (
     ErrorContext,
     ModelNotEntitledError,
@@ -67,6 +66,7 @@ from homeassistant.components.spacexai.issue import (
     MODEL_ISSUE_ORIGIN_RESPONSE,
     async_create_model_not_entitled_issue,
 )
+from homeassistant.components.spacexai.stream import _stream_failure
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.const import (
     CONF_LLM_HASS_API,
@@ -249,7 +249,9 @@ async def test_continuation_reuses_history_and_prompt_cache_key(
     assert second.conversation_id == first.conversation_id
     assert second.response.speech["plain"]["speech"] == "Welcome back"
     assert mock_stream.call_args.kwargs["prompt_cache_key"] == first.conversation_id
-    assert mock_stream.call_args.kwargs["max_output_tokens"] == DEFAULT_MAX_OUTPUT_TOKENS
+    assert (
+        mock_stream.call_args.kwargs["max_output_tokens"] == DEFAULT_MAX_OUTPUT_TOKENS
+    )
     assert mock_stream.call_args.kwargs["input"][1:] == snapshot
 
 

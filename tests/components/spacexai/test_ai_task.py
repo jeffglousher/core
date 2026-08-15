@@ -539,7 +539,9 @@ async def test_attachment_mime_type_is_guessed(
     ("exists", "mime_type", "size", "translation_key"),
     [
         pytest.param(False, "image/jpeg", 7, "attachment_not_found", id="missing"),
-        pytest.param(True, "text/csv", 7, "attachment_unsupported_type", id="unsupported"),
+        pytest.param(
+            True, "text/csv", 7, "attachment_unsupported_type", id="unsupported"
+        ),
         pytest.param(
             True,
             "image/jpeg",

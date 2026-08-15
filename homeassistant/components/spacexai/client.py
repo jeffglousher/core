@@ -38,10 +38,10 @@ from .const import (
     HTTP_TIMEOUT_SECONDS,
     IMAGE_MODELS,
     IMAGE_TIMEOUT_SECONDS,
-    LEGACY_IMAGE_MODELS,
-    LEGACY_VIDEO_MODELS,
     IMAGES_EDIT_URL,
     IMAGES_URL,
+    LEGACY_IMAGE_MODELS,
+    LEGACY_VIDEO_MODELS,
     MAX_IMAGE_BYTES,
     MAX_IMAGE_COUNT,
     MODELS_URL,
@@ -1185,9 +1185,7 @@ def _picker_model_ids(
     """Documented ids first, then other stable catalog ids."""
     seen = set(documented)
     extra = [
-        model_id
-        for model_id in _catalog_model_ids(discovered)
-        if model_id not in seen
+        model_id for model_id in _catalog_model_ids(discovered) if model_id not in seen
     ]
     return (*documented, *extra)
 

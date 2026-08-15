@@ -7,7 +7,9 @@ from homeassistant.components.assist_pipeline import (
     async_setup_pipeline_store,
     async_update_pipeline,
 )
-from homeassistant.components.assist_pipeline.pipeline import KEY_ASSIST_PIPELINE
+from homeassistant.components.assist_pipeline.pipeline import (  # pylint: disable=home-assistant-component-root-import
+    KEY_ASSIST_PIPELINE,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 

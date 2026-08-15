@@ -95,10 +95,10 @@ from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er, issue_registry as ir, llm
-from homeassistant.helpers.selector import SelectSelector
 from homeassistant.helpers.config_entry_oauth2_flow import (
     ImplementationUnavailableError,
 )
+from homeassistant.helpers.selector import SelectSelector
 from homeassistant.setup import async_setup_component
 
 from .conftest import ACCESS_TOKEN, ACCOUNT_ID

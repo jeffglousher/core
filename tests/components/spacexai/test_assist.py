@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from homeassistant.components.assist_pipeline import async_get_pipelines
-from homeassistant.components.assist_pipeline.pipeline import KEY_ASSIST_PIPELINE
+from homeassistant.components.assist_pipeline.pipeline import (  # pylint: disable=home-assistant-component-root-import
+    KEY_ASSIST_PIPELINE,
+)
 from homeassistant.components.spacexai.assist import async_setup_assist_pipeline
 from homeassistant.components.spacexai.const import CONF_DEFAULT_ASSIST
 from homeassistant.core import HomeAssistant

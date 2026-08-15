@@ -1493,7 +1493,10 @@ async def test_generate_video_create_sends_image_and_duration(
     aioclient_mock.post(VIDEOS_URL, json={"request_id": "req-1"})
     aioclient_mock.get(
         f"{DEVELOPER_API_BASE_URL}/videos/req-1",
-        json={"status": "done", "video": {"url": "https://vidgen.example/from-image.mp4"}},
+        json={
+            "status": "done",
+            "video": {"url": "https://vidgen.example/from-image.mp4"},
+        },
     )
     with patch(
         "homeassistant.components.spacexai.client.asyncio.sleep",

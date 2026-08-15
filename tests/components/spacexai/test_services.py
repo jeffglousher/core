@@ -218,27 +218,29 @@ async def test_generate_video_encodes_local_media_source(
         )
     )
 
-    with patch(
-        "homeassistant.components.spacexai.media.media_source.async_resolve_media",
-        return_value=PlayMedia(
-            url="/ai_task/image/still.jpg",
-            mime_type="image/jpeg",
-            path=source,
+    with (
+        patch(
+            "homeassistant.components.spacexai.media.media_source.async_resolve_media",
+            return_value=PlayMedia(
+                url="/ai_task/image/still.jpg",
+                mime_type="image/jpeg",
+                path=source,
+            ),
         ),
+        _persist_patch(),
     ):
-        with _persist_patch():
-            response = await hass.services.async_call(
-                DOMAIN,
-                "generate_video",
-                {
-                    "config_entry": entry.entry_id,
-                    "prompt": "Animate this still",
-                    "image_url": "media-source://ai_task/image/still.jpg",
-                    "duration": 2,
-                },
-                blocking=True,
-                return_response=True,
-            )
+        response = await hass.services.async_call(
+            DOMAIN,
+            "generate_video",
+            {
+                "config_entry": entry.entry_id,
+                "prompt": "Animate this still",
+                "image_url": "media-source://ai_task/image/still.jpg",
+                "duration": 2,
+            },
+            blocking=True,
+            return_response=True,
+        )
 
     assert response == {
         **PERSISTED_VIDEO,
@@ -561,7 +563,9 @@ async def test_generate_video_keeps_existing_persist_file(
             return_response=True,
         )
 
-    assert response["filename"] == "2026-08-14_180000_imagine_video_2026-08-14_180000.mp4"
+    assert (
+        response["filename"] == "2026-08-14_180000_imagine_video_2026-08-14_180000.mp4"
+    )
     assert existing.read_bytes() == b"keep-me"
     assert (
         dest_dir / "2026-08-14_180000_imagine_video_2026-08-14_180000.mp4"
