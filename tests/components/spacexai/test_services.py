@@ -296,6 +296,14 @@ async def test_generate_video_persists_provider_download(
         headers={"Content-Type": "video/mp4"},
     )
     Path(hass.config.path("www")).mkdir(parents=True, exist_ok=True)
+    dest = (
+        Path(hass.config.path("www"))
+        / "spacexai"
+        / "2026-08-14_180000_imagine_video.mp4"
+    )
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    for leftover in dest.parent.glob("2026-08-14_180000_imagine_video*.mp4"):
+        leftover.unlink()
 
     with (
         patch(
@@ -318,11 +326,6 @@ async def test_generate_video_persists_provider_download(
             return_response=True,
         )
 
-    dest = (
-        Path(hass.config.path("www"))
-        / "spacexai"
-        / "2026-08-14_180000_imagine_video.mp4"
-    )
     assert dest.read_bytes() == payload
     assert response == {
         "filename": "2026-08-14_180000_imagine_video.mp4",
@@ -374,6 +377,10 @@ async def test_publish_media_copies_to_local(
     source.write_bytes(b"\xff\xd8\xffjpeg")
     www = Path(hass.config.path("www"))
     www.mkdir(parents=True, exist_ok=True)
+    dest_dir = www / "spacexai"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    for leftover in dest_dir.glob("porch*.jpg"):
+        leftover.unlink()
 
     with (
         patch(
@@ -419,6 +426,8 @@ async def test_publish_media_keeps_existing_file(
     www = Path(hass.config.path("www"))
     dest_dir = www / "spacexai"
     dest_dir.mkdir(parents=True, exist_ok=True)
+    for leftover in dest_dir.glob("porch*.jpg"):
+        leftover.unlink()
     (dest_dir / "porch.jpg").write_bytes(b"keep-me")
 
     with (
