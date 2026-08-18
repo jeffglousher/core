@@ -1,0 +1,12 @@
+okf_version: 2
+retrieved_at: 2026-08-15
+timezone: America/Chicago
+retriever: cursor-agent
+purpose: >
+  Official Home Assistant contribution knowledge for every later SpaceXAI
+  wake. Kit-only. Never land on Core-bound slices.
+canonical_wake: WAKE.md
+rules: rules.yaml
+gaps: GAPS.md
+sources: sources.yaml
+snapshots: snapshots/

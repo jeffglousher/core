@@ -1,0 +1,114 @@
+# SpaceXAI individual contribution stack
+
+Domain: **`spacexai`**. Company name stays SpaceXAI; model IDs change over time and are **discovered** from the account (`models.list`), then presented in selectors. Chat, image, and video models are partitioned into `ProviderSnapshot` when the catalog exposes them; curated Imagine IDs remain as a fallback when discovery is sparse.
+
+This folder is the **human-facing contribution kit** (fork meta only). It is **not** part of the upstream-ready Core branches. Core code lives in `homeassistant/components/spacexai/` on the `cursor/spacexai-up-*-2f69` stack. Do **not** open against `home-assistant/core` until the [HUMAN_CHECKLIST.md](HUMAN_CHECKLIST.md) blockers are cleared. Retarget notes: [UPSTREAM.md](UPSTREAM.md).
+
+## External prerequisites (parallel, not Core commits)
+
+| Track | Repo / branch | Content | Status artifact |
+| --- | --- | --- | --- |
+| Brands | `home-assistant/brands` → `master` | `core_integrations/spacexai/` from [`brands/`](brands/) | [`brands/SOURCE.md`](brands/SOURCE.md) |
+| Docs | `home-assistant/home-assistant.io` → `current` | `source/_integrations/spacexai.markdown` from [`docs/spacexai.markdown`](docs/spacexai.markdown) | Front matter `ha_quality_scale: bronze` on docs PR; platinum on Core wave 8 |
+| OAuth | xAI allowlist | Dedicated Home Assistant public client ID | **BLOCKER** until issued |
+
+## Live PR map (2026-08-15)
+
+OKF v2 wake file: [`okf/v2/WAKE.md`](okf/v2/WAKE.md). Gap list: [`okf/v2/GAPS.md`](okf/v2/GAPS.md).
+
+Official Core `#178765` is conversation-only — **do not touch**.
+
+| PR | Branch | Base | Role |
+| --- | --- | --- | --- |
+| official `#178765` | n/a | `dev` | Conversation-only. Do not touch |
+| `#14` | `cursor/spacexai-up-conversation-2f69` | `dev` | Wave 1 bronze Conversation |
+| `#24` | `cursor/spacexai-gold-diagnostics-2f69` | `#14` | Diagnostics / icons |
+| `#23` | `cursor/spacexai-up-runtime-entitlement-2f69` | `#24` | Catalog entitlement / repairs |
+| `#18` | `cursor/spacexai-up-ai-task-2f69` | `#23` | AI Task |
+| `#17` | `cursor/spacexai-up-capabilities-2f69` | `#18` | Server tools |
+| `#28` | `cursor/spacexai-up-device-code-2f69` | `#17` | Device-code + CLI OAuth |
+| `#29` | `cursor/spacexai-up-hardening-2f69` | `#28` | Attachments / Imagine |
+| `#30` | `cursor/spacexai-up-full-capabilities-2f69` | `#29` | STT / TTS / Assist |
+| `#31` | `cursor/spacexai-up-optimized-surface-2f69` | `#30` | Optimized surface |
+| `#32` | `cursor/spacexai-up-runtime-repair-2f69` | `#31` | Runtime repair |
+| `#34` | `cursor/spacexai-up-platinum-2f69` | `#32` | Platinum declaration |
+| `#35` | `cursor/spacexai-super-stack-2f69` | `#17` | Stacked tip 1–6 (review slices) |
+| `#36` | `cursor/spacexai-grok-46-2f69` | `#35` | Grok 4.6 / Imagine 2 defaults |
+| `#37` | `cursor/spacexai-media-friction-2f69` | `#36` | Media persist + image-stream friction. Required CI green. Do not mark ready |
+| `#38` | `cursor/spacexai-conformance-2f69` | `#37` | Confirmed send-time image-tool entitlement |
+| `#15` | `cursor/spacexai-contribution-kit-2f69` | `up-base` | This kit only |
+
+Do **not** merge `#37` into `#36`. Do **not** put kit / OKF / `.cursor/` files on Core-bound slices.
+
+## Upstream-ready Core stack (canonical)
+
+Rebuilt from current `upstream/dev` (`cursor/spacexai-up-base-2f69`). Fork-only paths stripped. Former brands/docs flip folded into wave 1. Wave 1 is **bronze-first Conversation** (no tip `quality_scale` claims, no unrelated `requirements_all` churn, no Assist `after_dependencies` until the STT/TTS wave).
+
+### First Core PR recommendation
+
+| Peer | First PR size |
+| --- | --- |
+| LiteLLM | ~2.0k additions |
+| Harbor Sleep | ~1.6k |
+| Karakeep | ~1.3k |
+| **SpaceXAI wave 1 today** | ~5.7k (≈ half tests) |
+
+**Ship wave 1 (`up-conversation`) as the first Core PR** — that is the right story (OAuth Conversation agent + diagnostics + bronze). Do **not** open a mega tip PR.
+
+Optional size cut before undrafting Core (recommended): trim exotic stream edge-case coverage in `test_conversation.py` / `test_client.py` toward ~2–2.5k total additions. Keep production modules; tests are the bulk.
+
+| Wave | Branch (fork) | Adds | Quality-scale intent |
+| --- | --- | --- | --- |
+| base | `cursor/spacexai-up-base-2f69` | Pin = `upstream/dev` | n/a |
+| 1 | `cursor/spacexai-up-conversation-2f69` | Conversation + OAuth app credentials + client + diagnostics | `quality_scale: bronze`; `brands` + applicable `docs-*` already `done` |
+| 2 | `cursor/spacexai-up-ai-task-2f69` | AI Task `GENERATE_DATA` | Same |
+| 3 | `cursor/spacexai-up-capabilities-2f69` | Web search / X search / code interpreter | Same |
+| 4 | `cursor/spacexai-up-device-code-2f69` | RFC 8628 device-code login + Grok CLI OAuth / CLI-proxy entitlement | Same — **needs A1 OAuth before Core** |
+| 5 | `cursor/spacexai-up-hardening-2f69` | Attachments + `GENERATE_IMAGE` | Same |
+| 6 | `cursor/spacexai-up-full-capabilities-2f69` | STT + TTS + Assist pipeline helpers / STT stream limits | Same |
+| 7 | `cursor/spacexai-up-optimized-surface-2f69` | Optimized provider surface (defaults/`service_tier`, progressive models, reauth, diagnostics, video, adversarial) | Feature tip |
+| 8 | `cursor/spacexai-up-platinum-2f69` | Raise `manifest.json` `quality_scale` to `platinum` | Declaration-only |
+
+Legacy `-0109` branches / fork PRs `#1`–`#7`, `#12`, `#13` are **superseded** by this `up-*` cut. Do not retarget those to Core.
+
+## Per-wave validation (every Core PR)
+
+```bash
+uv run --no-sync pytest tests/components/spacexai/ -q
+uv run --no-sync prek run --all-files
+python3 -m script.hassfest
+python3 -m script.translations develop --integration spacexai   # if strings.json changed
+```
+
+Human checklist (do not auto-check): see [HUMAN_CHECKLIST.md](HUMAN_CHECKLIST.md).
+
+## Feature confirmation matrix
+
+| Surface | Covered by tests today | Live smoke |
+| --- | --- | --- |
+| Conversation + `llm_hass_api` | `test_conversation.py` | Assist HA control demos |
+| Model discovery / selector | config flow + client model list | Reconfigure model list |
+| AI Task `generate_data` | `test_ai_task.py` | Dev Tools Actions |
+| AI Task `generate_image` | `test_ai_task.py` / `test_client.py` | Live OK 2026-08-10 ([#9](https://github.com/jeffglousher/core/issues/9) closed) |
+| Attachments (JPEG, PDF, GIF) | `test_ai_task.py` (incl. GIF) | Assist / AI Task attach |
+| Server tools | conversation tool tests | web_search Assist |
+| Device code | `test_oauth_device.py` | Wait-screen capture |
+| STT / TTS | `test_stt_tts.py` | Live OK with subscription bearer; selectable in Voice assistants |
+| `service_tier=priority` | client + conversation tests | Live OK on CLI proxy ([#11](https://github.com/jeffglousher/core/issues/11) closed) |
+| Imagine video service | client / service tests | Live OK ([#10](https://github.com/jeffglousher/core/issues/10) closed) |
+
+Live smoke notes: [`TRACKING.md`](TRACKING.md).
+
+**GIF note:** Imagine **output** is JPEG today (`client.py`). “Fun GIFs” are supported as **input attachments** (`image/gif`). Animated Imagine output needs a provider model + client change before it can be promised in docs.
+
+## Assist version questions
+
+Home Assistant’s default LLM prompt and Assist API do **not** expose Core version or the configured LLM model id. SpaceXAI appends a small runtime identity block (HA Core version + configured Grok model) so Assist can answer those questions without a new Assist tool. See `conversation.py`.
+
+## Suggested human submission order
+
+1. Brands edition — [brands#10947](https://github.com/home-assistant/brands/pull/10947): Ready for review → **sign CLA** → merge
+2. Docs PR (`home-assistant.io` `current`) — [docs#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) with `ha_quality_scale: bronze`
+3. Clear **A1** OAuth client (human)
+4. Core waves 1 → 8 on `home-assistant/core` `dev` using the `up-*` branches (wave 1 already includes brands/docs `done`)
+5. Docs follow-up — bump `ha_quality_scale` to `platinum` with Core wave 8

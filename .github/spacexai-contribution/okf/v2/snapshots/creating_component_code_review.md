@@ -1,0 +1,73 @@
+# Checklist for creating a component
+
+Source: https://developers.home-assistant.io/docs/creating_component_code_review
+Retrieved: 2026-08-15
+
+Not all existing code follows the requirements in this checklist. This cannot
+be used as a reason to not follow them.
+
+## 0. Common
+
+1. Follow Style guidelines
+2. Use existing constants from const.py. Only add new constants to `const.py`
+   if they are widely used. Otherwise keep them on components level.
+
+## 1. External requirements
+
+1. Requirements have been added to manifest.json. The `REQUIREMENTS` constant
+   is deprecated.
+2. Requirement version must be pinned.
+3. Each requirement meets the library requirements.
+
+## 2. Configuration
+
+1. Voluptuous schema present for configuration validation
+2. Default parameters specified in voluptuous schema, not in `setup(…)`
+3. Schema using as many generic config keys as possible from
+   `homeassistant.const`
+4. If your component has platforms, define a `PLATFORM_SCHEMA` instead of a
+   `CONFIG_SCHEMA`.
+5. If using a `PLATFORM_SCHEMA` to be used with `EntityComponent`, import base
+   from `homeassistant.helpers.config_validation`
+6. Never depend on users adding things to `customize` to configure behavior
+   inside your component.
+
+## 3. Component/platform communication
+
+1. You can share data with your platforms by leveraging `hass.data[DOMAIN]`.
+2. If the component fetches data that causes its related platform entities to
+   update, you can notify them using the dispatcher code in
+   `homeassistant.helpers.dispatcher`.
+
+## 4. Communication with devices/services
+
+All API specific code has to be part of a third party library hosted on PyPI.
+Home Assistant should only interact with objects and not make direct calls to
+the API.
+
+## 5. Make your pull request as small as possible
+
+Keep a new integration to the minimum functionality needed for someone to get
+value out of the integration. Pull requests containing large code dumps will
+not be a priority for review and may be closed.
+
+* Limit to a single platform
+* Do not add features not needed to directly support the single platform
+  (such as custom service actions)
+* Do not mix clean-ups and new features in a single pull request.
+* Do not solve several issues in a single pull request.
+* Do not submit pull requests that depend on other work which is still
+  unmerged.
+
+Break features down into independent functional changes and submit the PRs
+sequentially. One strategy is to create a branch for the next PR off the
+current PR's branch.
+
+## 6. Event names
+
+Prefix component event names with the domain name.
+
+## 7. Tests
+
+Strongly consider adding tests for your component to minimize future
+regressions.
