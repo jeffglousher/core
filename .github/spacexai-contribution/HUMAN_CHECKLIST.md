@@ -143,7 +143,7 @@ Notes: [TRACKING.md](TRACKING.md).
 | Brands draft PR | [#10947](https://github.com/home-assistant/brands/pull/10947) |
 | Docs draft PR | [#47349](https://github.com/home-assistant/home-assistant.io/pull/47349) |
 | Contribution kit meta | [`#15`](https://github.com/jeffglousher/core/pull/15) `cursor/spacexai-contribution-kit-2f69` (OKF v2 + WAKE) |
-| Upstream-ready fork drafts | `#14` `#24` `#23` `#18` `#17` `#28`–`#32` `#34`–`#37` + conformance tip (see [`okf/v2/GAPS.md`](okf/v2/GAPS.md)) |
+| Upstream-ready fork drafts | `#14` `#24` `#23` `#18` `#17` `#28`–`#32` `#34`–`#38` (see [`okf/v2/GAPS.md`](okf/v2/GAPS.md)) |
 
 ---
 
