@@ -1,0 +1,16 @@
+---
+description: Always rebase SpaceXAI/Core PR branches onto home-assistant/core dev tip
+alwaysApply: true
+---
+
+# Catch up on upstream/dev by rebase, not merge
+
+When bringing SpaceXAI (or any Core PR) onto latest `dev`:
+
+1. `git fetch upstream dev` (`upstream` = `home-assistant/core`, never the fork's lagging `origin/dev`).
+2. Replay our commit(s) onto that tip: `git rebase --onto upstream/dev HEAD~1` for a single squashed commit, or `git rebase upstream/dev` for a linear branch.
+3. Confirm `git rev-list --count upstream/dev..HEAD` is the intended commit count and `git diff --name-only upstream/dev...HEAD` is only our integration (+ generated wiring on the first PR).
+4. Do **not** `git merge` `dev` into the feature branch. Merge commits pull unrelated tree state and make squash/CI history noisy.
+5. Force-push with `--force-with-lease` only when the user asked to squash or rebase a published PR. Leave the PR drafted unless told otherwise.
+
+Stacked waves: rebase the Conversation PR onto `upstream/dev` first, then `--onto` each later branch onto its predecessor.
