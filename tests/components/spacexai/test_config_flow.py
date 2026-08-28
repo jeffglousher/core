@@ -1,0 +1,363 @@
+"""Tests for the SpaceXAI config flow."""
+
+import asyncio
+from collections.abc import Generator
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from spacexai_subscription_client import (
+    Account,
+    AuthenticationError,
+    AuthorizationDeniedError,
+    ConnectionFailureError,
+    DeviceAuthorization,
+    DeviceAuthorizationExpiredError,
+    OAuthToken,
+    RateLimitError,
+    RequestTimeoutError,
+    SpaceXAISubscriptionClient,
+    SpaceXAISubscriptionError,
+)
+
+from homeassistant.components.spacexai.const import DOMAIN
+from homeassistant.config_entries import SOURCE_USER, ConfigFlowResult
+from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
+
+from .conftest import ACCESS_TOKEN, REFRESH_TOKEN
+
+from tests.common import MockConfigEntry
+
+TOKEN_RESPONSE = {
+    "access_token": ACCESS_TOKEN,
+    "refresh_token": REFRESH_TOKEN,
+    "expires_in": 3600,
+    "token_type": "Bearer",
+}
+TOKEN_DATA = {**TOKEN_RESPONSE, "expires_at": 1234.0}
+DEVICE_AUTHORIZATION = DeviceAuthorization(
+    device_code="device-code",
+    user_code="ABCD-1234",
+    verification_uri="https://accounts.x.ai/oauth2/device",
+    verification_uri_complete=(
+        "https://accounts.x.ai/oauth2/device?user_code=ABCD-1234"
+    ),
+    expires_in=1800,
+    interval=1,
+)
+
+
+async def _start_flow(hass: HomeAssistant) -> ConfigFlowResult:
+    """Start a SpaceXAI user flow."""
+    return await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+
+
+async def _finish_device_progress(
+    hass: HomeAssistant, mock_flow_client: MagicMock, result: ConfigFlowResult
+) -> ConfigFlowResult:
+    """Advance a device flow after its polling task completes."""
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    assert result["description_placeholders"] == {
+        "user_code": "ABCD-1234",
+        "verification_uri": "https://accounts.x.ai/oauth2/device?user_code=ABCD-1234",
+    }
+    mock_flow_client.poll_event.set()
+    await hass.async_block_till_done()
+    return await hass.config_entries.flow.async_configure(result["flow_id"])
+
+
+def _set_successful_poll(mock_flow_client: MagicMock) -> None:
+    """Make token polling wait until the progress form has been asserted."""
+    mock_flow_client.poll_event = asyncio.Event()
+
+    async def _async_poll(*_args: object) -> OAuthToken:
+        await mock_flow_client.poll_event.wait()
+        return OAuthToken(TOKEN_DATA)
+
+    mock_flow_client.async_poll_device_token.side_effect = _async_poll
+
+
+def _set_poll_error(
+    mock_flow_client: MagicMock, error: type[SpaceXAISubscriptionError]
+) -> None:
+    """Make token polling fail after the progress form has been asserted."""
+    mock_flow_client.poll_event = asyncio.Event()
+
+    async def _async_poll(*_args: object) -> OAuthToken:
+        await mock_flow_client.poll_event.wait()
+        raise error
+
+    mock_flow_client.async_poll_device_token.side_effect = _async_poll
+
+
+@pytest.fixture
+def mock_flow_client() -> Generator[MagicMock]:
+    """Return a successful mocked client for the config flow."""
+    client = MagicMock(spec=SpaceXAISubscriptionClient)
+    client.async_request_device_authorization = AsyncMock(
+        return_value=DEVICE_AUTHORIZATION
+    )
+    client.async_poll_device_token = AsyncMock()
+    client.async_get_account = AsyncMock(
+        return_value=Account("account-123", "Home User", "home@test")
+    )
+    client.async_list_models = AsyncMock(return_value=("grok-4.5", "grok-4.6"))
+    _set_successful_poll(client)
+    with patch(
+        "homeassistant.components.spacexai.config_flow.create_client",
+        return_value=client,
+    ):
+        yield client
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_full_oauth_flow(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Complete device login and create one Conversation subentry."""
+    result = await _start_flow(hass)
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "conversation"
+    assert result["data_schema"].schema[CONF_MODEL].config["options"] == [
+        "grok-4.5",
+        "grok-4.6",
+    ]
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_MODEL: "grok-4.6",
+            CONF_PROMPT: "Be concise.",
+            CONF_LLM_HASS_API: [],
+        },
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Home User"
+    assert result["result"].unique_id == "account-123"
+    assert result["data"] == {
+        "auth_implementation": DOMAIN,
+        "token": TOKEN_DATA,
+    }
+    assert len(result["subentries"]) == 1
+    assert result["subentries"][0]["subentry_type"] == "conversation"
+    assert result["subentries"][0]["data"] == {
+        CONF_MODEL: "grok-4.6",
+        CONF_PROMPT: "Be concise.",
+    }
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_device_authorization_rejected(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Abort when the OAuth client is rejected."""
+    mock_flow_client.async_request_device_authorization.side_effect = (
+        AuthenticationError
+    )
+
+    result = await _start_flow(hass)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "invalid_auth"
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_device_authorization_connection_error(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Retry when device authorization cannot be started."""
+    mock_flow_client.async_request_device_authorization.side_effect = [
+        SpaceXAISubscriptionError,
+        DEVICE_AUTHORIZATION,
+    ]
+
+    result = await _start_flow(hass)
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "device_connection_error"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "conversation"
+    assert mock_flow_client.async_request_device_authorization.await_count == 2
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(ConnectionFailureError, id="connection"),
+        pytest.param(RateLimitError, id="rate_limit"),
+        pytest.param(RequestTimeoutError, id="timeout"),
+    ],
+)
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_device_authorization_transient_poll_error_and_retry(
+    hass: HomeAssistant,
+    error: type[SpaceXAISubscriptionError],
+    mock_flow_client: MagicMock,
+) -> None:
+    """Retry transient polling failures with the same device authorization."""
+    _set_poll_error(mock_flow_client, error)
+
+    result = await _start_flow(hass)
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "device_connection_error"
+
+    _set_successful_poll(mock_flow_client)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "conversation"
+    mock_flow_client.async_request_device_authorization.assert_awaited_once()
+
+
+@pytest.mark.parametrize(
+    ("error", "step_id"),
+    [
+        pytest.param(AuthorizationDeniedError, "device_denied", id="denied"),
+        pytest.param(DeviceAuthorizationExpiredError, "device_timeout", id="expired"),
+        pytest.param(SpaceXAISubscriptionError, "device_connection_error", id="other"),
+    ],
+)
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_device_authorization_terminal_poll_error_and_retry(
+    hass: HomeAssistant,
+    error: type[SpaceXAISubscriptionError],
+    mock_flow_client: MagicMock,
+    step_id: str,
+) -> None:
+    """Request a new device authorization after a terminal polling failure."""
+    _set_poll_error(mock_flow_client, error)
+
+    result = await _start_flow(hass)
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == step_id
+
+    _set_successful_poll(mock_flow_client)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "conversation"
+    assert mock_flow_client.async_request_device_authorization.await_count == 2
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_device_authorization_poll_authentication_error(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Abort when device token polling rejects the OAuth client."""
+    _set_poll_error(mock_flow_client, AuthenticationError)
+
+    result = await _start_flow(hass)
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "invalid_auth"
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_account_validation_authentication_error(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Abort when the approved account rejects the access token."""
+    mock_flow_client.async_get_account.side_effect = AuthenticationError
+
+    result = await _finish_device_progress(
+        hass, mock_flow_client, await _start_flow(hass)
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "invalid_auth"
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_account_validation_connection_error_and_retry(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Retry account validation without repeating device authorization."""
+    mock_flow_client.async_get_account.side_effect = SpaceXAISubscriptionError
+
+    result = await _finish_device_progress(
+        hass, mock_flow_client, await _start_flow(hass)
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "device_validation_error"
+
+    mock_flow_client.async_get_account.side_effect = None
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "conversation"
+    mock_flow_client.async_request_device_authorization.assert_awaited_once()
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_account_has_no_models(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Retry validation when the approved account has no available models."""
+    mock_flow_client.async_list_models.return_value = ()
+
+    result = await _finish_device_progress(
+        hass, mock_flow_client, await _start_flow(hass)
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "device_validation_error"
+
+    mock_flow_client.async_list_models.return_value = ("grok-4.5",)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "conversation"
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_duplicate_account(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Abort when the signed-in account is already configured."""
+    mock_config_entry.add_to_hass(hass)
+    result = await _start_flow(hass)
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+    mock_flow_client.async_list_models.assert_not_awaited()
