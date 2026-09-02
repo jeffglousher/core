@@ -2,12 +2,18 @@
 
 from collections.abc import Generator
 import time
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from spacexai_subscription_client import SpaceXAISubscriptionClient
 
-from homeassistant.components.spacexai.const import DOMAIN
+from homeassistant.components.spacexai.const import (
+    CONF_CODE_INTERPRETER,
+    CONF_WEB_SEARCH,
+    CONF_X_SEARCH,
+    DOMAIN,
+)
 from homeassistant.config_entries import ConfigSubentryData
 from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
 from homeassistant.core import HomeAssistant
@@ -26,14 +32,24 @@ def enable_assist() -> bool:
     return False
 
 
-def _mock_config_entry(enable_assist: bool) -> MockConfigEntry:
+def _mock_config_entry(
+    enable_assist: bool, *, enable_provider_tools: bool = False
+) -> MockConfigEntry:
     """Return a configured SpaceXAI entry."""
-    data = {
+    data: dict[str, Any] = {
         CONF_MODEL: "grok-4.6",
         CONF_PROMPT: "Be helpful.",
     }
     if enable_assist:
         data[CONF_LLM_HASS_API] = [llm.LLM_API_ASSIST]
+    if enable_provider_tools:
+        data.update(
+            {
+                CONF_CODE_INTERPRETER: True,
+                CONF_WEB_SEARCH: True,
+                CONF_X_SEARCH: True,
+            }
+        )
     return MockConfigEntry(
         domain=DOMAIN,
         title="Home User",
@@ -70,6 +86,12 @@ def mock_config_entry(enable_assist: bool) -> MockConfigEntry:
 def mock_config_entry_with_assist() -> MockConfigEntry:
     """Return a configured SpaceXAI entry with Assist tools enabled."""
     return _mock_config_entry(True)
+
+
+@pytest.fixture
+def mock_config_entry_with_provider_tools() -> MockConfigEntry:
+    """Return a configured entry with provider-hosted tools enabled."""
+    return _mock_config_entry(False, enable_provider_tools=True)
 
 
 @pytest.fixture

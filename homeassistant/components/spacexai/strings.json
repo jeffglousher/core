@@ -10,14 +10,20 @@
     "step": {
       "conversation": {
         "data": {
+          "code_interpreter": "Code interpreter",
           "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
           "model": "[%key:common::generic::model%]",
-          "prompt": "[%key:common::config_flow::data::prompt%]"
+          "prompt": "[%key:common::config_flow::data::prompt%]",
+          "web_search": "Web search",
+          "x_search": "X search"
         },
         "data_description": {
+          "code_interpreter": "Allow Grok to run Python code in an isolated environment.",
           "llm_hass_api": "Select which tools the model can use to interact with Home Assistant.",
           "model": "The Grok model used by this conversation agent.",
-          "prompt": "Instructions for how the agent should respond. This can be a template."
+          "prompt": "Instructions for how the agent should respond. This can be a template.",
+          "web_search": "Allow Grok to search the web and browse pages.",
+          "x_search": "Allow Grok to search public posts and profiles on X."
         }
       },
       "device_connection_error": {
@@ -34,12 +40,52 @@
       }
     }
   },
+  "config_subentries": {
+    "conversation": {
+      "abort": {
+        "entry_not_loaded": "Cannot add a conversation agent while the configuration is disabled.",
+        "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
+      },
+      "entry_type": "Conversation agent",
+      "initiate_flow": {
+        "reconfigure": "Reconfigure conversation agent",
+        "user": "Add conversation agent"
+      },
+      "step": {
+        "init": {
+          "data": {
+            "code_interpreter": "Code interpreter",
+            "llm_hass_api": "[%key:common::config_flow::data::llm_hass_api%]",
+            "model": "[%key:common::generic::model%]",
+            "name": "[%key:common::config_flow::data::name%]",
+            "prompt": "[%key:common::config_flow::data::prompt%]",
+            "web_search": "Web search",
+            "x_search": "X search"
+          },
+          "data_description": {
+            "code_interpreter": "Allow Grok to run Python code in an isolated environment.",
+            "llm_hass_api": "Select which tools the model can use to interact with Home Assistant.",
+            "model": "The Grok model used by this conversation agent.",
+            "prompt": "Instructions for how the agent should respond. This can be a template.",
+            "web_search": "Allow Grok to search the web and browse pages.",
+            "x_search": "Allow Grok to search public posts and profiles on X."
+          }
+        }
+      }
+    }
+  },
   "exceptions": {
     "api_error": {
       "message": "SpaceXAI returned an error while generating a response."
     },
-    "attachments_not_supported": {
-      "message": "Attachments are not supported by this version of the SpaceXAI integration."
+    "attachment_empty": {
+      "message": "The attachment {filename} is empty."
+    },
+    "attachment_too_large": {
+      "message": "The selected attachments exceed the 20 MiB limit at {filename}."
+    },
+    "attachment_unavailable": {
+      "message": "The attachment {filename} could not be read."
     },
     "invalid_auth": {
       "message": "SpaceXAI rejected the current sign-in. Remove and add the integration again to sign in."
@@ -52,6 +98,12 @@
     },
     "tool_iteration_limit": {
       "message": "The SpaceXAI conversation exceeded the tool-call limit."
+    },
+    "unsupported_attachment": {
+      "message": "The attachment {filename} is not a JPEG image, PNG image, or PDF."
+    },
+    "user_message_not_found": {
+      "message": "The latest attachments do not belong to a user message."
     }
   }
 }

@@ -107,6 +107,29 @@ async def test_create_client_uses_shared_sessions(hass: HomeAssistant) -> None:
     )
 
 
+async def test_token_update_does_not_reload(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Keep entities loaded when OAuth persists a refreshed token."""
+    await setup_integration(hass, mock_config_entry)
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        data={
+            **mock_config_entry.data,
+            "token": {
+                **mock_config_entry.data["token"],
+                "access_token": "refreshed-access-token",
+            },
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    mock_spacexai_subscription_client.async_list_models.assert_awaited_once()
+
+
 async def test_oauth_token_refresh(
     aioclient_mock: AiohttpClientMocker, hass: HomeAssistant
 ) -> None:

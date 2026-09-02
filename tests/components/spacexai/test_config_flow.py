@@ -19,12 +19,25 @@ from spacexai_subscription_client import (
     SpaceXAISubscriptionError,
 )
 
-from homeassistant.components.spacexai.const import DOMAIN
+from homeassistant.components import conversation
+from homeassistant.components.spacexai.const import (
+    CONF_CODE_INTERPRETER,
+    CONF_WEB_SEARCH,
+    CONF_X_SEARCH,
+    DOMAIN,
+)
 from homeassistant.config_entries import SOURCE_USER, ConfigFlowResult
-from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
+from homeassistant.const import (
+    ATTR_SUPPORTED_FEATURES,
+    CONF_LLM_HASS_API,
+    CONF_MODEL,
+    CONF_NAME,
+    CONF_PROMPT,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
+from . import setup_integration
 from .conftest import ACCESS_TOKEN, REFRESH_TOKEN
 
 from tests.common import MockConfigEntry
@@ -345,6 +358,112 @@ async def test_account_has_no_models(
 
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "conversation"
+
+
+@pytest.mark.usefixtures("mock_spacexai_subscription_client")
+async def test_create_conversation_subentry(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Create another conversation agent with opt-in provider tools."""
+    await setup_integration(hass, mock_config_entry)
+
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "conversation"),
+        context={"source": SOURCE_USER},
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+    assert result["data_schema"] is not None
+    assert result["data_schema"].schema[CONF_MODEL].config["options"] == ["grok-4.6"]
+
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            CONF_NAME: "Research Grok",
+            CONF_MODEL: "grok-4.6",
+            CONF_PROMPT: "Cite sources.",
+            CONF_LLM_HASS_API: [],
+            CONF_WEB_SEARCH: True,
+            CONF_X_SEARCH: True,
+            CONF_CODE_INTERPRETER: False,
+        },
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Research Grok"
+    assert result["data"] == {
+        CONF_MODEL: "grok-4.6",
+        CONF_PROMPT: "Cite sources.",
+        CONF_WEB_SEARCH: True,
+        CONF_X_SEARCH: True,
+    }
+    await hass.async_block_till_done()
+    assert hass.states.get("conversation.research_grok") is not None
+
+
+@pytest.mark.parametrize("enable_assist", [True])
+@pytest.mark.usefixtures("mock_spacexai_subscription_client")
+async def test_reconfigure_conversation_subentry(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Reconfigure a conversation agent and remove disabled options."""
+    await setup_integration(hass, mock_config_entry)
+    subentry = next(iter(mock_config_entry.subentries.values()))
+    state = hass.states.get("conversation.grok")
+    assert state is not None
+    assert (
+        state.attributes[ATTR_SUPPORTED_FEATURES]
+        == conversation.ConversationEntityFeature.CONTROL
+    )
+
+    result = await mock_config_entry.start_subentry_reconfigure_flow(
+        hass, subentry.subentry_id
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+
+    updated = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {
+            CONF_MODEL: "grok-4.6",
+            CONF_PROMPT: "Use calculations.",
+            CONF_LLM_HASS_API: [],
+            CONF_WEB_SEARCH: False,
+            CONF_X_SEARCH: False,
+            CONF_CODE_INTERPRETER: True,
+        },
+    )
+    await hass.async_block_till_done()
+
+    assert updated["type"] is FlowResultType.ABORT
+    assert updated["reason"] == "reconfigure_successful"
+    assert subentry.data == {
+        CONF_MODEL: "grok-4.6",
+        CONF_PROMPT: "Use calculations.",
+        CONF_CODE_INTERPRETER: True,
+    }
+    state = hass.states.get("conversation.grok")
+    assert state is not None
+    assert state.attributes[ATTR_SUPPORTED_FEATURES] == 0
+
+
+async def test_create_conversation_subentry_not_loaded(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Reject adding a conversation agent while the account is disabled."""
+    mock_config_entry.add_to_hass(hass)
+
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "conversation"),
+        context={"source": SOURCE_USER},
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "entry_not_loaded"
 
 
 @pytest.mark.usefixtures("mock_setup_entry")

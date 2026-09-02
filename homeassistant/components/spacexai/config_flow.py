@@ -17,8 +17,15 @@ from spacexai_subscription_client import (
 )
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
-from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
+from homeassistant.config_entries import (
+    ConfigEntryState,
+    ConfigFlow,
+    ConfigFlowResult,
+    ConfigSubentryFlow,
+    SubentryFlowResult,
+)
+from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_NAME, CONF_PROMPT
+from homeassistant.core import callback
 from homeassistant.helpers import llm
 from homeassistant.helpers.selector import (
     SelectOptionDict,
@@ -28,14 +35,67 @@ from homeassistant.helpers.selector import (
     TemplateSelector,
 )
 
-from . import create_client
-from .const import DEFAULT_CONVERSATION_NAME, DOMAIN, RECOMMENDED_CONVERSATION_OPTIONS
+from . import SpaceXAIConfigEntry, create_client
+from .const import (
+    CONF_CODE_INTERPRETER,
+    CONF_WEB_SEARCH,
+    CONF_X_SEARCH,
+    DEFAULT_CONVERSATION_NAME,
+    DOMAIN,
+    RECOMMENDED_CONVERSATION_OPTIONS,
+)
+
+PROVIDER_TOOL_OPTIONS = (CONF_WEB_SEARCH, CONF_X_SEARCH, CONF_CODE_INTERPRETER)
+
+
+def _clean_conversation_options(options: dict[str, Any]) -> dict[str, Any]:
+    """Remove disabled optional capabilities from stored options."""
+    if not options.get(CONF_LLM_HASS_API):
+        options.pop(CONF_LLM_HASS_API, None)
+    for option in PROVIDER_TOOL_OPTIONS:
+        if not options.get(option):
+            options.pop(option, None)
+    return options
+
+
+def _conversation_schema(
+    models: list[str] | tuple[str, ...],
+    hass_apis: list[SelectOptionDict],
+) -> vol.Schema:
+    """Return the conversation configuration schema."""
+    return vol.Schema(
+        {
+            vol.Required(CONF_MODEL): SelectSelector(
+                SelectSelectorConfig(
+                    options=list(models),
+                    mode=SelectSelectorMode.DROPDOWN,
+                    sort=True,
+                )
+            ),
+            vol.Optional(CONF_PROMPT): TemplateSelector(),
+            vol.Optional(CONF_LLM_HASS_API): SelectSelector(
+                SelectSelectorConfig(options=hass_apis, multiple=True)
+            ),
+            vol.Optional(CONF_WEB_SEARCH, default=False): bool,
+            vol.Optional(CONF_X_SEARCH, default=False): bool,
+            vol.Optional(CONF_CODE_INTERPRETER, default=False): bool,
+        }
+    )
 
 
 class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle SpaceXAI configuration."""
 
     VERSION = 1
+
+    @classmethod
+    @callback
+    @override
+    def async_get_supported_subentry_types(
+        cls, config_entry: SpaceXAIConfigEntry
+    ) -> dict[str, type[ConfigSubentryFlow]]:
+        """Return the supported subentry types."""
+        return {"conversation": SpaceXAIConversationSubentryFlow}
 
     def __init__(self) -> None:
         """Initialize the flow."""
@@ -129,8 +189,7 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
         """Configure the initial conversation agent."""
         assert self._token is not None
         if user_input is not None:
-            if not user_input.get(CONF_LLM_HASS_API):
-                user_input.pop(CONF_LLM_HASS_API, None)
+            _clean_conversation_options(user_input)
             return self.async_create_entry(
                 title=self._account_name,
                 data={"auth_implementation": DOMAIN, "token": self._token},
@@ -150,30 +209,9 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
         ]
         return self.async_show_form(
             step_id="conversation",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_MODEL): SelectSelector(
-                        SelectSelectorConfig(
-                            options=self._models,
-                            mode=SelectSelectorMode.DROPDOWN,
-                            sort=True,
-                        )
-                    ),
-                    vol.Optional(
-                        CONF_PROMPT,
-                        description={
-                            "suggested_value": RECOMMENDED_CONVERSATION_OPTIONS[
-                                CONF_PROMPT
-                            ]
-                        },
-                    ): TemplateSelector(),
-                    vol.Optional(
-                        CONF_LLM_HASS_API,
-                        default=RECOMMENDED_CONVERSATION_OPTIONS[CONF_LLM_HASS_API],
-                    ): SelectSelector(
-                        SelectSelectorConfig(options=hass_apis, multiple=True)
-                    ),
-                }
+            data_schema=self.add_suggested_values_to_schema(
+                _conversation_schema(self._models, hass_apis),
+                RECOMMENDED_CONVERSATION_OPTIONS,
             ),
         )
 
@@ -227,3 +265,69 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
         self._models = list(await self._client.async_list_models(access_token))
         if not self._models:
             raise SpaceXAISubscriptionError
+
+
+class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
+    """Manage SpaceXAI conversation agents."""
+
+    options: dict[str, Any]
+
+    @property
+    def _is_new(self) -> bool:
+        """Return whether a conversation agent is being added."""
+        return self.source == "user"
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Add a conversation agent."""
+        self.options = RECOMMENDED_CONVERSATION_OPTIONS.copy()
+        return await self.async_step_init(user_input)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Reconfigure a conversation agent."""
+        self.options = self._get_reconfigure_subentry().data.copy()
+        return await self.async_step_init(user_input)
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Configure a conversation agent."""
+        entry = self._get_entry()
+        if entry.state is not ConfigEntryState.LOADED:
+            return self.async_abort(reason="entry_not_loaded")
+
+        if user_input is not None:
+            options = _clean_conversation_options(user_input)
+            if self._is_new:
+                return self.async_create_entry(
+                    title=options.pop(CONF_NAME),
+                    data=options,
+                )
+            return self.async_update_and_abort(
+                entry,
+                self._get_reconfigure_subentry(),
+                data=options,
+            )
+
+        hass_apis = [
+            SelectOptionDict(label=api.name, value=api.id)
+            for api in llm.async_get_apis(self.hass)
+        ]
+        schema = _conversation_schema(entry.runtime_data.models, hass_apis)
+        if self._is_new:
+            schema = vol.Schema(
+                {
+                    vol.Required(CONF_NAME, default=DEFAULT_CONVERSATION_NAME): str,
+                    **schema.schema,
+                }
+            )
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                schema,
+                self.options,
+            ),
+        )

@@ -1,5 +1,6 @@
 """The SpaceXAI integration."""
 
+from copy import deepcopy
 from dataclasses import dataclass
 
 from spacexai_subscription_client import (
@@ -40,6 +41,7 @@ class SpaceXAIData:
 
     oauth_session: OAuth2Session
     client: SpaceXAISubscriptionClient
+    models: tuple[str, ...]
 
 
 type SpaceXAIConfigEntry = ConfigEntry[SpaceXAIData]
@@ -71,7 +73,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
     try:
         await oauth_session.async_ensure_token_valid()
         client = create_client(hass)
-        if not await client.async_list_models(oauth_session.token["access_token"]):
+        if not (
+            models := await client.async_list_models(
+                oauth_session.token["access_token"]
+            )
+        ):
             raise ConfigEntryNotReady(
                 translation_domain=DOMAIN,
                 translation_key="no_models_available",
@@ -81,8 +87,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
     except (SpaceXAISubscriptionError, OAuth2TokenRequestError) as err:
         raise ConfigEntryNotReady from err
 
-    entry.runtime_data = SpaceXAIData(oauth_session, client)
+    entry.runtime_data = SpaceXAIData(oauth_session, client, models)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+    subentries = deepcopy(
+        [subentry.as_dict() for subentry in entry.subentries.values()]
+    )
+
+    async def async_update_subentries(
+        hass: HomeAssistant, entry: SpaceXAIConfigEntry
+    ) -> None:
+        """Reload entity configuration without interrupting OAuth token refreshes."""
+        nonlocal subentries
+        updated_subentries = [
+            subentry.as_dict() for subentry in entry.subentries.values()
+        ]
+        if subentries != updated_subentries:
+            subentries = deepcopy(updated_subentries)
+            hass.config_entries.async_schedule_reload(entry.entry_id)
+
+    entry.async_on_unload(entry.add_update_listener(async_update_subentries))
     return True
 
 

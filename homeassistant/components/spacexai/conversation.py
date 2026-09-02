@@ -1,15 +1,19 @@
 """Conversation support for SpaceXAI."""
 
 from collections.abc import AsyncGenerator, Callable, Iterable
+from pathlib import Path
 from typing import Any, Literal, override
 
 from probatio import to_openapi
 from spacexai_subscription_client import (
+    Attachment,
     AuthenticationError,
+    BuiltinTool,
     Completion,
     InputItem,
     InvalidResponseError,
     Message,
+    ResponseTool,
     SpaceXAISubscriptionError,
     Tool,
     ToolCall,
@@ -30,7 +34,15 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.json import json_dumps
 
 from . import SpaceXAIConfigEntry
-from .const import DOMAIN, LOGGER, MAX_TOOL_ITERATIONS
+from .const import (
+    CONF_CODE_INTERPRETER,
+    CONF_WEB_SEARCH,
+    CONF_X_SEARCH,
+    DOMAIN,
+    LOGGER,
+    MAX_ATTACHMENT_SIZE,
+    MAX_TOOL_ITERATIONS,
+)
 
 PARALLEL_UPDATES = 0
 
@@ -55,11 +67,6 @@ def _convert_content(
     """Convert Home Assistant chat content to client input."""
     messages: list[InputItem] = []
     for content in chat_content:
-        if isinstance(content, conversation.UserContent) and content.attachments:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="attachments_not_supported",
-            )
         if isinstance(content, conversation.ToolResultContent):
             messages.append(
                 ToolResult(
@@ -68,11 +75,13 @@ def _convert_content(
                 )
             )
             continue
-        if content.content:
+        if content.content or (
+            isinstance(content, conversation.UserContent) and content.attachments
+        ):
             role: Literal["user", "assistant", "system", "developer"] = content.role
             if role == "system":
                 role = "developer"
-            messages.append(Message(role, content.content))
+            messages.append(Message(role, content.content or ""))
         if isinstance(content, conversation.AssistantContent):
             messages.extend(
                 ToolCall(
@@ -83,6 +92,92 @@ def _convert_content(
                 for tool_call in content.tool_calls or ()
             )
     return messages
+
+
+async def _async_convert_content(
+    hass: HomeAssistant, chat_content: Iterable[conversation.Content]
+) -> list[InputItem]:
+    """Convert chat content and load attachments from the latest user message."""
+    contents = list(chat_content)
+    messages = _convert_content(contents)
+    if not contents:
+        return messages
+
+    last_content = contents[-1]
+    if not isinstance(last_content, conversation.UserContent) or not (
+        attachments := last_content.attachments
+    ):
+        return messages
+
+    if not messages or not isinstance(messages[-1], Message):
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="user_message_not_found",
+        )
+    last_message = messages[-1]
+    if last_message.role != "user":
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="user_message_not_found",
+        )
+
+    prepared = await hass.async_add_executor_job(
+        _prepare_attachments,
+        [(item.path, item.mime_type) for item in attachments],
+    )
+    messages[-1] = Message(last_message.role, last_message.content, prepared)
+    return messages
+
+
+def _prepare_attachments(files: list[tuple[Path, str]]) -> tuple[Attachment, ...]:
+    """Read and validate attachments."""
+    attachments: list[Attachment] = []
+    total_size = 0
+    for path, media_type in files:
+        if media_type == "image/jpg":
+            media_type = "image/jpeg"
+        if media_type not in ("image/jpeg", "image/png", "application/pdf"):
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="unsupported_attachment",
+                translation_placeholders={"filename": path.name},
+            )
+        try:
+            size = path.stat().st_size
+            if size == 0:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="attachment_empty",
+                    translation_placeholders={"filename": path.name},
+                )
+            if total_size + size > MAX_ATTACHMENT_SIZE:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="attachment_too_large",
+                    translation_placeholders={"filename": path.name},
+                )
+            data = path.read_bytes()
+        except OSError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="attachment_unavailable",
+                translation_placeholders={"filename": path.name},
+            ) from err
+        if not data:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="attachment_empty",
+                translation_placeholders={"filename": path.name},
+            )
+        total_size += len(data)
+        if total_size > MAX_ATTACHMENT_SIZE:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="attachment_too_large",
+                translation_placeholders={"filename": path.name},
+            )
+        attachments.append(Attachment(path.name, media_type, data))
+    return tuple(attachments)
 
 
 def _tool_input(tool_call: ToolCall) -> llm.ToolInput:
@@ -175,12 +270,18 @@ class SpaceXAIConversationEntity(
 
     async def _async_handle_chat_log(self, chat_log: conversation.ChatLog) -> None:
         """Send the chat log to SpaceXAI and execute Home Assistant tools."""
-        tools = []
+        tools: list[ResponseTool] = []
         if chat_log.llm_api:
             tools = [
                 _format_tool(tool, chat_log.llm_api.custom_serializer)
                 for tool in chat_log.llm_api.tools
             ]
+        if self.subentry.data.get(CONF_WEB_SEARCH):
+            tools.append(BuiltinTool("web_search"))
+        if self.subentry.data.get(CONF_X_SEARCH):
+            tools.append(BuiltinTool("x_search"))
+        if self.subentry.data.get(CONF_CODE_INTERPRETER):
+            tools.append(BuiltinTool("code_interpreter"))
 
         for _iteration in range(MAX_TOOL_ITERATIONS):
             try:
@@ -188,7 +289,9 @@ class SpaceXAIConversationEntity(
                 response = await self.entry.runtime_data.client.async_create_response(
                     self.entry.runtime_data.oauth_session.token["access_token"],
                     model=self.subentry.data[CONF_MODEL],
-                    input_data=_convert_content(chat_log.content),
+                    input_data=await _async_convert_content(
+                        self.hass, chat_log.content
+                    ),
                     tools=tools,
                 )
             except (AuthenticationError, OAuth2TokenRequestReauthError) as err:
