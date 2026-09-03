@@ -6,6 +6,7 @@ from typing import Any, cast
 from spacexai_subscription_client import (
     AuthenticationError,
     InvalidResponseError,
+    PermissionDeniedError,
     SpaceXAISubscriptionError,
 )
 import voluptuous as vol
@@ -97,6 +98,11 @@ def async_setup_services(hass: HomeAssistant) -> None:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="invalid_response",
+            ) from err
+        except PermissionDeniedError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="not_entitled",
             ) from err
         except SpaceXAISubscriptionError as err:
             LOGGER.error("Error communicating with SpaceXAI: %s", type(err).__name__)

@@ -9,6 +9,7 @@ from spacexai_subscription_client import (
     AuthenticationError,
     GeneratedVideo,
     InvalidResponseError,
+    PermissionDeniedError,
     SpaceXAISubscriptionError,
 )
 
@@ -159,6 +160,7 @@ async def test_generate_video_encodes_local_image(
     [
         pytest.param(AuthenticationError(), "invalid_auth", id="authentication"),
         pytest.param(InvalidResponseError(), "invalid_response", id="response"),
+        pytest.param(PermissionDeniedError(), "not_entitled", id="permission_denied"),
         pytest.param(SpaceXAISubscriptionError(), "api_error", id="api"),
     ],
 )
