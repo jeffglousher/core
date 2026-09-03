@@ -13,6 +13,7 @@ from spacexai_subscription_client import (
     DeviceAuthorization,
     DeviceAuthorizationExpiredError,
     OAuthToken,
+    PermissionDeniedError,
     RateLimitError,
     RequestTimeoutError,
     SpaceXAISubscriptionClient,
@@ -58,6 +59,7 @@ DEVICE_AUTHORIZATION = DeviceAuthorization(
     ),
     expires_in=1800,
     interval=1,
+    expires_at_monotonic=999999999.0,
 )
 
 
@@ -183,6 +185,22 @@ async def test_device_authorization_rejected(
 
 
 @pytest.mark.usefixtures("mock_setup_entry")
+async def test_device_authorization_permission_denied(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Abort when the OAuth client is not permitted to start device login."""
+    mock_flow_client.async_request_device_authorization.side_effect = (
+        PermissionDeniedError
+    )
+
+    result = await _start_flow(hass)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "not_entitled"
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
 async def test_device_authorization_connection_error(
     hass: HomeAssistant,
     mock_flow_client: MagicMock,
@@ -296,6 +314,21 @@ async def test_device_authorization_poll_authentication_error(
 
 
 @pytest.mark.usefixtures("mock_setup_entry")
+async def test_device_authorization_poll_permission_denied(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Abort when the account cannot use the subscription token endpoint."""
+    _set_poll_error(mock_flow_client, PermissionDeniedError)
+
+    result = await _start_flow(hass)
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "not_entitled"
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
 async def test_account_validation_authentication_error(
     hass: HomeAssistant,
     mock_flow_client: MagicMock,
@@ -309,6 +342,22 @@ async def test_account_validation_authentication_error(
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "invalid_auth"
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_account_validation_permission_denied(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Abort when the approved account cannot use the subscription API."""
+    mock_flow_client.async_list_models.side_effect = PermissionDeniedError
+
+    result = await _finish_device_progress(
+        hass, mock_flow_client, await _start_flow(hass)
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "not_entitled"
 
 
 @pytest.mark.usefixtures("mock_setup_entry")

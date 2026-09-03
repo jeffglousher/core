@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from spacexai_subscription_client import (
     AuthenticationError,
+    PermissionDeniedError,
     SpaceXAISubscriptionClient,
     SpaceXAISubscriptionError,
 )
@@ -19,6 +20,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
+    ConfigEntryError,
     ConfigEntryNotReady,
     OAuth2TokenRequestError,
     OAuth2TokenRequestReauthError,
@@ -84,6 +86,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
             )
     except (AuthenticationError, OAuth2TokenRequestReauthError, KeyError) as err:
         raise ConfigEntryAuthFailed from err
+    except PermissionDeniedError as err:
+        raise ConfigEntryError(
+            translation_domain=DOMAIN,
+            translation_key="not_entitled",
+        ) from err
     except (SpaceXAISubscriptionError, OAuth2TokenRequestError) as err:
         raise ConfigEntryNotReady from err
 
