@@ -10,6 +10,7 @@ from spacexai_subscription_client import (
     Completion,
     GeneratedImage,
     Message,
+    PermissionDeniedError,
     ResponseFormat,
 )
 import voluptuous as vol
@@ -232,6 +233,46 @@ async def test_generate_data_authentication_error(
             task_name="Test Task",
             entity_id=ENTITY_ID,
             instructions="Return data",
+        )
+
+
+async def test_generate_data_permission_denied(
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Translate subscription permission denial from data generation."""
+    mock_spacexai_subscription_client.async_create_response.side_effect = (
+        PermissionDeniedError
+    )
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+
+    with pytest.raises(HomeAssistantError):
+        await ai_task.async_generate_data(
+            hass,
+            task_name="Test Task",
+            entity_id=ENTITY_ID,
+            instructions="Return data",
+        )
+
+
+async def test_generate_image_permission_denied(
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Translate subscription permission denial from image generation."""
+    mock_spacexai_subscription_client.async_generate_image.side_effect = (
+        PermissionDeniedError
+    )
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+
+    with pytest.raises(HomeAssistantError):
+        await ai_task.async_generate_image(
+            hass,
+            task_name="Test Image",
+            entity_id=ENTITY_ID,
+            instructions="Draw a smart home",
         )
 
 
