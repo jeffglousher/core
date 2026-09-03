@@ -137,6 +137,7 @@ async def test_full_oauth_flow(
 
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "conversation"
+    assert result["data_schema"] is not None
     assert result["data_schema"].schema[CONF_MODEL].config["options"] == [
         "grok-4.5",
         "grok-4.6",
@@ -158,12 +159,15 @@ async def test_full_oauth_flow(
         "auth_implementation": DOMAIN,
         "token": TOKEN_DATA,
     }
-    assert len(result["subentries"]) == 1
-    assert result["subentries"][0]["subentry_type"] == "conversation"
-    assert result["subentries"][0]["data"] == {
+    subentries = list(result["subentries"])
+    assert len(subentries) == 2
+    assert subentries[0]["subentry_type"] == "conversation"
+    assert subentries[0]["data"] == {
         CONF_MODEL: "grok-4.6",
         CONF_PROMPT: "Be concise.",
     }
+    assert subentries[1]["subentry_type"] == "ai_task_data"
+    assert subentries[1]["data"] == {CONF_MODEL: "grok-4.6"}
 
 
 @pytest.mark.usefixtures("mock_setup_entry")
@@ -459,6 +463,50 @@ async def test_create_conversation_subentry_not_loaded(
 
     result = await hass.config_entries.subentries.async_init(
         (mock_config_entry.entry_id, "conversation"),
+        context={"source": SOURCE_USER},
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "entry_not_loaded"
+
+
+@pytest.mark.usefixtures("mock_spacexai_subscription_client")
+async def test_create_ai_task_subentry(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Create an AI Task subentry."""
+    await setup_integration(hass, mock_config_entry)
+
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "ai_task_data"),
+        context={"source": SOURCE_USER},
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+    assert result["data_schema"] is not None
+    assert result["data_schema"].schema[CONF_MODEL].config["options"] == ["grok-4.6"]
+
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"],
+        {CONF_NAME: "Automation Grok", CONF_MODEL: "grok-4.6"},
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Automation Grok"
+    assert result["data"] == {CONF_MODEL: "grok-4.6"}
+
+
+async def test_create_ai_task_subentry_not_loaded(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+) -> None:
+    """Reject adding an AI Task entity while the account is disabled."""
+    mock_config_entry.add_to_hass(hass)
+
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, "ai_task_data"),
         context={"source": SOURCE_USER},
     )
 

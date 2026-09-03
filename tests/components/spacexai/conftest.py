@@ -33,7 +33,10 @@ def enable_assist() -> bool:
 
 
 def _mock_config_entry(
-    enable_assist: bool, *, enable_provider_tools: bool = False
+    enable_assist: bool,
+    *,
+    enable_provider_tools: bool = False,
+    include_ai_task: bool = False,
 ) -> MockConfigEntry:
     """Return a configured SpaceXAI entry."""
     data: dict[str, Any] = {
@@ -50,6 +53,25 @@ def _mock_config_entry(
                 CONF_X_SEARCH: True,
             }
         )
+    subentries = [
+        ConfigSubentryData(
+            data=data,
+            subentry_id="conversation-subentry",
+            subentry_type="conversation",
+            title="Grok",
+            unique_id=None,
+        )
+    ]
+    if include_ai_task:
+        subentries.append(
+            ConfigSubentryData(
+                data={CONF_MODEL: "grok-4.6"},
+                subentry_id="ai-task-subentry",
+                subentry_type="ai_task_data",
+                title="Grok AI Task",
+                unique_id=None,
+            )
+        )
     return MockConfigEntry(
         domain=DOMAIN,
         title="Home User",
@@ -64,15 +86,7 @@ def _mock_config_entry(
                 "token_type": "Bearer",
             },
         },
-        subentries_data=[
-            ConfigSubentryData(
-                data=data,
-                subentry_id="conversation-subentry",
-                subentry_type="conversation",
-                title="Grok",
-                unique_id=None,
-            )
-        ],
+        subentries_data=subentries,
     )
 
 
@@ -95,11 +109,19 @@ def mock_config_entry_with_provider_tools() -> MockConfigEntry:
 
 
 @pytest.fixture
+def mock_config_entry_with_ai_task() -> MockConfigEntry:
+    """Return a configured entry with an AI Task entity."""
+    return _mock_config_entry(False, include_ai_task=True)
+
+
+@pytest.fixture
 def mock_spacexai_subscription_client() -> Generator[MagicMock]:
     """Return a mocked SpaceXAI client."""
     client = MagicMock(spec=SpaceXAISubscriptionClient)
     client.async_list_models = AsyncMock(return_value=("grok-4.6",))
     client.async_create_response = AsyncMock()
+    client.async_generate_image = AsyncMock()
+    client.async_edit_image = AsyncMock()
     with patch("homeassistant.components.spacexai.create_client", return_value=client):
         yield client
 

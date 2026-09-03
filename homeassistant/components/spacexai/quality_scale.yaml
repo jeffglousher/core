@@ -49,7 +49,7 @@ rules:
     comment: The integration provides a stateless conversation entity.
   parallel-updates: done
   reauthentication-flow: todo
-  test-coverage: done
+  test-coverage: todo
 
   # Gold
   devices: done

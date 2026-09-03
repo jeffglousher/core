@@ -9,6 +9,8 @@ DOMAIN = "spacexai"
 LOGGER: Logger = getLogger(__package__)
 
 DEFAULT_CONVERSATION_NAME = "Grok"
+DEFAULT_AI_TASK_NAME = "Grok AI Task"
+RECOMMENDED_IMAGE_MODEL = "grok-imagine-image-2.0"
 MAX_TOOL_ITERATIONS = 10
 MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024
 

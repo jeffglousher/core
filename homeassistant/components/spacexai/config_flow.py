@@ -40,6 +40,7 @@ from .const import (
     CONF_CODE_INTERPRETER,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
+    DEFAULT_AI_TASK_NAME,
     DEFAULT_CONVERSATION_NAME,
     DOMAIN,
     RECOMMENDED_CONVERSATION_OPTIONS,
@@ -95,7 +96,10 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
         cls, config_entry: SpaceXAIConfigEntry
     ) -> dict[str, type[ConfigSubentryFlow]]:
         """Return the supported subentry types."""
-        return {"conversation": SpaceXAIConversationSubentryFlow}
+        return {
+            "ai_task_data": SpaceXAIEntitySubentryFlow,
+            "conversation": SpaceXAIEntitySubentryFlow,
+        }
 
     def __init__(self) -> None:
         """Initialize the flow."""
@@ -199,7 +203,13 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
                         "data": user_input,
                         "title": DEFAULT_CONVERSATION_NAME,
                         "unique_id": None,
-                    }
+                    },
+                    {
+                        "subentry_type": "ai_task_data",
+                        "data": {CONF_MODEL: user_input[CONF_MODEL]},
+                        "title": DEFAULT_AI_TASK_NAME,
+                        "unique_id": None,
+                    },
                 ],
             )
 
@@ -267,40 +277,51 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
             raise SpaceXAISubscriptionError
 
 
-class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
-    """Manage SpaceXAI conversation agents."""
+class SpaceXAIEntitySubentryFlow(ConfigSubentryFlow):
+    """Manage SpaceXAI entities."""
 
     options: dict[str, Any]
 
     @property
     def _is_new(self) -> bool:
-        """Return whether a conversation agent is being added."""
+        """Return whether an entity is being added."""
         return self.source == "user"
+
+    @property
+    def _is_conversation(self) -> bool:
+        """Return whether this flow manages a conversation agent."""
+        return self._subentry_type == "conversation"
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Add a conversation agent."""
-        self.options = RECOMMENDED_CONVERSATION_OPTIONS.copy()
+        """Add an entity."""
+        self.options = (
+            RECOMMENDED_CONVERSATION_OPTIONS.copy() if self._is_conversation else {}
+        )
         return await self.async_step_init(user_input)
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Reconfigure a conversation agent."""
+        """Reconfigure an entity."""
         self.options = self._get_reconfigure_subentry().data.copy()
         return await self.async_step_init(user_input)
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> SubentryFlowResult:
-        """Configure a conversation agent."""
+        """Configure an entity."""
         entry = self._get_entry()
         if entry.state is not ConfigEntryState.LOADED:
             return self.async_abort(reason="entry_not_loaded")
 
         if user_input is not None:
-            options = _clean_conversation_options(user_input)
+            options = (
+                _clean_conversation_options(user_input)
+                if self._is_conversation
+                else user_input
+            )
             if self._is_new:
                 return self.async_create_entry(
                     title=options.pop(CONF_NAME),
@@ -312,15 +333,30 @@ class SpaceXAIConversationSubentryFlow(ConfigSubentryFlow):
                 data=options,
             )
 
-        hass_apis = [
-            SelectOptionDict(label=api.name, value=api.id)
-            for api in llm.async_get_apis(self.hass)
-        ]
-        schema = _conversation_schema(entry.runtime_data.models, hass_apis)
+        if self._is_conversation:
+            hass_apis = [
+                SelectOptionDict(label=api.name, value=api.id)
+                for api in llm.async_get_apis(self.hass)
+            ]
+            schema = _conversation_schema(entry.runtime_data.models, hass_apis)
+            default_name = DEFAULT_CONVERSATION_NAME
+        else:
+            schema = vol.Schema(
+                {
+                    vol.Required(CONF_MODEL): SelectSelector(
+                        SelectSelectorConfig(
+                            options=list(entry.runtime_data.models),
+                            mode=SelectSelectorMode.DROPDOWN,
+                            sort=True,
+                        )
+                    )
+                }
+            )
+            default_name = DEFAULT_AI_TASK_NAME
         if self._is_new:
             schema = vol.Schema(
                 {
-                    vol.Required(CONF_NAME, default=DEFAULT_CONVERSATION_NAME): str,
+                    vol.Required(CONF_NAME, default=default_name): str,
                     **schema.schema,
                 }
             )

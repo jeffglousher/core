@@ -46,6 +46,17 @@ async def test_setup_and_unload(
     assert mock_config_entry.state is ConfigEntryState.NOT_LOADED
 
 
+async def test_setup_ai_task(
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Set up the AI Task platform for its subentry."""
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+
+    assert hass.states.get("ai_task.grok_ai_task") is not None
+
+
 @pytest.mark.parametrize(
     ("error", "state"),
     [
