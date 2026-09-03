@@ -115,13 +115,14 @@ class SpaceXAIAITaskEntity(ai_task.AITaskEntity):
         """Generate unstructured or structured data."""
         try:
             response = await self.entry.runtime_data.client.async_create_response(
-                await async_access_token(self.entry),
+                await async_access_token(self.hass, self.entry),
                 model=self.subentry.data[CONF_MODEL],
                 input_data=await _async_convert_content(self.hass, chat_log.content),
                 tools=[],
                 response_format=_format_response_format(task, chat_log),
             )
         except AuthenticationError as err:
+            self.entry.async_start_reauth(self.hass)
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="invalid_auth",
@@ -163,7 +164,7 @@ class SpaceXAIAITaskEntity(ai_task.AITaskEntity):
     ) -> ai_task.GenImageTaskResult:
         """Generate or edit an image."""
         attachments = await self._async_prepare_image_attachments(task)
-        access_token = await async_access_token(self.entry)
+        access_token = await async_access_token(self.hass, self.entry)
         try:
             if attachments:
                 image = await self.entry.runtime_data.client.async_edit_image(
@@ -179,6 +180,7 @@ class SpaceXAIAITaskEntity(ai_task.AITaskEntity):
                     prompt=task.instructions,
                 )
         except AuthenticationError as err:
+            self.entry.async_start_reauth(self.hass)
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="invalid_auth",

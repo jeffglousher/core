@@ -138,6 +138,7 @@ class SpaceXAITtsEntity(TextToSpeechEntity, SpaceXAISpeechEntity):
                 speed=self.subentry.data.get(CONF_TTS_SPEED, RECOMMENDED_TTS_SPEED),
             )
         except AuthenticationError as err:
+            self.entry.async_start_reauth(self.hass)
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="invalid_auth",

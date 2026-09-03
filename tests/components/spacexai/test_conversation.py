@@ -151,6 +151,10 @@ async def test_authentication_error(
         agent_id="conversation.grok",
     )
     assert result.response.response_type is intent.IntentResponseType.ERROR
+    flows = hass.config_entries.flow.async_progress()
+    assert len(flows) == 1
+    assert flows[0]["context"]["source"] == "reauth"
+    assert flows[0]["step_id"] == "reauth_confirm"
 
 
 async def test_api_error(

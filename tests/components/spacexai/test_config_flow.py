@@ -369,6 +369,124 @@ async def test_account_has_no_models(
     assert result["step_id"] == "conversation"
 
 
+async def test_reauth(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_flow_client: MagicMock,
+    mock_setup_entry: AsyncMock,
+) -> None:
+    """Replace an expired OAuth token without changing the entry settings."""
+    mock_config_entry.add_to_hass(hass)
+    original_subentries = [
+        subentry.as_dict() for subentry in mock_config_entry.subentries.values()
+    ]
+
+    result = await mock_config_entry.start_reauth_flow(hass)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert mock_config_entry.data == {
+        "auth_implementation": DOMAIN,
+        "token": TOKEN_DATA,
+    }
+    assert mock_config_entry.title == "Home User"
+    assert [
+        subentry.as_dict() for subentry in mock_config_entry.subentries.values()
+    ] == original_subentries
+    assert len(hass.config_entries.async_entries(DOMAIN)) == 1
+    await hass.async_block_till_done()
+    mock_setup_entry.assert_awaited_once_with(hass, mock_config_entry)
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_reauth_wrong_account(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Reject credentials for a different SpaceXAI account."""
+    mock_config_entry.add_to_hass(hass)
+    original_data = mock_config_entry.data
+    mock_flow_client.async_get_account.return_value = Account(
+        "other-account", "Other User", "other@test"
+    )
+
+    result = await mock_config_entry.start_reauth_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "wrong_account"
+    assert mock_config_entry.data == original_data
+
+
+async def test_reauth_loaded_entry_reloads_once(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Reload exactly once when reauth updates a loaded account's token."""
+    await setup_integration(hass, mock_config_entry)
+    new_token = {**mock_config_entry.data["token"], "access_token": "new-access-token"}
+
+    async def async_poll(_device: DeviceAuthorization) -> OAuthToken:
+        await mock_flow_client.poll_event.wait()
+        return OAuthToken(new_token)
+
+    mock_flow_client.async_poll_device_token.side_effect = async_poll
+    result = await mock_config_entry.start_reauth_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert mock_config_entry.data["token"] == new_token
+    assert mock_spacexai_subscription_client.async_list_models.await_count == 2
+    assert hass.states.get("conversation.grok") is not None
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_reauth_denied_and_retry(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Request a new device code when reauthentication is denied."""
+    mock_config_entry.add_to_hass(hass)
+    _set_poll_error(mock_flow_client, AuthorizationDeniedError)
+
+    result = await mock_config_entry.start_reauth_flow(hass)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "device_denied"
+
+    _set_successful_poll(mock_flow_client)
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], user_input={}
+    )
+    result = await _finish_device_progress(hass, mock_flow_client, result)
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert mock_flow_client.async_request_device_authorization.await_count == 2
+
+
 @pytest.mark.usefixtures("mock_spacexai_subscription_client")
 async def test_create_conversation_subentry(
     hass: HomeAssistant,
@@ -501,6 +619,8 @@ async def test_create_ai_task_subentry(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == "Automation Grok"
     assert result["data"] == {CONF_MODEL: "grok-4.6"}
+    await hass.async_block_till_done()
+    assert hass.states.get("ai_task.automation_grok") is not None
 
 
 async def test_create_ai_task_subentry_not_loaded(
@@ -520,13 +640,14 @@ async def test_create_ai_task_subentry_not_loaded(
 
 
 @pytest.mark.parametrize(
-    ("subentry_type", "user_input", "expected_title", "expected_data"),
+    ("subentry_type", "user_input", "expected_title", "expected_data", "entity_id"),
     [
         pytest.param(
             "stt",
             {CONF_NAME: "Hallway transcription"},
             "Hallway transcription",
             {},
+            "stt.hallway_transcription",
             id="speech_to_text",
         ),
         pytest.param(
@@ -534,6 +655,7 @@ async def test_create_ai_task_subentry_not_loaded(
             {CONF_NAME: "Kitchen voice", CONF_TTS_SPEED: 1.2},
             "Kitchen voice",
             {CONF_TTS_SPEED: 1.2},
+            "tts.kitchen_voice_text_to_speech",
             id="text_to_speech",
         ),
     ],
@@ -546,6 +668,7 @@ async def test_create_speech_subentry(
     user_input: dict[str, object],
     expected_title: str,
     expected_data: dict[str, object],
+    entity_id: str,
 ) -> None:
     """Create a speech subentry with minimal options."""
     await setup_integration(hass, mock_config_entry)
@@ -564,6 +687,8 @@ async def test_create_speech_subentry(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["title"] == expected_title
     assert result["data"] == expected_data
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id) is not None
 
 
 @pytest.mark.parametrize("subentry_type", ["stt", "tts"])

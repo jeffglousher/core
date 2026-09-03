@@ -5,7 +5,7 @@ import io
 from typing import override
 import wave
 
-from spacexai_subscription_client import SpaceXAISubscriptionError
+from spacexai_subscription_client import AuthenticationError, SpaceXAISubscriptionError
 
 from homeassistant.components import stt
 from homeassistant.config_entries import ConfigSubentry
@@ -155,6 +155,10 @@ class SpaceXAISttEntity(stt.SpeechToTextEntity, SpaceXAISpeechEntity):
                 media_type=f"audio/{metadata.format.value}",
                 language=metadata.language.split("-", 1)[0],
             )
+        except AuthenticationError:
+            self.entry.async_start_reauth(self.hass)
+            LOGGER.error("SpaceXAI authentication failed during speech-to-text")
+            return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
         except (HomeAssistantError, SpaceXAISubscriptionError) as err:
             LOGGER.error("Error during speech-to-text processing: %s", err)
             return stt.SpeechResult(None, stt.SpeechResultState.ERROR)

@@ -1,6 +1,7 @@
 """Config flow for SpaceXAI."""
 
 import asyncio
+from collections.abc import Mapping
 from typing import Any, override
 
 from spacexai_subscription_client import (
@@ -18,6 +19,7 @@ from spacexai_subscription_client import (
 import voluptuous as vol
 
 from homeassistant.config_entries import (
+    SOURCE_REAUTH,
     ConfigEntryState,
     ConfigFlow,
     ConfigFlowResult,
@@ -126,6 +128,20 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
         """Start device authorization."""
         return await self.async_step_device()
 
+    async def async_step_reauth(
+        self, entry_data: Mapping[str, Any]
+    ) -> ConfigFlowResult:
+        """Start reauthentication after an OAuth authentication error."""
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Confirm that the user wants to sign in again."""
+        if user_input is None:
+            return self.async_show_form(step_id="reauth_confirm")
+        return await self.async_step_device()
+
     async def async_step_device(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
@@ -194,6 +210,14 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
         except SpaceXAISubscriptionError:
             return await self.async_step_device_validation_error()
 
+        if self.source == SOURCE_REAUTH:
+            entry = self._get_reauth_entry()
+            result = self.async_update_and_abort(
+                entry, data_updates={"token": self._token}
+            )
+            # The update listener only reloads subentry configuration changes.
+            self.hass.config_entries.async_schedule_reload(entry.entry_id)
+            return result
         return await self.async_step_conversation()
 
     async def async_step_conversation(
@@ -291,7 +315,10 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
         access_token = self._token["access_token"]
         account = await self._client.async_get_account(access_token)
         await self.async_set_unique_id(account.subject)
-        self._abort_if_unique_id_configured()
+        if self.source == SOURCE_REAUTH:
+            self._abort_if_unique_id_mismatch(reason="wrong_account")
+        else:
+            self._abort_if_unique_id_configured()
         self._account_name = account.display_name
         self._models = list(await self._client.async_list_models(access_token))
         if not self._models:

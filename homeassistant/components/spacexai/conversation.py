@@ -283,7 +283,7 @@ class SpaceXAIConversationEntity(
         for _iteration in range(MAX_TOOL_ITERATIONS):
             try:
                 response = await self.entry.runtime_data.client.async_create_response(
-                    await async_access_token(self.entry),
+                    await async_access_token(self.hass, self.entry),
                     model=self.subentry.data[CONF_MODEL],
                     input_data=await _async_convert_content(
                         self.hass, chat_log.content
@@ -291,6 +291,7 @@ class SpaceXAIConversationEntity(
                     tools=tools,
                 )
             except AuthenticationError as err:
+                self.entry.async_start_reauth(self.hass)
                 raise HomeAssistantError(
                     translation_domain=DOMAIN,
                     translation_key="invalid_auth",

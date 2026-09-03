@@ -234,6 +234,37 @@ async def test_generate_data_authentication_error(
             instructions="Return data",
         )
 
+    flows = hass.config_entries.flow.async_progress()
+    assert len(flows) == 1
+    assert flows[0]["context"]["source"] == "reauth"
+    assert flows[0]["step_id"] == "reauth_confirm"
+
+
+async def test_generate_image_authentication_error(
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Start reauthentication when image generation rejects the token."""
+    mock_spacexai_subscription_client.async_generate_image.side_effect = (
+        AuthenticationError
+    )
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+
+    with pytest.raises(HomeAssistantError) as err:
+        await ai_task.async_generate_image(
+            hass,
+            task_name="Test Image",
+            entity_id=ENTITY_ID,
+            instructions="Draw a smart home",
+        )
+
+    assert err.value.translation_key == "invalid_auth"
+    flows = hass.config_entries.flow.async_progress()
+    assert len(flows) == 1
+    assert flows[0]["context"]["source"] == "reauth"
+    assert flows[0]["step_id"] == "reauth_confirm"
+
 
 @pytest.mark.parametrize(
     ("media_type", "attachment_count"),

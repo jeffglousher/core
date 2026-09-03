@@ -80,7 +80,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
             )
         try:
             video = await entry.runtime_data.client.async_generate_video(
-                await async_access_token(entry),
+                await async_access_token(hass, entry),
                 model=call.data[CONF_MODEL],
                 prompt=call.data[CONF_PROMPT],
                 image_url=image_url,
@@ -89,6 +89,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
                 resolution=call.data.get(CONF_RESOLUTION),
             )
         except AuthenticationError as err:
+            entry.async_start_reauth(hass)
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="invalid_auth",
