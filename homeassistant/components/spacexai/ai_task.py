@@ -16,11 +16,7 @@ from homeassistant.components import ai_task, conversation
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.const import CONF_MODEL
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import (
-    HomeAssistantError,
-    OAuth2TokenRequestError,
-    OAuth2TokenRequestReauthError,
-)
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import slugify
@@ -29,6 +25,7 @@ from homeassistant.util.json import json_loads
 from . import SpaceXAIConfigEntry
 from .const import DOMAIN, LOGGER, RECOMMENDED_IMAGE_MODEL
 from .conversation import _async_convert_content, _prepare_attachments
+from .entity import async_access_token
 
 PARALLEL_UPDATES = 0
 MAX_EDIT_IMAGES = 5
@@ -109,28 +106,6 @@ class SpaceXAIAITaskEntity(ai_task.AITaskEntity):
             entry_type=dr.DeviceEntryType.SERVICE,
         )
 
-    async def _async_access_token(self) -> str:
-        """Return a valid OAuth access token."""
-        try:
-            await self.entry.runtime_data.oauth_session.async_ensure_token_valid()
-        except (AuthenticationError, OAuth2TokenRequestReauthError) as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="invalid_auth",
-            ) from err
-        except OAuth2TokenRequestError as err:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="api_error",
-            ) from err
-        access_token = self.entry.runtime_data.oauth_session.token.get("access_token")
-        if not isinstance(access_token, str) or not access_token:
-            raise HomeAssistantError(
-                translation_domain=DOMAIN,
-                translation_key="invalid_auth",
-            )
-        return access_token
-
     @override
     async def _async_generate_data(
         self,
@@ -140,7 +115,7 @@ class SpaceXAIAITaskEntity(ai_task.AITaskEntity):
         """Generate unstructured or structured data."""
         try:
             response = await self.entry.runtime_data.client.async_create_response(
-                await self._async_access_token(),
+                await async_access_token(self.entry),
                 model=self.subentry.data[CONF_MODEL],
                 input_data=await _async_convert_content(self.hass, chat_log.content),
                 tools=[],
@@ -188,7 +163,7 @@ class SpaceXAIAITaskEntity(ai_task.AITaskEntity):
     ) -> ai_task.GenImageTaskResult:
         """Generate or edit an image."""
         attachments = await self._async_prepare_image_attachments(task)
-        access_token = await self._async_access_token()
+        access_token = await async_access_token(self.entry)
         try:
             if attachments:
                 image = await self.entry.runtime_data.client.async_edit_image(

@@ -57,6 +57,18 @@ async def test_setup_ai_task(
     assert hass.states.get("ai_task.grok_ai_task") is not None
 
 
+@pytest.mark.usefixtures("mock_spacexai_subscription_client")
+async def test_setup_speech_entities(
+    hass: HomeAssistant,
+    mock_config_entry_with_speech: MockConfigEntry,
+) -> None:
+    """Set up speech-to-text and text-to-speech subentries."""
+    await setup_integration(hass, mock_config_entry_with_speech)
+
+    assert hass.states.get("stt.grok_speech_to_text") is not None
+    assert hass.states.get("tts.grok_tts_text_to_speech") is not None
+
+
 @pytest.mark.parametrize(
     ("error", "state"),
     [

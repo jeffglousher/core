@@ -22,6 +22,7 @@ from spacexai_subscription_client import (
 from homeassistant.components import conversation
 from homeassistant.components.spacexai.const import (
     CONF_CODE_INTERPRETER,
+    CONF_TTS_SPEED,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
     DOMAIN,
@@ -160,7 +161,7 @@ async def test_full_oauth_flow(
         "token": TOKEN_DATA,
     }
     subentries = list(result["subentries"])
-    assert len(subentries) == 2
+    assert len(subentries) == 4
     assert subentries[0]["subentry_type"] == "conversation"
     assert subentries[0]["data"] == {
         CONF_MODEL: "grok-4.6",
@@ -168,6 +169,10 @@ async def test_full_oauth_flow(
     }
     assert subentries[1]["subentry_type"] == "ai_task_data"
     assert subentries[1]["data"] == {CONF_MODEL: "grok-4.6"}
+    assert subentries[2]["subentry_type"] == "stt"
+    assert subentries[2]["data"] == {}
+    assert subentries[3]["subentry_type"] == "tts"
+    assert subentries[3]["data"] == {CONF_TTS_SPEED: 1.0}
 
 
 @pytest.mark.usefixtures("mock_setup_entry")
@@ -512,6 +517,99 @@ async def test_create_ai_task_subentry_not_loaded(
 
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "entry_not_loaded"
+
+
+@pytest.mark.parametrize(
+    ("subentry_type", "user_input", "expected_title", "expected_data"),
+    [
+        pytest.param(
+            "stt",
+            {CONF_NAME: "Hallway transcription"},
+            "Hallway transcription",
+            {},
+            id="speech_to_text",
+        ),
+        pytest.param(
+            "tts",
+            {CONF_NAME: "Kitchen voice", CONF_TTS_SPEED: 1.2},
+            "Kitchen voice",
+            {CONF_TTS_SPEED: 1.2},
+            id="text_to_speech",
+        ),
+    ],
+)
+@pytest.mark.usefixtures("mock_spacexai_subscription_client")
+async def test_create_speech_subentry(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    subentry_type: str,
+    user_input: dict[str, object],
+    expected_title: str,
+    expected_data: dict[str, object],
+) -> None:
+    """Create a speech subentry with minimal options."""
+    await setup_integration(hass, mock_config_entry)
+
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, subentry_type),
+        context={"source": SOURCE_USER},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "init"
+
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], user_input
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == expected_title
+    assert result["data"] == expected_data
+
+
+@pytest.mark.parametrize("subentry_type", ["stt", "tts"])
+async def test_create_speech_subentry_not_loaded(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    subentry_type: str,
+) -> None:
+    """Reject adding a speech entity while the account is disabled."""
+    mock_config_entry.add_to_hass(hass)
+
+    result = await hass.config_entries.subentries.async_init(
+        (mock_config_entry.entry_id, subentry_type),
+        context={"source": SOURCE_USER},
+    )
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "entry_not_loaded"
+
+
+@pytest.mark.usefixtures("mock_spacexai_subscription_client")
+async def test_reconfigure_tts_subentry(
+    hass: HomeAssistant,
+    mock_config_entry_with_speech: MockConfigEntry,
+) -> None:
+    """Reconfigure text-to-speech speed."""
+    await setup_integration(hass, mock_config_entry_with_speech)
+    subentry = next(
+        subentry
+        for subentry in mock_config_entry_with_speech.subentries.values()
+        if subentry.subentry_type == "tts"
+    )
+
+    result = await mock_config_entry_with_speech.start_subentry_reconfigure_flow(
+        hass, subentry.subentry_id
+    )
+    assert result["type"] is FlowResultType.FORM
+
+    result = await hass.config_entries.subentries.async_configure(
+        result["flow_id"], {CONF_TTS_SPEED: 0.9}
+    )
+    await hass.async_block_till_done()
+
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert subentry.data == {CONF_TTS_SPEED: 0.9}
 
 
 @pytest.mark.usefixtures("mock_setup_entry")

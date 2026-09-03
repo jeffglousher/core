@@ -5,7 +5,7 @@ rules:
     comment: The integration does not provide actions.
   appropriate-polling:
     status: exempt
-    comment: The integration only makes requests in response to user conversations.
+    comment: The integration only makes requests for user-initiated AI and speech operations.
   brands: done
   common-modules: done
   config-flow-test-coverage: done
@@ -25,7 +25,7 @@ rules:
     comment: The integration does not provide triggers.
   entity-event-setup:
     status: exempt
-    comment: The conversation entity does not subscribe to events.
+    comment: The stateless service entities do not subscribe to events.
   entity-unique-id: done
   has-entity-name: done
   runtime-data: done
@@ -42,11 +42,11 @@ rules:
   docs-installation-parameters: todo
   entity-unavailable:
     status: exempt
-    comment: The integration provides a stateless conversation entity.
+    comment: The integration provides stateless, on-demand service entities.
   integration-owner: done
   log-when-unavailable:
     status: exempt
-    comment: The integration provides a stateless conversation entity.
+    comment: The integration provides stateless, on-demand service entities.
   parallel-updates: done
   reauthentication-flow: todo
   test-coverage: todo
@@ -74,16 +74,14 @@ rules:
     comment: The integration represents a cloud service, not physical devices.
   entity-category:
     status: exempt
-    comment: The conversation entity is the primary feature.
+    comment: The service entities are primary integration features.
   entity-device-class:
     status: exempt
-    comment: Conversation entities do not have a device class.
+    comment: AI task, conversation, STT, and TTS entities do not have device classes.
   entity-disabled-by-default:
     status: exempt
-    comment: User-created conversation agents are enabled by default.
-  entity-translations:
-    status: exempt
-    comment: The conversation entity uses the user-defined subentry title.
+    comment: User-created service entities are enabled by default.
+  entity-translations: done
   exception-translations: done
   icon-translations:
     status: exempt

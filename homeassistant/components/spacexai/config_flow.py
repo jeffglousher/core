@@ -28,6 +28,8 @@ from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_NAME, CONF_P
 from homeassistant.core import callback
 from homeassistant.helpers import llm
 from homeassistant.helpers.selector import (
+    NumberSelector,
+    NumberSelectorConfig,
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
@@ -38,12 +40,16 @@ from homeassistant.helpers.selector import (
 from . import SpaceXAIConfigEntry, create_client
 from .const import (
     CONF_CODE_INTERPRETER,
+    CONF_TTS_SPEED,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
     DEFAULT_AI_TASK_NAME,
     DEFAULT_CONVERSATION_NAME,
+    DEFAULT_STT_NAME,
+    DEFAULT_TTS_NAME,
     DOMAIN,
     RECOMMENDED_CONVERSATION_OPTIONS,
+    RECOMMENDED_TTS_SPEED,
 )
 
 PROVIDER_TOOL_OPTIONS = (CONF_WEB_SEARCH, CONF_X_SEARCH, CONF_CODE_INTERPRETER)
@@ -99,6 +105,8 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
         return {
             "ai_task_data": SpaceXAIEntitySubentryFlow,
             "conversation": SpaceXAIEntitySubentryFlow,
+            "stt": SpaceXAISpeechSubentryFlow,
+            "tts": SpaceXAISpeechSubentryFlow,
         }
 
     def __init__(self) -> None:
@@ -208,6 +216,18 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
                         "subentry_type": "ai_task_data",
                         "data": {CONF_MODEL: user_input[CONF_MODEL]},
                         "title": DEFAULT_AI_TASK_NAME,
+                        "unique_id": None,
+                    },
+                    {
+                        "subentry_type": "stt",
+                        "data": {},
+                        "title": DEFAULT_STT_NAME,
+                        "unique_id": None,
+                    },
+                    {
+                        "subentry_type": "tts",
+                        "data": {CONF_TTS_SPEED: RECOMMENDED_TTS_SPEED},
+                        "title": DEFAULT_TTS_NAME,
                         "unique_id": None,
                     },
                 ],
@@ -364,6 +384,74 @@ class SpaceXAIEntitySubentryFlow(ConfigSubentryFlow):
             step_id="init",
             data_schema=self.add_suggested_values_to_schema(
                 schema,
+                self.options,
+            ),
+        )
+
+
+class SpaceXAISpeechSubentryFlow(ConfigSubentryFlow):
+    """Manage SpaceXAI speech entities."""
+
+    options: dict[str, Any]
+
+    @property
+    def _is_new(self) -> bool:
+        """Return whether an entity is being added."""
+        return self.source == "user"
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Add a speech entity."""
+        self.options = (
+            {CONF_TTS_SPEED: RECOMMENDED_TTS_SPEED}
+            if self._subentry_type == "tts"
+            else {}
+        )
+        return await self.async_step_init(user_input)
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Reconfigure a speech entity."""
+        self.options = self._get_reconfigure_subentry().data.copy()
+        return await self.async_step_init(user_input)
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Configure a speech entity."""
+        entry = self._get_entry()
+        if entry.state is not ConfigEntryState.LOADED:
+            return self.async_abort(reason="entry_not_loaded")
+
+        if user_input is not None:
+            options = self.options | user_input
+            if self._is_new:
+                return self.async_create_entry(
+                    title=options.pop(CONF_NAME),
+                    data=options,
+                )
+            return self.async_update_and_abort(
+                entry,
+                self._get_reconfigure_subentry(),
+                data=options,
+            )
+
+        default_name = (
+            DEFAULT_TTS_NAME if self._subentry_type == "tts" else DEFAULT_STT_NAME
+        )
+        schema: dict[vol.Marker, Any] = {}
+        if self._is_new:
+            schema[vol.Required(CONF_NAME, default=default_name)] = str
+        if self._subentry_type == "tts":
+            schema[vol.Optional(CONF_TTS_SPEED, default=RECOMMENDED_TTS_SPEED)] = (
+                NumberSelector(NumberSelectorConfig(min=0.7, max=1.5, step=0.1))
+            )
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(schema),
                 self.options,
             ),
         )

@@ -32,7 +32,7 @@ from homeassistant.helpers.httpx_client import get_async_client
 
 from .const import DOMAIN
 
-PLATFORMS = (Platform.AI_TASK, Platform.CONVERSATION)
+PLATFORMS = (Platform.AI_TASK, Platform.CONVERSATION, Platform.STT, Platform.TTS)
 
 
 @dataclass(slots=True)
