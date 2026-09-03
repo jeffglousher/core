@@ -1,9 +1,14 @@
 """Tests for SpaceXAI setup."""
 
+from http import HTTPStatus
 from unittest.mock import MagicMock, patch
 
 import pytest
-from spacexai_subscription_client import AuthenticationError, SpaceXAISubscriptionError
+from spacexai_subscription_client import (
+    AuthenticationError,
+    PermissionDeniedError,
+    SpaceXAISubscriptionError,
+)
 from spacexai_subscription_client.const import GROK_CLI_OAUTH_CLIENT_ID, TOKEN_URL
 
 from homeassistant.components.spacexai import create_client, oauth_implementation
@@ -49,6 +54,11 @@ async def test_setup_and_unload(
 @pytest.mark.parametrize(
     ("error", "state"),
     [
+        pytest.param(
+            PermissionDeniedError,
+            ConfigEntryState.SETUP_ERROR,
+            id="permission_denied",
+        ),
         pytest.param(
             AuthenticationError,
             ConfigEntryState.SETUP_ERROR,
@@ -138,3 +148,64 @@ async def test_oauth_token_refresh(
         "grant_type": "refresh_token",
         "refresh_token": "old-refresh-token",
     }
+
+
+async def test_setup_refreshes_expired_token_and_persists_rotation(
+    aioclient_mock: AiohttpClientMocker,
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Refresh an expired token during setup and persist token rotation."""
+    mock_config_entry.data["token"]["expires_at"] = 0
+    aioclient_mock.post(
+        TOKEN_URL,
+        json={
+            "access_token": "new-access-token",
+            "refresh_token": "new-refresh-token",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        },
+    )
+
+    await setup_integration(hass, mock_config_entry)
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert mock_config_entry.data["token"]["access_token"] == "new-access-token"
+    assert mock_config_entry.data["token"]["refresh_token"] == "new-refresh-token"
+    mock_spacexai_subscription_client.async_list_models.assert_awaited_once_with(
+        "new-access-token"
+    )
+
+
+@pytest.mark.parametrize(
+    ("status", "expected_state"),
+    [
+        pytest.param(
+            HTTPStatus.UNAUTHORIZED,
+            ConfigEntryState.SETUP_ERROR,
+            id="revoked_refresh_token",
+        ),
+        pytest.param(
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            ConfigEntryState.SETUP_RETRY,
+            id="provider_failure",
+        ),
+    ],
+)
+async def test_setup_expired_token_refresh_error(
+    aioclient_mock: AiohttpClientMocker,
+    expected_state: ConfigEntryState,
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    status: HTTPStatus,
+) -> None:
+    """Classify permanent and transient failures refreshing an expired token."""
+    mock_config_entry.data["token"]["expires_at"] = 0
+    aioclient_mock.post(TOKEN_URL, status=status)
+    mock_config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert mock_config_entry.state is expected_state
