@@ -1,0 +1,59 @@
+generate_video:
+  fields:
+    config_entry:
+      required: true
+      selector:
+        config_entry:
+          integration: spacexai
+    prompt:
+      required: true
+      selector:
+        text:
+          multiline: true
+    model:
+      required: false
+      default: grok-imagine-video-1.5
+      selector:
+        text:
+    image:
+      required: false
+      selector:
+        media:
+          accept:
+            - image/*
+    duration:
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 15
+          mode: box
+    aspect_ratio:
+      required: false
+      selector:
+        select:
+          options:
+            - "1:1"
+            - "16:9"
+            - "9:16"
+            - "4:3"
+            - "3:4"
+            - "3:2"
+            - "2:3"
+    resolution:
+      required: false
+      selector:
+        select:
+          options:
+            - 480p
+            - 720p
+            - 1080p
+publish_media:
+  fields:
+    media:
+      required: true
+      selector:
+        media:
+          accept:
+            - image/*
+            - video/*

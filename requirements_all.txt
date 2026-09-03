@@ -3138,7 +3138,7 @@ solax==3.2.4
 sonos-websocket==0.2.0
 
 # homeassistant.components.spacexai
-spacexai-subscription-client==0.4.0
+spacexai-subscription-client==0.5.0
 
 # homeassistant.components.marytts
 speak2mary==1.4.0

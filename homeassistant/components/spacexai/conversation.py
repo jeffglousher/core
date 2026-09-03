@@ -29,7 +29,6 @@ from homeassistant.helpers import device_registry as dr, llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.json import json_dumps
 
-from . import SpaceXAIConfigEntry
 from .const import (
     CONF_CODE_INTERPRETER,
     CONF_WEB_SEARCH,
@@ -40,6 +39,7 @@ from .const import (
     MAX_TOOL_ITERATIONS,
 )
 from .entity import async_access_token
+from .models import SpaceXAIConfigEntry
 
 PARALLEL_UPDATES = 0
 

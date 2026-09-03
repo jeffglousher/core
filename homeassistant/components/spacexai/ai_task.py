@@ -22,10 +22,10 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import slugify
 from homeassistant.util.json import json_loads
 
-from . import SpaceXAIConfigEntry
 from .const import DOMAIN, LOGGER, RECOMMENDED_IMAGE_MODEL
 from .conversation import _async_convert_content, _prepare_attachments
 from .entity import async_access_token
+from .models import SpaceXAIConfigEntry
 
 PARALLEL_UPDATES = 0
 MAX_EDIT_IMAGES = 5

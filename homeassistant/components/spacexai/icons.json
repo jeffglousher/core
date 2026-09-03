@@ -1,0 +1,10 @@
+{
+  "services": {
+    "generate_video": {
+      "service": "mdi:movie-open-plus"
+    },
+    "publish_media": {
+      "service": "mdi:link-lock"
+    }
+  }
+}

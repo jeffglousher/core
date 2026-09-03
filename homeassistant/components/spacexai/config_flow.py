@@ -37,7 +37,7 @@ from homeassistant.helpers.selector import (
     TemplateSelector,
 )
 
-from . import SpaceXAIConfigEntry, create_client
+from . import create_client
 from .const import (
     CONF_CODE_INTERPRETER,
     CONF_TTS_SPEED,
@@ -51,6 +51,7 @@ from .const import (
     RECOMMENDED_CONVERSATION_OPTIONS,
     RECOMMENDED_TTS_SPEED,
 )
+from .models import SpaceXAIConfigEntry
 
 PROVIDER_TOOL_OPTIONS = (CONF_WEB_SEARCH, CONF_X_SEARCH, CONF_CODE_INTERPRETER)
 

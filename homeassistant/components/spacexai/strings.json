@@ -159,11 +159,23 @@
     "invalid_auth": {
       "message": "SpaceXAI rejected the current sign-in. Remove and add the integration again to sign in."
     },
+    "invalid_media_reference": {
+      "message": "The selected media could not be resolved."
+    },
     "invalid_response": {
       "message": "SpaceXAI returned an invalid response."
     },
     "invalid_structured_response": {
       "message": "SpaceXAI returned invalid structured data."
+    },
+    "media_not_local": {
+      "message": "Only media stored locally by Home Assistant is supported."
+    },
+    "media_too_large": {
+      "message": "The media exceeds the {max_mb} MiB limit."
+    },
+    "no_media_directory": {
+      "message": "Home Assistant does not have a local media directory configured."
     },
     "no_models_available": {
       "message": "No Grok models are available for the signed-in account."
@@ -180,8 +192,66 @@
     "unsupported_image_attachment": {
       "message": "Image editing supports only JPEG and PNG source images."
     },
+    "unsupported_media": {
+      "message": "The selected media type is not supported."
+    },
+    "unsupported_video": {
+      "message": "SpaceXAI returned a file that is not a supported MP4 video."
+    },
     "user_message_not_found": {
       "message": "The latest attachments do not belong to a user message."
+    },
+    "video_download_failed": {
+      "message": "The generated video could not be saved to Home Assistant media."
+    },
+    "video_moderated": {
+      "message": "SpaceXAI did not return a video that passed its moderation controls."
+    }
+  },
+  "services": {
+    "generate_video": {
+      "description": "Generates a billable video with Grok Imagine and saves it in authenticated local media.",
+      "fields": {
+        "aspect_ratio": {
+          "description": "The output frame shape. If omitted for image-to-video, the source image ratio is used.",
+          "name": "Aspect ratio"
+        },
+        "config_entry": {
+          "description": "The SpaceXAI account to use.",
+          "name": "Account"
+        },
+        "duration": {
+          "description": "The requested video length from 1 to 15 seconds.",
+          "name": "Duration"
+        },
+        "image": {
+          "description": "An optional local image to animate.",
+          "name": "Source image"
+        },
+        "model": {
+          "description": "The Grok Imagine video model.",
+          "name": "Model"
+        },
+        "prompt": {
+          "description": "A description of the video to generate.",
+          "name": "Prompt"
+        },
+        "resolution": {
+          "description": "The requested output resolution.",
+          "name": "Resolution"
+        }
+      },
+      "name": "Generate video"
+    },
+    "publish_media": {
+      "description": "Creates a time-limited signed URL for media stored locally by Home Assistant.",
+      "fields": {
+        "media": {
+          "description": "The local image or video to make temporarily accessible.",
+          "name": "Media"
+        }
+      },
+      "name": "Publish media"
     }
   }
 }

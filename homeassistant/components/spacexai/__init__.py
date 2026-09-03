@@ -1,7 +1,6 @@
 """The SpaceXAI integration."""
 
 from copy import deepcopy
-from dataclasses import dataclass
 
 from spacexai_subscription_client import (
     AuthenticationError,
@@ -14,7 +13,6 @@ from spacexai_subscription_client.const import (
     TOKEN_URL,
 )
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import (
@@ -23,28 +21,27 @@ from homeassistant.exceptions import (
     OAuth2TokenRequestError,
     OAuth2TokenRequestReauthError,
 )
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.config_entry_oauth2_flow import (
     LocalOAuth2Implementation,
     OAuth2Session,
 )
 from homeassistant.helpers.httpx_client import get_async_client
+from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN
+from .models import SpaceXAIConfigEntry, SpaceXAIData
+from .services import async_setup_services
 
 PLATFORMS = (Platform.AI_TASK, Platform.CONVERSATION, Platform.STT, Platform.TTS)
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
-@dataclass(slots=True)
-class SpaceXAIData:
-    """Runtime data for a SpaceXAI account."""
-
-    oauth_session: OAuth2Session
-    client: SpaceXAISubscriptionClient
-    models: tuple[str, ...]
-
-
-type SpaceXAIConfigEntry = ConfigEntry[SpaceXAIData]
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up SpaceXAI actions."""
+    async_setup_services(hass)
+    return True
 
 
 def oauth_implementation(hass: HomeAssistant) -> LocalOAuth2Implementation:

@@ -11,8 +11,8 @@ from homeassistant.exceptions import (
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.entity import Entity
 
-from . import SpaceXAIConfigEntry
 from .const import DOMAIN
+from .models import SpaceXAIConfigEntry
 
 
 async def async_access_token(entry: SpaceXAIConfigEntry) -> str:

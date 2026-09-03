@@ -21,9 +21,9 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import SpaceXAIConfigEntry
 from .const import CONF_TTS_SPEED, DOMAIN, RECOMMENDED_TTS_SPEED
 from .entity import SpaceXAISpeechEntity
+from .models import SpaceXAIConfigEntry
 
 PARALLEL_UPDATES = 0
 
