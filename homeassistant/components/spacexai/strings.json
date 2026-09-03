@@ -2,7 +2,8 @@
   "config": {
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_account%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]"
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
+      "not_entitled": "The signed-in account cannot access the SpaceXAI subscription API. Confirm that the account has an eligible subscription."
     },
     "progress": {
       "wait_for_device": "To sign in, open the [Grok sign-in page]({verification_uri}). If the code is not filled in automatically, enter:\n\n```\n{user_code}\n```\n\nHome Assistant will continue automatically after you finish signing in."
@@ -179,6 +180,9 @@
     },
     "no_models_available": {
       "message": "No Grok models are available for the signed-in account."
+    },
+    "not_entitled": {
+      "message": "The signed-in account cannot access the SpaceXAI subscription API. Confirm that the account has an eligible subscription."
     },
     "too_many_image_attachments": {
       "message": "Image editing supports up to three source images."

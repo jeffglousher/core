@@ -11,6 +11,7 @@ from spacexai_subscription_client import (
     Completion,
     InvalidResponseError,
     Message,
+    PermissionDeniedError,
     SpaceXAISubscriptionError,
     ToolCall,
     ToolResult,
@@ -150,6 +151,29 @@ async def test_authentication_error(
         Context(),
         agent_id="conversation.grok",
     )
+    assert result.response.response_type is intent.IntentResponseType.ERROR
+
+
+async def test_permission_denied_error(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    mock_chat_log: MockChatLog,  # noqa: F811
+) -> None:
+    """Return an intent error when the account cannot use the subscription API."""
+    mock_spacexai_subscription_client.async_create_response.side_effect = (
+        PermissionDeniedError
+    )
+    await setup_integration(hass, mock_config_entry)
+
+    result = await conversation.async_converse(
+        hass,
+        "Hello",
+        mock_chat_log.conversation_id,
+        Context(),
+        agent_id="conversation.grok",
+    )
+
     assert result.response.response_type is intent.IntentResponseType.ERROR
 
 

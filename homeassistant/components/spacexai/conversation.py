@@ -13,6 +13,7 @@ from spacexai_subscription_client import (
     InputItem,
     InvalidResponseError,
     Message,
+    PermissionDeniedError,
     ResponseTool,
     SpaceXAISubscriptionError,
     Tool,
@@ -299,6 +300,11 @@ class SpaceXAIConversationEntity(
                 raise HomeAssistantError(
                     translation_domain=DOMAIN,
                     translation_key="invalid_response",
+                ) from err
+            except PermissionDeniedError as err:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="not_entitled",
                 ) from err
             except SpaceXAISubscriptionError as err:
                 LOGGER.error(
