@@ -7,6 +7,7 @@ import pytest
 from spacexai_subscription_client import (
     AuthenticationError,
     InvalidResponseError,
+    PermissionDeniedError,
     SpaceXAISubscriptionError,
 )
 
@@ -124,6 +125,7 @@ async def test_tts_http_playback(
     [
         pytest.param(AuthenticationError, "invalid_auth", id="authentication"),
         pytest.param(InvalidResponseError, "invalid_response", id="response"),
+        pytest.param(PermissionDeniedError, "not_entitled", id="permission_denied"),
         pytest.param(SpaceXAISubscriptionError, "api_error", id="api"),
     ],
 )

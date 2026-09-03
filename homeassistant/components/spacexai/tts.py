@@ -7,6 +7,7 @@ from propcache.api import cached_property
 from spacexai_subscription_client import (
     AuthenticationError,
     InvalidResponseError,
+    PermissionDeniedError,
     SpaceXAISubscriptionError,
 )
 
@@ -146,6 +147,11 @@ class SpaceXAITtsEntity(TextToSpeechEntity, SpaceXAISpeechEntity):
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="invalid_response",
+            ) from err
+        except PermissionDeniedError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="not_entitled",
             ) from err
         except SpaceXAISubscriptionError as err:
             raise HomeAssistantError(

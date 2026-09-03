@@ -156,7 +156,9 @@ class SpaceXAISttEntity(stt.SpeechToTextEntity, SpaceXAISpeechEntity):
                 language=metadata.language.split("-", 1)[0],
             )
         except (HomeAssistantError, SpaceXAISubscriptionError) as err:
-            LOGGER.error("Error during speech-to-text processing: %s", err)
+            LOGGER.error(
+                "Error during speech-to-text processing: %s", type(err).__name__
+            )
             return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
 
         return stt.SpeechResult(text, stt.SpeechResultState.SUCCESS)
