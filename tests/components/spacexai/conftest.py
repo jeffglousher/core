@@ -151,6 +151,7 @@ def mock_spacexai_subscription_client() -> Generator[MagicMock]:
     client.async_edit_image = AsyncMock()
     client.async_transcribe = AsyncMock(return_value="Turn on the kitchen light")
     client.async_synthesize_speech = AsyncMock(return_value=b"speech")
+    client.async_generate_video = AsyncMock()
     with patch(
         "homeassistant.components.spacexai.SpaceXAISubscriptionClient",
         return_value=client,
