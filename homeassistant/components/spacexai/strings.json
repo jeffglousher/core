@@ -105,9 +105,6 @@
     },
     "unsupported_attachment": {
       "message": "The attachment {filename} is not a JPEG image, PNG image, or PDF."
-    },
-    "user_message_not_found": {
-      "message": "The latest attachments do not belong to a user message."
     }
   }
 }
