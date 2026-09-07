@@ -1,0 +1,84 @@
+name: SpaceXAI generated wiring validation
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - codex/spacexai-validation
+    paths:
+      - .github/workflows/spacexai-generated-validation.yaml
+      - script/spacexai_validate_generated.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generated:
+    if: github.repository == 'jeffglousher/core'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - layer: initial
+            core-ref: c9e6db462a36cd5a70e12672d09579bd757f0e1b
+            client-ref: c4fd662c281b5700a5c5d547b4afe097c8e5be22
+          - layer: final
+            core-ref: 29fba4fb81fd6f377edcb864cccb8980194d5d52
+            client-ref: 1bed91dad22855884847a6957656122752011849
+    defaults:
+      run:
+        working-directory: core
+        shell: bash
+    steps:
+      - name: Check out validation harness
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: validation
+          persist-credentials: false
+      - name: Check out Core under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ matrix.core-ref }}
+          path: core
+          persist-credentials: false
+      - name: Check out subscription client under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jeffglousher/spacexai-subscription-client
+          ref: ${{ matrix.client-ref }}
+          path: client
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          version: 0.12.6
+      - name: Install native generator environment
+        run: |
+          uv venv .venv --python "$(cat .python-version)"
+          source .venv/bin/activate
+          uv pip install -r requirements.txt -r requirements_test.txt -e . ../client --config-settings editable_mode=compat
+      - name: Record exact sources
+        run: |
+          source .venv/bin/activate
+          {
+            git rev-parse HEAD
+            git -C ../client rev-parse HEAD
+            python3 --version
+          } | tee generated-sources.txt
+      - name: Validate generated files and integration metadata
+        run: |
+          source .venv/bin/activate
+          set -o pipefail
+          python3 ../validation/script/spacexai_validate_generated.py 2>&1 | tee generated-validation.txt
+      - name: Upload generated validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spacexai-generated-${{ matrix.layer }}-${{ github.run_id }}
+          path: |
+            core/generated-*.txt
+            core/generated-*.json
+          if-no-files-found: warn
