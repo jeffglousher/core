@@ -266,20 +266,58 @@ def test_convert_system_content() -> None:
     ]
 
 
-async def test_prepare_attachments(hass: HomeAssistant, tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("media_type", "expected_media_type"),
+    [
+        pytest.param("image/png", "image/png", id="png"),
+        pytest.param("image/jpg", "image/jpeg", id="jpeg_alias"),
+    ],
+)
+async def test_prepare_attachments(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    media_type: str,
+    expected_media_type: str,
+) -> None:
     """Load supported attachments from the latest user message."""
     image = tmp_path / "image.png"
     image.write_bytes(b"image")
     content = conversation.UserContent(
         "Describe this",
-        [conversation.Attachment("media-id", "image/png", image)],
+        [conversation.Attachment("media-id", media_type, image)],
     )
 
     assert await _async_convert_content(hass, [content]) == [
         Message(
-            "user", "Describe this", (Attachment("image.png", "image/png", b"image"),)
+            "user",
+            "Describe this",
+            (Attachment("image.png", expected_media_type, b"image"),),
         )
     ]
+
+
+@pytest.mark.parametrize(
+    ("data", "translation_key"),
+    [
+        pytest.param(b"", "attachment_empty", id="emptied_after_stat"),
+        pytest.param(b"123456", "attachment_too_large", id="grew_after_stat"),
+    ],
+)
+def test_attachment_changed_during_read(
+    tmp_path: Path, data: bytes, translation_key: str
+) -> None:
+    """Validate actual bytes when a file changes after its size check."""
+    path = tmp_path / "changing.png"
+    path.write_bytes(b"123")
+
+    with (
+        patch("pathlib.Path.read_bytes", return_value=data),
+        patch("homeassistant.components.spacexai.conversation.MAX_ATTACHMENT_SIZE", 5),
+        pytest.raises(HomeAssistantError) as err,
+    ):
+        _prepare_attachments([(path, "image/png")])
+
+    assert err.value.translation_key == translation_key
 
 
 async def test_only_latest_message_attachments_are_loaded(
