@@ -7,6 +7,7 @@ on:
       - codex/spacexai-validation
     paths:
       - .github/workflows/spacexai-validation.yaml
+      - script/spacexai_check_coverage.py
   workflow_dispatch:
     inputs:
       core-ref:
@@ -40,6 +41,12 @@ jobs:
       PYTHONASYNCIODEBUG: 1
       HASS_CI: 1
     steps:
+      - name: Check out validation tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: validation
+          persist-credentials: false
       - name: Check out Core under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -92,6 +99,10 @@ jobs:
             --cov=homeassistant.components.spacexai --cov-report=term-missing --cov-report=json:coverage.json \
             --cov-report=xml:coverage.xml --junitxml=junit.xml -p no:sugar \
             tests/components/spacexai 2>&1 | tee pytest-spacexai.txt
+      - name: Require coverage above 95 percent for every module
+        run: |
+          source .venv/bin/activate
+          python3 ../validation/script/spacexai_check_coverage.py coverage.json | tee coverage-gate.txt
       - name: Check integration lint and typing
         if: success() || failure()
         run: |
@@ -114,5 +125,6 @@ jobs:
             core/lint-spacexai.txt
             core/coverage.json
             core/coverage.xml
+            core/coverage-gate.txt
             core/junit.xml
           if-no-files-found: warn
