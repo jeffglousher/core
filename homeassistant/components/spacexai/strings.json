@@ -136,9 +136,6 @@
     },
     "unsupported_image_attachment": {
       "message": "Image editing supports only JPEG and PNG source images."
-    },
-    "user_message_not_found": {
-      "message": "The latest attachments do not belong to a user message."
     }
   }
 }
