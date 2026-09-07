@@ -206,12 +206,14 @@ async def test_generate_video_rejects_unreadable_image(
 
 
 @pytest.mark.parametrize(
-    ("error", "translation_key"),
+    ("error", "translation_key", "reauth_flow_count"),
     [
-        pytest.param(AuthenticationError(), "invalid_auth", id="authentication"),
-        pytest.param(InvalidResponseError(), "invalid_response", id="response"),
-        pytest.param(PermissionDeniedError(), "not_entitled", id="permission_denied"),
-        pytest.param(SpaceXAISubscriptionError(), "api_error", id="api"),
+        pytest.param(AuthenticationError(), "invalid_auth", 1, id="authentication"),
+        pytest.param(InvalidResponseError(), "invalid_response", 0, id="response"),
+        pytest.param(
+            PermissionDeniedError(), "not_entitled", 0, id="permission_denied"
+        ),
+        pytest.param(SpaceXAISubscriptionError(), "api_error", 0, id="api"),
     ],
 )
 async def test_generate_video_translates_client_errors(
@@ -219,6 +221,7 @@ async def test_generate_video_translates_client_errors(
     hass: HomeAssistant,
     mock_config_entry: MockConfigEntry,
     mock_spacexai_subscription_client: MagicMock,
+    reauth_flow_count: int,
     translation_key: str,
 ) -> None:
     """Translate stable client failures for action callers."""
@@ -238,6 +241,7 @@ async def test_generate_video_translates_client_errors(
         )
 
     assert raised.value.translation_key == translation_key
+    assert len(hass.config_entries.flow.async_progress()) == reauth_flow_count
 
 
 async def test_generate_video_rejects_moderated_result(

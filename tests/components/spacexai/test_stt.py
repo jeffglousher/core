@@ -140,10 +140,14 @@ async def test_wav_transcription_adds_header(
 
 
 @pytest.mark.parametrize(
-    "error",
+    ("error", "reauth_steps"),
     [
-        pytest.param(SpaceXAISubscriptionError, id="provider_error"),
-        pytest.param(AuthenticationError, id="authentication_error"),
+        pytest.param(SpaceXAISubscriptionError, [], id="provider_error"),
+        pytest.param(
+            AuthenticationError,
+            [("reauth", "reauth_confirm")],
+            id="authentication_error",
+        ),
     ],
 )
 async def test_transcription_error(
@@ -152,8 +156,9 @@ async def test_transcription_error(
     mock_config_entry_with_speech: MockConfigEntry,
     mock_spacexai_subscription_client: MagicMock,
     error: type[SpaceXAISubscriptionError],
+    reauth_steps: list[tuple[str, str]],
 ) -> None:
-    """Return an error result for a client failure."""
+    """Return client errors and start reauthentication only for rejected tokens."""
     mock_spacexai_subscription_client.async_transcribe.side_effect = error
     await setup_integration(hass, mock_config_entry_with_speech)
     client = await hass_client()
@@ -164,6 +169,11 @@ async def test_transcription_error(
 
     assert response.status == HTTPStatus.OK
     assert await response.json() == {"text": None, "result": "error"}
+    await hass.async_block_till_done()
+    assert [
+        (flow["context"]["source"], flow["step_id"])
+        for flow in hass.config_entries.flow.async_progress()
+    ] == reauth_steps
 
 
 @pytest.mark.parametrize(

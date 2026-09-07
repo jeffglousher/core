@@ -3,6 +3,7 @@
 from spacexai_subscription_client import AuthenticationError
 
 from homeassistant.config_entries import ConfigSubentry
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import (
     HomeAssistantError,
     OAuth2TokenRequestError,
@@ -15,11 +16,12 @@ from .const import DOMAIN
 from .models import SpaceXAIConfigEntry
 
 
-async def async_access_token(entry: SpaceXAIConfigEntry) -> str:
+async def async_access_token(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> str:
     """Return a valid OAuth access token."""
     try:
         await entry.runtime_data.oauth_session.async_ensure_token_valid()
     except (AuthenticationError, OAuth2TokenRequestReauthError) as err:
+        entry.async_start_reauth(hass)
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="invalid_auth",
@@ -31,6 +33,7 @@ async def async_access_token(entry: SpaceXAIConfigEntry) -> str:
         ) from err
     access_token = entry.runtime_data.oauth_session.token.get("access_token")
     if not isinstance(access_token, str) or not access_token:
+        entry.async_start_reauth(hass)
         raise HomeAssistantError(
             translation_domain=DOMAIN,
             translation_key="invalid_auth",
@@ -60,4 +63,4 @@ class SpaceXAISpeechEntity(Entity):
 
     async def _async_access_token(self) -> str:
         """Return a valid OAuth access token."""
-        return await async_access_token(self.entry)
+        return await async_access_token(self.hass, self.entry)

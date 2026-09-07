@@ -10,6 +10,7 @@ from spacexai_subscription_client import (
     PermissionDeniedError,
     SpaceXAISubscriptionError,
 )
+from spacexai_subscription_client.const import TOKEN_URL
 
 from homeassistant.components import media_source, tts
 from homeassistant.components.spacexai.const import DOMAIN
@@ -21,6 +22,7 @@ from homeassistant.setup import async_setup_component
 from . import setup_integration
 
 from tests.common import MockConfigEntry
+from tests.test_util.aiohttp import AiohttpClientMocker
 from tests.typing import ClientSessionGenerator, WebSocketGenerator
 
 
@@ -167,12 +169,12 @@ async def test_tts_http_playback(
 
 
 @pytest.mark.parametrize(
-    ("error", "translation_key"),
+    ("error", "translation_key", "reauth_flow_count"),
     [
-        pytest.param(AuthenticationError, "invalid_auth", id="authentication"),
-        pytest.param(InvalidResponseError, "invalid_response", id="response"),
-        pytest.param(PermissionDeniedError, "not_entitled", id="permission_denied"),
-        pytest.param(SpaceXAISubscriptionError, "api_error", id="api"),
+        pytest.param(AuthenticationError, "invalid_auth", 1, id="authentication"),
+        pytest.param(InvalidResponseError, "invalid_response", 0, id="response"),
+        pytest.param(PermissionDeniedError, "not_entitled", 0, id="permission_denied"),
+        pytest.param(SpaceXAISubscriptionError, "api_error", 0, id="api"),
     ],
 )
 @pytest.mark.usefixtures("mock_tts_cache_dir")
@@ -181,6 +183,7 @@ async def test_synthesis_error(
     mock_config_entry_with_speech: MockConfigEntry,
     mock_spacexai_subscription_client: MagicMock,
     error: type[SpaceXAISubscriptionError],
+    reauth_flow_count: int,
     translation_key: str,
 ) -> None:
     """Translate client failures into localized Home Assistant errors."""
@@ -197,3 +200,86 @@ async def test_synthesis_error(
 
     assert err.value.translation_domain == "spacexai"
     assert err.value.translation_key == translation_key
+    await hass.async_block_till_done()
+    assert len(hass.config_entries.flow.async_progress()) == reauth_flow_count
+
+
+@pytest.mark.parametrize(
+    ("status", "error_code", "translation_key", "reauth_flow_count"),
+    [
+        pytest.param(400, "invalid_grant", "invalid_auth", 1, id="revoked"),
+        pytest.param(503, "temporarily_unavailable", "api_error", 0, id="transient"),
+    ],
+)
+@pytest.mark.usefixtures("mock_spacexai_subscription_client", "mock_tts_cache_dir")
+async def test_token_refresh_error(
+    aioclient_mock: AiohttpClientMocker,
+    hass: HomeAssistant,
+    mock_config_entry_with_speech: MockConfigEntry,
+    status: int,
+    error_code: str,
+    translation_key: str,
+    reauth_flow_count: int,
+) -> None:
+    """Start reauthentication only for a rejected OAuth refresh token."""
+    await setup_integration(hass, mock_config_entry_with_speech)
+    hass.config_entries.async_update_entry(
+        mock_config_entry_with_speech,
+        data={
+            **mock_config_entry_with_speech.data,
+            "token": {
+                **mock_config_entry_with_speech.data["token"],
+                "expires_at": 0,
+            },
+        },
+    )
+    aioclient_mock.post(TOKEN_URL, status=status, json={"error": error_code})
+
+    with pytest.raises(HomeAssistantError) as err:
+        await tts.async_get_media_source_audio(
+            hass,
+            tts.generate_media_source_id(
+                hass, "Hello", "tts.grok_tts", "en", cache=False
+            ),
+        )
+
+    await hass.async_block_till_done()
+    assert err.value.translation_key == translation_key
+    assert aioclient_mock.call_count == 1
+    assert len(hass.config_entries.flow.async_progress()) == reauth_flow_count
+
+
+@pytest.mark.parametrize("access_token", [None, "", 123])
+@pytest.mark.usefixtures("mock_spacexai_subscription_client", "mock_tts_cache_dir")
+async def test_missing_access_token_starts_reauth(
+    hass: HomeAssistant,
+    mock_config_entry_with_speech: MockConfigEntry,
+    access_token: str | int | None,
+) -> None:
+    """Recover an entry whose stored access token is unusable."""
+    await setup_integration(hass, mock_config_entry_with_speech)
+    hass.config_entries.async_update_entry(
+        mock_config_entry_with_speech,
+        data={
+            **mock_config_entry_with_speech.data,
+            "token": {
+                **mock_config_entry_with_speech.data["token"],
+                "access_token": access_token,
+            },
+        },
+    )
+
+    with pytest.raises(HomeAssistantError) as err:
+        await tts.async_get_media_source_audio(
+            hass,
+            tts.generate_media_source_id(
+                hass, "Hello", "tts.grok_tts", "en", cache=False
+            ),
+        )
+
+    await hass.async_block_till_done()
+    assert err.value.translation_key == "invalid_auth"
+    flows = hass.config_entries.flow.async_progress()
+    assert len(flows) == 1
+    assert flows[0]["context"]["source"] == "reauth"
+    assert flows[0]["step_id"] == "reauth_confirm"

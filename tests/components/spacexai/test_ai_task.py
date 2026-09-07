@@ -43,13 +43,13 @@ ENTITY_ID = "ai_task.grok_ai_task"
     ],
 )
 @pytest.mark.parametrize(
-    ("status", "translation_key"),
+    ("status", "translation_key", "reauth_flow_count"),
     [
-        pytest.param(HTTPStatus.BAD_REQUEST, "invalid_auth", id="invalid_grant"),
-        pytest.param(HTTPStatus.UNAUTHORIZED, "invalid_auth", id="revoked_token"),
-        pytest.param(HTTPStatus.TOO_MANY_REQUESTS, "api_error", id="rate_limited"),
+        pytest.param(HTTPStatus.BAD_REQUEST, "invalid_auth", 1, id="invalid_grant"),
+        pytest.param(HTTPStatus.UNAUTHORIZED, "invalid_auth", 1, id="revoked_token"),
+        pytest.param(HTTPStatus.TOO_MANY_REQUESTS, "api_error", 0, id="rate_limited"),
         pytest.param(
-            HTTPStatus.INTERNAL_SERVER_ERROR, "api_error", id="provider_error"
+            HTTPStatus.INTERNAL_SERVER_ERROR, "api_error", 0, id="provider_error"
         ),
     ],
 )
@@ -61,6 +61,7 @@ async def test_generate_with_failed_token_refresh(
     mock_spacexai_subscription_client: MagicMock,
     status: HTTPStatus,
     translation_key: str,
+    reauth_flow_count: int,
 ) -> None:
     """Reject AI requests when expired credentials cannot be refreshed."""
     await setup_integration(hass, mock_config_entry_with_ai_task)
@@ -91,7 +92,10 @@ async def test_generate_with_failed_token_refresh(
     mock_spacexai_subscription_client.async_generate_image.assert_not_awaited()
     mock_spacexai_subscription_client.async_edit_image.assert_not_awaited()
     await hass.async_block_till_done()
-    assert hass.config_entries.flow.async_progress() == []
+    assert [
+        (flow["context"]["source"], flow["step_id"])
+        for flow in hass.config_entries.flow.async_progress()
+    ] == [("reauth", "reauth_confirm")] * reauth_flow_count
 
 
 @pytest.mark.parametrize(
@@ -139,7 +143,10 @@ async def test_generate_with_invalid_stored_token(
     mock_spacexai_subscription_client.async_generate_image.assert_not_awaited()
     mock_spacexai_subscription_client.async_edit_image.assert_not_awaited()
     await hass.async_block_till_done()
-    assert hass.config_entries.flow.async_progress() == []
+    flows = hass.config_entries.flow.async_progress()
+    assert len(flows) == 1
+    assert flows[0]["context"]["source"] == "reauth"
+    assert flows[0]["step_id"] == "reauth_confirm"
 
 
 async def test_generate_data(
@@ -424,6 +431,37 @@ async def test_generate_data_authentication_error(
             entity_id=ENTITY_ID,
             instructions="Return data",
         )
+
+    flows = hass.config_entries.flow.async_progress()
+    assert len(flows) == 1
+    assert flows[0]["context"]["source"] == "reauth"
+    assert flows[0]["step_id"] == "reauth_confirm"
+
+
+async def test_generate_image_authentication_error(
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Start reauthentication when image generation rejects the token."""
+    mock_spacexai_subscription_client.async_generate_image.side_effect = (
+        AuthenticationError
+    )
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+
+    with pytest.raises(HomeAssistantError) as err:
+        await ai_task.async_generate_image(
+            hass,
+            task_name="Test Image",
+            entity_id=ENTITY_ID,
+            instructions="Draw a smart home",
+        )
+
+    assert err.value.translation_key == "invalid_auth"
+    flows = hass.config_entries.flow.async_progress()
+    assert len(flows) == 1
+    assert flows[0]["context"]["source"] == "reauth"
+    assert flows[0]["step_id"] == "reauth_confirm"
 
 
 async def test_generate_data_permission_denied(

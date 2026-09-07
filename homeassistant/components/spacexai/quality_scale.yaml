@@ -44,7 +44,7 @@ rules:
     status: exempt
     comment: The integration provides stateless, on-demand service entities.
   parallel-updates: done
-  reauthentication-flow: todo
+  reauthentication-flow: done
   test-coverage: done
 
   # Gold
@@ -82,7 +82,7 @@ rules:
   icon-translations:
     status: exempt
     comment: The integration does not use custom entity icons.
-  reconfiguration-flow: todo
+  reconfiguration-flow: done
   repair-issues:
     status: exempt
     comment: The integration has no actionable repair issues.
