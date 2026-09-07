@@ -107,23 +107,11 @@ async def _async_convert_content(
     ):
         return messages
 
-    if not messages or not isinstance(messages[-1], Message):
-        raise HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="user_message_not_found",
-        )
-    last_message = messages[-1]
-    if last_message.role != "user":
-        raise HomeAssistantError(
-            translation_domain=DOMAIN,
-            translation_key="user_message_not_found",
-        )
-
     prepared = await hass.async_add_executor_job(
         _prepare_attachments,
         [(item.path, item.mime_type) for item in attachments],
     )
-    messages[-1] = Message(last_message.role, last_message.content, prepared)
+    messages[-1] = Message("user", last_content.content or "", prepared)
     return messages
 
 
