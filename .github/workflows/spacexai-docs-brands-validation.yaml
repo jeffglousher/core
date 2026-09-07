@@ -26,7 +26,7 @@ jobs:
           - layer: initial
             revision: fcc39e84baa705e1c7cdc0eb4102e937dccfe487
           - layer: final
-            revision: 28a35e6d433cef61639ad3f5c1a956dc653b4b97
+            revision: babe0b6292d05002457184872f47e8f8c2e02e0d
     defaults:
       run:
         working-directory: docs
@@ -73,6 +73,10 @@ jobs:
           set -o pipefail
           bundle exec rake generate 2>&1 | tee native-build.txt
           test -s public/integrations/spacexai/index.html
+          if [[ '${{ matrix.layer }}' == 'final' ]]; then
+            cmp source/blueprints/integrations/spacexai_publish_media_notification.yaml \
+              public/blueprints/integrations/spacexai_publish_media_notification.yaml
+          fi
       - name: Save rendered pages and native build evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -84,11 +88,72 @@ jobs:
             docs/public/integrations/spacexai/
             docs/public/actions/spacexai.generate_video/
             docs/public/actions/spacexai.publish_media/
+            docs/public/blueprints/integrations/spacexai_publish_media_notification.yaml
             docs/public/stylesheets/
             docs/public/javascripts/
             docs/public/assets/
             docs/public/favicon.png
             docs/public/images/home-assistant-logo.svg
+          if-no-files-found: warn
+          retention-days: 14
+
+  blueprint:
+    if: github.repository == 'jeffglousher/core'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: core
+        shell: bash
+    steps:
+      - name: Check out validation helper
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: validation
+          persist-credentials: false
+      - name: Check out exact Core source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: b64085011ba8309005ec645d9500d76c45ba8c64
+          path: core
+          persist-credentials: false
+      - name: Check out exact documentation source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jeffglousher/home-assistant.io
+          ref: babe0b6292d05002457184872f47e8f8c2e02e0d
+          path: docs
+          persist-credentials: false
+      - name: Set up uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          version: 0.12.6
+      - name: Install native Home Assistant schema environment
+        run: |
+          uv venv .venv --python "$(cat .python-version)"
+          source .venv/bin/activate
+          uv pip install -r requirements.txt -e . --config-settings editable_mode=compat
+      - name: Validate blueprint and input substitution without executing actions
+        run: |
+          source .venv/bin/activate
+          set -o pipefail
+          {
+            git rev-parse HEAD
+            git -C ../docs rev-parse HEAD
+            python3 --version
+          } | tee blueprint-sources.txt
+          python3 ../validation/script/spacexai_validate_blueprint.py \
+            ../docs/source/blueprints/integrations/spacexai_publish_media_notification.yaml \
+            | tee blueprint-validation.json
+      - name: Save blueprint validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spacexai-blueprint-${{ github.run_id }}
+          path: |
+            core/blueprint-sources.txt
+            core/blueprint-validation.json
           if-no-files-found: warn
           retention-days: 14
 
