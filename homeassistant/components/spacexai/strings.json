@@ -42,6 +42,28 @@
     }
   },
   "config_subentries": {
+    "ai_task_data": {
+      "abort": {
+        "entry_not_loaded": "Cannot add an AI task while the configuration is disabled.",
+        "reconfigure_successful": "[%key:common::config_flow::abort::reconfigure_successful%]"
+      },
+      "entry_type": "AI task",
+      "initiate_flow": {
+        "reconfigure": "Reconfigure AI task",
+        "user": "Add AI task"
+      },
+      "step": {
+        "init": {
+          "data": {
+            "model": "[%key:common::generic::model%]",
+            "name": "[%key:common::config_flow::data::name%]"
+          },
+          "data_description": {
+            "model": "The Grok model used for data generation."
+          }
+        }
+      }
+    },
     "conversation": {
       "abort": {
         "entry_not_loaded": "Cannot add a conversation agent while the configuration is disabled.",
@@ -94,17 +116,26 @@
     "invalid_response": {
       "message": "SpaceXAI returned an invalid response."
     },
+    "invalid_structured_response": {
+      "message": "SpaceXAI returned invalid structured data."
+    },
     "no_models_available": {
       "message": "No Grok models are available for the signed-in account."
     },
     "not_entitled": {
       "message": "The signed-in account cannot access the SpaceXAI subscription API. Confirm that the account has an eligible subscription."
     },
+    "too_many_image_attachments": {
+      "message": "Image editing supports up to five source images."
+    },
     "tool_iteration_limit": {
       "message": "The SpaceXAI conversation exceeded the tool-call limit."
     },
     "unsupported_attachment": {
       "message": "The attachment {filename} is not a JPEG image, PNG image, or PDF."
+    },
+    "unsupported_image_attachment": {
+      "message": "Image editing supports only JPEG and PNG source images."
     }
   }
 }
