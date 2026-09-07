@@ -359,12 +359,15 @@ async def test_edit_image_with_maximum_references(
     hass: HomeAssistant,
     mock_config_entry_with_ai_task: MockConfigEntry,
     mock_spacexai_subscription_client: MagicMock,
+    tmp_path: Path,
 ) -> None:
     """Edit an image with the provider's maximum reference count."""
     mock_spacexai_subscription_client.async_edit_image.return_value = GeneratedImage(
         b"edited-image", "image/jpeg", RECOMMENDED_IMAGE_MODEL
     )
     await setup_integration(hass, mock_config_entry_with_ai_task)
+    source_path = tmp_path / "source.png"
+    await hass.async_add_executor_job(source_path.write_bytes, b"source-image")
 
     with (
         patch(
@@ -372,18 +375,15 @@ async def test_edit_image_with_maximum_references(
             return_value=media_source.PlayMedia(
                 url="http://example.com/source.png",
                 mime_type="image/png",
-                path=Path("source.png"),
+                path=source_path,
             ),
         ),
-        patch("pathlib.Path.stat") as mock_stat,
-        patch("pathlib.Path.read_bytes", return_value=b"source-image"),
         patch.object(
             media_source.local_source.LocalSource,
             "async_upload_media",
             return_value="media-source://ai_task/image/result.jpg",
         ),
     ):
-        mock_stat.return_value.st_size = len(b"source-image")
         result = await ai_task.async_generate_image(
             hass,
             task_name="Edit Image",
@@ -540,25 +540,31 @@ async def test_generate_image_provider_error(
 
 
 @pytest.mark.parametrize(
-    ("media_type", "attachment_count"),
+    ("media_type", "attachment_count", "translation_key"),
     [
-        pytest.param("application/pdf", 1, id="unsupported_type"),
-        pytest.param("image/png", 6, id="too_many"),
+        pytest.param(
+            "application/pdf", 1, "unsupported_image_attachment", id="unsupported_type"
+        ),
+        pytest.param("image/png", 6, "too_many_image_attachments", id="too_many"),
     ],
 )
 async def test_reject_invalid_image_attachments(
     hass: HomeAssistant,
     mock_config_entry_with_ai_task: MockConfigEntry,
     mock_spacexai_subscription_client: MagicMock,
+    tmp_path: Path,
     media_type: str,
     attachment_count: int,
+    translation_key: str,
 ) -> None:
     """Reject unsupported image-edit attachments before calling SpaceXAI."""
     await setup_integration(hass, mock_config_entry_with_ai_task)
+    source_path = tmp_path / "source"
+    await hass.async_add_executor_job(source_path.write_bytes, b"source")
     resolved = media_source.PlayMedia(
         url="http://example.com/source",
         mime_type=media_type,
-        path=Path("source"),
+        path=source_path,
     )
     attachments = [
         {"media_content_id": f"media-source://media/source-{index}"}
@@ -570,12 +576,7 @@ async def test_reject_invalid_image_attachments(
             "homeassistant.components.media_source.async_resolve_media",
             return_value=resolved,
         ),
-        patch(
-            "pathlib.Path.stat",
-            return_value=MagicMock(st_size=len(b"source")),
-        ),
-        patch("pathlib.Path.read_bytes", return_value=b"source"),
-        pytest.raises(HomeAssistantError),
+        pytest.raises(HomeAssistantError) as err,
     ):
         await ai_task.async_generate_image(
             hass,
@@ -585,5 +586,7 @@ async def test_reject_invalid_image_attachments(
             attachments=attachments,
         )
 
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == translation_key
     mock_spacexai_subscription_client.async_edit_image.assert_not_awaited()
     mock_spacexai_subscription_client.async_generate_image.assert_not_awaited()
