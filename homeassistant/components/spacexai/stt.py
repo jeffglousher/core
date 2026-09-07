@@ -160,7 +160,9 @@ class SpaceXAISttEntity(stt.SpeechToTextEntity, SpaceXAISpeechEntity):
             LOGGER.error("SpaceXAI authentication failed during speech-to-text")
             return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
         except (HomeAssistantError, SpaceXAISubscriptionError) as err:
-            LOGGER.error("Error during speech-to-text processing: %s", err)
+            LOGGER.error(
+                "Error during speech-to-text processing: %s", type(err).__name__
+            )
             return stt.SpeechResult(None, stt.SpeechResultState.ERROR)
 
         return stt.SpeechResult(text, stt.SpeechResultState.SUCCESS)

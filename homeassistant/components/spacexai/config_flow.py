@@ -11,6 +11,7 @@ from spacexai_subscription_client import (
     DeviceAuthorization,
     DeviceAuthorizationExpiredError,
     OAuthToken,
+    PermissionDeniedError,
     RateLimitError,
     RequestTimeoutError,
     SpaceXAISubscriptionClient,
@@ -152,6 +153,8 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._device = await self._client.async_request_device_authorization()
             except AuthenticationError:
                 return self.async_abort(reason="invalid_auth")
+            except PermissionDeniedError:
+                return self.async_abort(reason="not_entitled")
             except SpaceXAISubscriptionError:
                 return await self.async_step_device_connection_error()
 
@@ -172,6 +175,11 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
                     self._device = None
                     return self.async_show_progress_done(
                         next_step_id="device_invalid_auth"
+                    )
+                if isinstance(error, PermissionDeniedError):
+                    self._device = None
+                    return self.async_show_progress_done(
+                        next_step_id="device_not_entitled"
                     )
                 if isinstance(error, DeviceAuthorizationExpiredError):
                     self._device = None
@@ -207,6 +215,8 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
             await self._async_validate_account()
         except AuthenticationError:
             return self.async_abort(reason="invalid_auth")
+        except PermissionDeniedError:
+            return self.async_abort(reason="not_entitled")
         except SpaceXAISubscriptionError:
             return await self.async_step_device_validation_error()
 
@@ -291,6 +301,12 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Abort after device authorization credentials are rejected."""
         return self.async_abort(reason="invalid_auth")
+
+    async def async_step_device_not_entitled(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Abort when the account cannot use the subscription API."""
+        return self.async_abort(reason="not_entitled")
 
     async def async_step_device_connection_error(
         self, user_input: dict[str, Any] | None = None
