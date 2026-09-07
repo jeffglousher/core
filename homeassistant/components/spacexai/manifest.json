@@ -10,7 +10,7 @@
   "iot_class": "cloud_polling",
   "quality_scale": "bronze",
   "requirements": [
-    "spacexai-subscription-client @ https://github.com/jeffglousher/spacexai-subscription-client/archive/1bed91dad22855884847a6957656122752011849.zip"
+    "spacexai-subscription-client @ https://github.com/jeffglousher/spacexai-subscription-client/archive/b2d823452e5054ece8b7a90fb7b172f5ac1d1a7c.zip"
   ],
   "version": "0.9.0.dev20260906"
 }
