@@ -26,8 +26,8 @@ jobs:
             core-ref: c9e6db462a36cd5a70e12672d09579bd757f0e1b
             client-ref: c4fd662c281b5700a5c5d547b4afe097c8e5be22
           - layer: final
-            core-ref: 29fba4fb81fd6f377edcb864cccb8980194d5d52
-            client-ref: 1bed91dad22855884847a6957656122752011849
+            core-ref: 2315fa45b978aa1ebf637c111d0c1410d68d12ea
+            client-ref: b2d823452e5054ece8b7a90fb7b172f5ac1d1a7c
     defaults:
       run:
         working-directory: core
