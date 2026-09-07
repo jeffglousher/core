@@ -25,11 +25,7 @@ from homeassistant.components import conversation
 from homeassistant.config_entries import ConfigSubentry
 from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT, MATCH_ALL
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import (
-    HomeAssistantError,
-    OAuth2TokenRequestError,
-    OAuth2TokenRequestReauthError,
-)
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr, llm
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.json import json_dumps
@@ -44,6 +40,7 @@ from .const import (
     MAX_ATTACHMENT_SIZE,
     MAX_TOOL_ITERATIONS,
 )
+from .entity import async_access_token
 
 PARALLEL_UPDATES = 0
 
@@ -274,16 +271,15 @@ class SpaceXAIConversationEntity(
 
         for _iteration in range(MAX_TOOL_ITERATIONS):
             try:
-                await self.entry.runtime_data.oauth_session.async_ensure_token_valid()
                 response = await self.entry.runtime_data.client.async_create_response(
-                    self.entry.runtime_data.oauth_session.token["access_token"],
+                    await async_access_token(self.entry),
                     model=self.subentry.data[CONF_MODEL],
                     input_data=await _async_convert_content(
                         self.hass, chat_log.content
                     ),
                     tools=tools,
                 )
-            except (AuthenticationError, OAuth2TokenRequestReauthError) as err:
+            except AuthenticationError as err:
                 raise HomeAssistantError(
                     translation_domain=DOMAIN,
                     translation_key="invalid_auth",
@@ -298,7 +294,7 @@ class SpaceXAIConversationEntity(
                     translation_domain=DOMAIN,
                     translation_key="not_entitled",
                 ) from err
-            except (SpaceXAISubscriptionError, OAuth2TokenRequestError) as err:
+            except SpaceXAISubscriptionError as err:
                 LOGGER.error(
                     "Error communicating with SpaceXAI: %s", type(err).__name__
                 )

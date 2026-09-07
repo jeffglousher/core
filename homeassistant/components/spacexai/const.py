@@ -10,11 +10,15 @@ LOGGER: Logger = getLogger(__package__)
 
 DEFAULT_CONVERSATION_NAME = "Grok"
 DEFAULT_AI_TASK_NAME = "Grok AI Task"
+DEFAULT_STT_NAME = "Grok Speech-to-text"
+DEFAULT_TTS_NAME = "Grok TTS"
 RECOMMENDED_IMAGE_MODEL = "grok-imagine-image-2.0"
+RECOMMENDED_TTS_SPEED = 1.0
 MAX_TOOL_ITERATIONS = 10
 MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024
 
 CONF_CODE_INTERPRETER = "code_interpreter"
+CONF_TTS_SPEED = "tts_speed"
 CONF_WEB_SEARCH = "web_search"
 CONF_X_SEARCH = "x_search"
 

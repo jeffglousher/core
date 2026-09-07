@@ -10,6 +10,7 @@ from spacexai_subscription_client import SpaceXAISubscriptionClient
 
 from homeassistant.components.spacexai.const import (
     CONF_CODE_INTERPRETER,
+    CONF_TTS_SPEED,
     CONF_WEB_SEARCH,
     CONF_X_SEARCH,
     DOMAIN,
@@ -37,6 +38,7 @@ def _mock_config_entry(
     *,
     enable_provider_tools: bool = False,
     include_ai_task: bool = False,
+    include_speech: bool = False,
 ) -> MockConfigEntry:
     """Return a configured SpaceXAI entry."""
     data: dict[str, Any] = {
@@ -71,6 +73,25 @@ def _mock_config_entry(
                 title="Grok AI Task",
                 unique_id=None,
             )
+        )
+    if include_speech:
+        subentries.extend(
+            [
+                ConfigSubentryData(
+                    data={},
+                    subentry_id="stt-subentry",
+                    subentry_type="stt",
+                    title="Grok Speech-to-text",
+                    unique_id=None,
+                ),
+                ConfigSubentryData(
+                    data={CONF_TTS_SPEED: 1.1},
+                    subentry_id="tts-subentry",
+                    subentry_type="tts",
+                    title="Grok TTS",
+                    unique_id=None,
+                ),
+            ]
         )
     return MockConfigEntry(
         domain=DOMAIN,
@@ -115,6 +136,12 @@ def mock_config_entry_with_ai_task() -> MockConfigEntry:
 
 
 @pytest.fixture
+def mock_config_entry_with_speech() -> MockConfigEntry:
+    """Return a configured entry with speech entities."""
+    return _mock_config_entry(False, include_speech=True)
+
+
+@pytest.fixture
 def mock_spacexai_subscription_client() -> Generator[MagicMock]:
     """Return a mocked SpaceXAI client."""
     client = MagicMock(spec=SpaceXAISubscriptionClient)
@@ -122,6 +149,8 @@ def mock_spacexai_subscription_client() -> Generator[MagicMock]:
     client.async_create_response = AsyncMock()
     client.async_generate_image = AsyncMock()
     client.async_edit_image = AsyncMock()
+    client.async_transcribe = AsyncMock(return_value="Turn on the kitchen light")
+    client.async_synthesize_speech = AsyncMock(return_value=b"speech")
     with patch("homeassistant.components.spacexai.create_client", return_value=client):
         yield client
 
