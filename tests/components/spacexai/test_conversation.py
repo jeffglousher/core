@@ -270,6 +270,6 @@ async def test_attachments_not_supported(
 
     assert result.response.response_type is intent.IntentResponseType.ERROR
     assert result.response.speech["plain"]["speech"] == (
-        "Attachments are not supported by this version of the SpaceXAI integration."
+        "Attachments are not supported by this version of the SpaceXAI integration"
     )
     mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
