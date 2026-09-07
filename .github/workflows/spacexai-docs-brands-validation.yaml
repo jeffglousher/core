@@ -115,7 +115,7 @@ jobs:
       - name: Check out exact Core source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: b64085011ba8309005ec645d9500d76c45ba8c64
+          ref: 07c95d71202a7599cd4f91070df8a41a958a0524
           path: core
           persist-credentials: false
       - name: Check out exact documentation source
