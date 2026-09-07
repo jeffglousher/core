@@ -13,12 +13,12 @@ on:
       core-ref:
         description: Exact Core commit to validate
         required: true
-        default: ec01be7f73a4650546ad93a0620aedad3f9e3756
+        default: 1be5415320b9f511d568df7990d5f32ffb0df0df
         type: string
       client-ref:
         description: Exact subscription client commit to install
         required: true
-        default: 584250d60007714d337abfbcb3124318b8f49b22
+        default: f12b460dffecff7ce4f2827fffa8351e06cadcb6
         type: string
       standard-hooks:
         description: Also build the full development environment and run native hooks
@@ -59,14 +59,14 @@ jobs:
       - name: Check out Core under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.core-ref || 'ec01be7f73a4650546ad93a0620aedad3f9e3756' }}
+          ref: ${{ inputs.core-ref || '1be5415320b9f511d568df7990d5f32ffb0df0df' }}
           path: core
           persist-credentials: false
       - name: Check out subscription client under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jeffglousher/spacexai-subscription-client
-          ref: ${{ inputs.client-ref || '584250d60007714d337abfbcb3124318b8f49b22' }}
+          ref: ${{ inputs.client-ref || 'f12b460dffecff7ce4f2827fffa8351e06cadcb6' }}
           path: client
           persist-credentials: false
       - name: Install system dependencies
