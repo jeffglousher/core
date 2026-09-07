@@ -64,7 +64,7 @@ jobs:
           uv venv .venv --python "$(cat .python-version)"
           source .venv/bin/activate
           uv pip install -r requirements.txt -r requirements_test.txt -e . ../client --config-settings editable_mode=compat
-          python3 -m script.install_integration_requirements conversation assist_pipeline intent mqtt ai_task stt tts
+          python3 -m script.install_integration_requirements conversation assist_pipeline intent mqtt hassio ai_task stt tts
       - name: Record sources and installed package
         run: |
           source .venv/bin/activate
