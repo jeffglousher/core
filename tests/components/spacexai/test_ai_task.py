@@ -123,6 +123,49 @@ async def test_generate_data_invalid_json(
         )
 
 
+async def test_generate_nested_structured_data(
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Support optional union fields inside arrays and nested objects."""
+    mock_spacexai_subscription_client.async_create_response.return_value = Completion(
+        '{"items":[{"value":"ready"}]}', ()
+    )
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+
+    result = await ai_task.async_generate_data(
+        hass,
+        task_name="Nested Results",
+        entity_id=ENTITY_ID,
+        instructions="Return the results",
+        structure=vol.Schema(
+            {vol.Required("items"): [{vol.Optional("value"): vol.Any(str, int)}]}
+        ),
+    )
+
+    assert result.data == {"items": [{"value": "ready"}]}
+    response_format = (
+        mock_spacexai_subscription_client.async_create_response.call_args.kwargs[
+            "response_format"
+        ]
+    )
+    nested_schema = response_format.schema["properties"]["items"]["items"]
+    assert nested_schema == {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["value"],
+        "properties": {
+            "value": {
+                "anyOf": [
+                    {"anyOf": [{"type": "string"}, {"type": "integer"}]},
+                    {"type": "null"},
+                ]
+            }
+        },
+    }
+
+
 @pytest.mark.freeze_time("2026-08-29 12:00:00")
 async def test_generate_image(
     hass: HomeAssistant,

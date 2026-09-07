@@ -38,7 +38,9 @@ IMAGE_MEDIA_TYPES = ("image/jpeg", "image/png")
 
 def _adjust_schema(schema: dict[str, Any]) -> None:
     """Make a JSON schema compatible with strict structured output."""
-    if schema["type"] == "object":
+    for alternative in schema.get("anyOf", ()):
+        _adjust_schema(alternative)
+    if schema.get("type") == "object":
         schema.setdefault("additionalProperties", False)
         properties = schema.get("properties")
         if not properties:
@@ -47,9 +49,12 @@ def _adjust_schema(schema: dict[str, Any]) -> None:
         for name, prop_info in properties.items():
             _adjust_schema(prop_info)
             if name not in required:
-                prop_info["type"] = [prop_info["type"], "null"]
+                if isinstance(prop_info.get("type"), str):
+                    prop_info["type"] = [prop_info["type"], "null"]
+                else:
+                    properties[name] = {"anyOf": [prop_info, {"type": "null"}]}
                 required.append(name)
-    elif schema["type"] == "array" and "items" in schema:
+    elif schema.get("type") == "array" and "items" in schema:
         _adjust_schema(schema["items"])
 
 
