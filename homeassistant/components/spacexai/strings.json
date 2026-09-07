@@ -207,9 +207,6 @@
     "unsupported_video": {
       "message": "SpaceXAI returned a file that is not a supported MP4 video."
     },
-    "user_message_not_found": {
-      "message": "The latest attachments do not belong to a user message."
-    },
     "video_download_failed": {
       "message": "The generated video could not be saved to Home Assistant media."
     },
