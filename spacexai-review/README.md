@@ -26,14 +26,14 @@ staged until their prerequisites merge or release.
 
 [Current validation and gates](STAGED_READINESS.md) identifies exact source pairs
 and native run links. All eleven Core layers pass their integration tests; the
-final layer has 145 tests and three snapshots. This is not a clean final
+final layer has 149 tests and three snapshots. This is not a clean final
 quality verdict: speech and every later Core layer remain blocked by
 `has-entity-name: todo`, in addition to unpublished dependencies.
 
 The earlier Core, generated-wiring, docs, and runtime evidence files are retained
 with explicit historical labels. Their older successful runs are not evidence
 for the rebuilt heads. [Package evidence](PACKAGE_REPAIR_EVIDENCE.md) now begins
-with the current release-hardening and five-version CI results.
+with current protocol hardening and all fifteen Python CI results.
 
 ## Human and publication boundaries
 
@@ -48,7 +48,9 @@ Personal attestations remain unchecked. The initial draft links the
 [previous contribution #178765](https://github.com/home-assistant/core/pull/178765);
 it does not invent maintainer approval or rejection.
 
-The current plan does not include an unapproved 24th shared-framework change.
+The plan remains 23 prepared contributions, with a conditional HA naming-fix
+slot beside the later speech wave if still needed. This is not a new Python
+package and does not enlarge or block the initial conversation contribution.
 No Bronze, Gold, or Platinum award is claimed. New rendered docs still need
 visual review, and a fresh initial-only Home Assistant OAuth login still needs
 an isolated native host and human authorization. Full-stack runtime status is

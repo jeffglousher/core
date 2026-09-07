@@ -23,13 +23,13 @@ None. This adds a new integration.
 
 Add a community-maintained SpaceXAI integration so users can use Grok in Assist with their xAI subscription.
 
-Browser-based OAuth device authorization creates one conversation agent per account. Setup validates account identity and available models; duplicate accounts are rejected. Assist access is optional and limited to exposed entities. There is no API-key mode.
+Browser-based OAuth device authorization creates one conversation agent per account. Setup validates account identity and available models; duplicate accounts are rejected. Assist access is selected by default, can be disabled during setup, and is limited to exposed entities. There is no API-key mode.
 
 The unofficial `spacexai-subscription-client` library owns provider communication and OAuth protocol handling. Core supplies shared HTTP sessions and handles configuration, conversation tools, token persistence, and unloading.
 
 This initial contribution targets Bronze and only the conversation platform. Attachments, provider-hosted tools, AI Task, media generation, speech, diagnostics, reauthentication, and reconfiguration are excluded.
 
-Tests cover authorization failures and recovery, account validation, token rotation across reload, conversation responses, tool calls, and provider failures. Permission denial is distinguished from invalid credentials.
+Tests cover completed login retries, cancellation, account validation, token rotation across reload, conversation responses, real Assist exposure controls, and provider failures. Permission denial is distinguished from invalid credentials.
 
 ## Type of change
 <!--
@@ -62,8 +62,8 @@ Tests cover authorization failures and recovery, account validation, token rotat
 - Client release: Version 0.1.0 is not yet published. Add the verified PyPI and GitHub release links before submitting.
 - Brands pull request staging diff: https://github.com/home-assistant/brands/compare/master...jeffglousher:brands:spacexai-initial
 - Prepared Core diff: https://github.com/jeffglousher/core/compare/be2e14f4273335fb5ef02b7f636cd01800e1491a...codex/spacexai/staged-01-initial
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/ec01be7f73a4650546ad93a0620aedad3f9e3756
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34123627426) tests Core `ec01be7f73a4650546ad93a0620aedad3f9e3756` with client `584250d60007714d337abfbcb3124318b8f49b22`: 37 tests, 99.1701% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. The same exact-source run also passes unchanged script/setup and standard native hooks; strict hassfest remains blocked only by dependency-transparency: todo. Human review and dependency publication remain required.
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/1be5415320b9f511d568df7990d5f32ffb0df0df
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34169029198) tests Core `1be5415320b9f511d568df7990d5f32ffb0df0df` with client `f12b460dffecff7ce4f2827fffa8351e06cadcb6`: 41 tests, 99.1701% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. The same exact-source run also passes unchanged script/setup and standard native hooks; strict hassfest remains blocked only by dependency-transparency: todo. Human review and dependency publication remain required.
 
 - First-install validation: Fresh initial-only Home Assistant UI/OAuth login still needs an isolated native host and human authorization; the existing full-stack test system is not that evidence.
 

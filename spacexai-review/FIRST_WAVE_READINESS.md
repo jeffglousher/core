@@ -7,10 +7,10 @@ check remain. No upstream PR or package release was opened by this work.
 
 ## Exact first-wave source
 
-- Python 0.1.0: `harden-initial-release`, `584250d60007714d337abfbcb3124318b8f49b22`.
-- Core: `codex/spacexai/staged-01-initial`, `ec01be7f73a4650546ad93a0620aedad3f9e3756`.
+- Python 0.1.0: `harden-initial-release`, `f12b460dffecff7ce4f2827fffa8351e06cadcb6`.
+- Core: `codex/spacexai/staged-01-initial`, `1be5415320b9f511d568df7990d5f32ffb0df0df`.
 - Brands: `spacexai-initial`, `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
-- Docs: `codex/spacexai/staged-docs-01-initial`, `ab12c0012807c333c90b34935e982d0b9df40d04`.
+- Docs: `codex/spacexai/staged-docs-01-initial`, `0a5a5dfb0f779bf027b609781c5117cc78f9d3a7`.
 
 All four are pushed to the corresponding jeffglousher forks. Core is based on
 official dev `be2e14f4273335fb5ef02b7f636cd01800e1491a`: 18 changed files containing
@@ -21,23 +21,23 @@ old published history remains available without force pushes.
 
 ## Verified checks
 
-- Python: [exact-head CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123466992)
-  passes all Python 3.12/3.13/3.14 jobs. There are 87 tests and 96.51% statement
+- Python: [exact-head CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34168803786)
+  passes all Python 3.12/3.13/3.14 jobs. There are 110 tests and 96.59% statement
   coverage, including 28 release-contract tests. Ruff, strict MyPy, builds,
   strict Twine checks, exact distribution contents, and isolated wheel/sdist
   imports pass.
-- Initial Core: [exact-pair native run](https://github.com/jeffglousher/core/actions/runs/34123627426)
-  passes 37 tests without failures, errors, or skips; 239/241 statements
+- Initial Core: [exact-pair native run](https://github.com/jeffglousher/core/actions/runs/34169029198)
+  passes 41 tests without failures, errors, or skips; 239/241 statements
   (99.1701%), with every module above 95%. Unchanged script/setup, the upstream
   full-tree general-hook subset, and standard contribution-file hooks pass,
   including native MyPy/Pylint, requirements, and typing generation. Tests
   keep the standard socket guard; no Windows compatibility shim is used.
-- [Exact first/final generated validation](https://github.com/jeffglousher/core/actions/runs/34124881178)
-  leaves tracked files unchanged. Initial Core has exactly the acknowledged
+- The same [exact initial native run](https://github.com/jeffglousher/core/actions/runs/34169029198)
+  leaves tracked generated files unchanged. Initial Core has exactly the acknowledged
   `dependency-transparency: todo` blocker and no other errors/warnings.
-  This is a staging-gate pass, not clean hassfest. The combined workflow fails
-  because final speech/downstream also has the unresolved entity-naming rule.
-- [Native docs and Brands validation](https://github.com/jeffglousher/core/actions/runs/34124125762)
+  This is a staging-gate pass, not clean hassfest. Later speech naming remains
+  a separate follow-on gate; it is not present in this initial layer.
+- [Native docs and Brands validation](https://github.com/jeffglousher/core/actions/runs/34168495512)
   builds the exact new initial and final docs with the prescribed Jekyll command
   and passes prose checks. Brands at the exact SHA above passes the complete
   validator: 19,231 images, zero issues. All six docs layers also pass individual
@@ -47,7 +47,12 @@ old published history remains available without force pushes.
 OAuth device authorization remains the only login path and the approved provider
 identity is unchanged. The unofficial package owns protocol handling, absolute
 device-code expiry, polling backoff, and distinct permission/authentication
-errors. Core remains the HA adapter.
+errors. This pass also rejects malformed response fields, unoffered function
+calls, unsupported explicit token types, and invalid numeric token metadata.
+Real SDK wire tests exercise these boundaries. Core remains the HA adapter:
+its only changes in this pass are completed-retry, cancellation, shared-session,
+and real Assist exposure tests. Docs clarifies subscription eligibility,
+selected-by-default Assist access, and supported first-layer troubleshooting.
 
 ## Remaining first-wave gates
 
@@ -77,7 +82,7 @@ errors. Core remains the HA adapter.
    after Brands merges. Recheck upstream freshness and replace staging links
    with actual PR/release links when human-reviewed submissions are made.
 
-The [release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/584250d60007714d337abfbcb3124318b8f49b22/RELEASING.md)
+The [release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/f12b460dffecff7ce4f2827fffa8351e06cadcb6/RELEASING.md)
 contains the package publication sequence. Keep follow-ons staged until their
 predecessors merge; do not open dependent upstream PRs.
 
@@ -86,9 +91,10 @@ predecessors merge; do not open dependent upstream PRs.
 The [23-layer map](STACK.md) now separates four Core dependency bumps from their
 features. All eleven Core layers pass native integration tests, but speech and
 downstream remain quality-blocked by `has-entity-name: todo`. The written rule
-has no exception for the current functional TTS naming behavior. No 24th
-shared-framework change is approved or included; no Bronze, Gold, or Platinum
-award is claimed.
+has no exception for the current functional TTS naming behavior. The plan keeps
+23 prepared contributions plus a conditional HA naming-fix slot beside speech,
+if still needed then. It requires no additional Python package and does not
+enlarge or block this first wave. No Bronze, Gold, or Platinum award is claimed.
 
 The exact new full-stack dogfood is deployed and running; bounded conversation,
 AI text, fresh TTS, audio decoding, and STT round-trip checks pass.

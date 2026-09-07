@@ -6,10 +6,10 @@ dogfood deployment, not proof of a fresh initial-only OAuth installation.
 ## Exact source and deployment
 
 - Dogfood branch: `codex/spacexai/dogfood-staged-20260907`.
-- Dogfood commit: `08b259eed599e5d0e15a386d015244afa2221bba`.
-- Canonical final Core: `298a208679829f70a8c6c424d1ab5471e8c6da15`, an ancestor
+- Dogfood commit: `85ac0fd099cdfb94ebc604ee9677aa16f61719c8`.
+- Canonical final Core: `fd1db0993f4b92450784e26dc30d48c27e57f075`, an ancestor
   of dogfood.
-- Client 0.5.0: `5bfafeceeca8a32ae6ace6d4471764c64ff86d69`.
+- Client 0.5.0: `b6087bbd49428839cc4db845f0c5ec33ef3025fd`.
 - Integration development version: `0.9.0.dev20260907`.
 - Existing HA base remains `2026.10.0.dev202608300226`; no base-image,
   security, or stored-credential changes were made.
@@ -17,23 +17,27 @@ dogfood deployment, not proof of a fresh initial-only OAuth installation.
 Only the development manifest version and exact source requirement pin differ
 from the canonical integration. All 17 archived files were byte-compared
 against Git, and 13 deployed runtime hashes matched the remote files.
-Compiled translations were verified from the exact source.
+Compiled translations were verified against unchanged source and the retained
+generated English file. Archive verification caught Windows newline conversion;
+the regenerated archive passed a byte-for-byte comparison before deployment.
 
 Configuration check and restart passed. Redacted runtime API inspection
 confirmed running state, the existing OAuth entry loaded, all four platform
-subentry types, and the exact development version/source pin. Exactly one
+subentry types, and the exact development version/source pin. The protected
+Core container does not expose installed dependency-file hashes through the
+SSH app, so this is not an independent installed-wheel hash check. Exactly one
 SpaceXAI overlay is active. The previous overlay is retained outside the
 custom-components scan directory for rollback; current credentials were kept.
 
 ## Bounded live checks on the new deployment
 
 - Conversation and AI text returned the expected generic responses; together
-  they took 8.08 seconds.
-- A fresh uncached TTS request returned 34,176 bytes in 0.68 seconds. Full
+  they took 5.34 seconds.
+- A fresh uncached TTS request returned 34,176 bytes in 0.60 seconds. Full
   FFmpeg decoding produced 2.136 seconds of audio: 68,352 bytes at 16 kHz,
   mono, 16-bit PCM.
 - STT of that exact decoded speech succeeded with the expected normalized
-  sentence in 0.28 seconds. This confirms complete audio, not only a media URL
+  sentence in 0.42 seconds. This confirms complete audio, not only a media URL
   or first network chunk.
 - The 100 available log lines contained zero SpaceXAI errors. This is a bounded
   log inspection, not a whole-lifetime no-error claim.
@@ -47,6 +51,10 @@ The speech entity-naming quality gate remains unresolved despite functional
 TTS/STT success. A fresh initial-only Home Assistant setup and human OAuth login
 still require an isolated native host. No tokens, entry identifiers, host
 addresses, signed URLs, raw logs, or private audio are included here.
+
+[The previous September 7 runtime record](https://github.com/jeffglousher/core/blob/c1ae633f17322fe3f17738deebe842779f2d00f5/spacexai-review/RUNTIME_VERIFICATION.md)
+retains its own source identities and measurements. Its prior overlay and
+private smoke artifacts were preserved; new receipts use the new commit ID.
 
 ## Historical prior deployment and live checks
 

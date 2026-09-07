@@ -15,7 +15,7 @@
 
 Document adding and naming the Grok speech entities, selecting them for Assist, supported recording formats, voices, and speed. Match the suggested Grok TTS name shown in Home Assistant. Explain that speech recognition sends recordings and speech synthesis sends text to xAI.
 
-Prepared branch: `codex/spacexai/staged-docs-04-speech`, commit `54a6c6bd83aeb70637e2badf50fc0d183a137364`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-03-ai-task...codex/spacexai/staged-docs-04-speech) against `codex/spacexai/staged-docs-03-ai-task`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Cumulative final docs at `30997c988948e3a3e9f138ed350960cd28ce81b3` passed native linters and the prescribed Jekyll build in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762). This is cumulative build evidence, not a separate Jekyll run for this intermediate commit. No newly generated preview has been visually inspected. The companion speech and downstream Core layers remain quality-blocked by has-entity-name: todo; this documentation build does not resolve that gate.
+Prepared branch: `codex/spacexai/staged-docs-04-speech`, commit `7c1846b5924b4c5715c67c8ae3791821668150b9`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/fc805f1dd2565f5d9fdecd3c08a6b8f806c5cc96...7c1846b5924b4c5715c67c8ae3791821668150b9) against `codex/spacexai/staged-docs-03-ai-task` at `fc805f1dd2565f5d9fdecd3c08a6b8f806c5cc96`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Cumulative final docs at `69221dc8a853972e4b4fcbf78d4fbba8047b393d` passed native linters and the prescribed Jekyll build in [fork validation](https://github.com/jeffglousher/core/actions/runs/34168495512). This is cumulative build evidence, not a separate Jekyll run for this intermediate commit. No newly generated preview has been visually inspected. The current speech naming TODO remains unresolved; address it at the speech wave using existing accepted TTS precedent and, only if necessary, a separate minimal HA naming fix. It does not enlarge or block the initial conversation contribution. Neither this documentation build nor passing Core tests establishes compliance with the written naming rule.
 
 ## Type of change
 <!--
@@ -37,7 +37,7 @@ Prepared branch: `codex/spacexai/staged-docs-04-speech`, commit `54a6c6bd83aeb70
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: Not opened; [prepared Core layer 07](https://github.com/jeffglousher/core/compare/codex/spacexai/staged-06-client-0-4...codex/spacexai/staged-07-speech).
+- Link to parent pull request in the codebase: Not opened; [prepared Core layer 07](https://github.com/jeffglousher/core/compare/5e86d419c261bf98f92ed199b4f09e9ba7300c26...2c59f3dc5e7ad02e12eeea8072e25a804ce5c698).
 - Link to parent pull request in the Brands repository: Not applicable; the initial integration supplies the existing assets.
 - This PR fixes or closes issue: Not applicable; this documents speech support.
 

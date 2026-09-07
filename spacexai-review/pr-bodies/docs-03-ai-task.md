@@ -15,7 +15,7 @@
 
 Document text and structured data tasks and image generation through the standard AI Task actions. Explain the Name field when adding an AI task. Image editing accepts one to five JPEG or PNG images. Explain that task instructions and source files are sent to xAI.
 
-Prepared branch: `codex/spacexai/staged-docs-03-ai-task`, commit `341c603235f9dec052aa8e0cc792d57bd37fdd41`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-02-conversation...codex/spacexai/staged-docs-03-ai-task) against `codex/spacexai/staged-docs-02-conversation`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Cumulative final docs at `30997c988948e3a3e9f138ed350960cd28ce81b3` passed native linters and the prescribed Jekyll build in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762). This is cumulative build evidence, not a separate Jekyll run for this intermediate commit. No newly generated preview has been visually inspected.
+Prepared branch: `codex/spacexai/staged-docs-03-ai-task`, commit `fc805f1dd2565f5d9fdecd3c08a6b8f806c5cc96`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/ce493b6c2d545d3f0b0b8f887a01c140b4e35347...fc805f1dd2565f5d9fdecd3c08a6b8f806c5cc96) against `codex/spacexai/staged-docs-02-conversation` at `ce493b6c2d545d3f0b0b8f887a01c140b4e35347`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Cumulative final docs at `69221dc8a853972e4b4fcbf78d4fbba8047b393d` passed native linters and the prescribed Jekyll build in [fork validation](https://github.com/jeffglousher/core/actions/runs/34168495512). This is cumulative build evidence, not a separate Jekyll run for this intermediate commit. No newly generated preview has been visually inspected.
 
 ## Type of change
 <!--
@@ -37,7 +37,7 @@ Prepared branch: `codex/spacexai/staged-docs-03-ai-task`, commit `341c603235f9de
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: Not opened; [prepared Core layer 05](https://github.com/jeffglousher/core/compare/codex/spacexai/staged-04-client-0-3...codex/spacexai/staged-05-ai-task).
+- Link to parent pull request in the codebase: Not opened; [prepared Core layer 05](https://github.com/jeffglousher/core/compare/33d48cf808320e6123cc6141fd759c75cb49afea...4046b353e5b74553bfea2eaa30e4884e0e41ebc9).
 - Link to parent pull request in the Brands repository: Not applicable; the initial integration supplies the existing assets.
 - This PR fixes or closes issue: Not applicable; this documents AI tasks.
 

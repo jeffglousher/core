@@ -55,13 +55,13 @@ Tests cover strict structured schemas, nested and empty objects, image requests 
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-04-client-0-3...codex/spacexai/staged-05-ai-task
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/9dd2b6ab1e719d4c9e3d76af4b392408a5b21a96
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/33d48cf808320e6123cc6141fd759c75cb49afea...4046b353e5b74553bfea2eaa30e4884e0e41ebc9
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/4046b353e5b74553bfea2eaa30e4884e0e41ebc9
 - Prerequisite: Submit against Home Assistant `dev` only after Core layer 04 merges. The preceding dependency-only layer owns the package version bump; this feature diff does not bundle it. No new upstream PR has been opened.
-- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-02-conversation...spacexai/client-03-image
-- Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/spacexai/client-03-image/CHANGELOG.md
+- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/573e22c48b9e182ab27fcc0d3d4027d0e9e4a142...f98151c06729b7bb5a930bc863075cc396b25bf6
+- Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/f98151c06729b7bb5a930bc863075cc396b25bf6/CHANGELOG.md
 - Dependency release: Version 0.3.0 is not published. Add verified release/PyPI links and installation evidence before submission.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34123998947) tests Core `9dd2b6ab1e719d4c9e3d76af4b392408a5b21a96` with client `03bb0ee35e78df69f94c852e22887d4148fec0e4`: 83 tests, 99.5633% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34169548007) tests Core `4046b353e5b74553bfea2eaa30e4884e0e41ebc9` with client `f98151c06729b7bb5a930bc863075cc396b25bf6`: 87 tests, 99.5633% statement coverage, every integration module above 95%, and zero failures/errors/skips. Scoped native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
 
 ## Checklist
 <!--

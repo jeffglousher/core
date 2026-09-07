@@ -1,3 +1,34 @@
+# Current first-wave documentation and Brands — September 7, 2026
+
+The initial page remains one 96-line addition on official next
+`16ad324d9cbadf6d03b94f12ef278b00c7b9999f`. This pass corrects four prose lines:
+eligible subscription/API access is required, Assist is selected by default
+and can be disabled, and permission troubleshooting no longer suggests a
+post-setup model change that the initial layer cannot perform.
+
+The fix is committed and pushed additively through all six canonical docs
+branches in [the stack map](STACK.md), without rewriting published history.
+Initial is `0a5a5dfb0f779bf027b609781c5117cc78f9d3a7`; final is
+`69221dc8a853972e4b4fcbf78d4fbba8047b393d`. Every layer passes prose and whitespace
+checks. [Native run 34168495512](https://github.com/jeffglousher/core/actions/runs/34168495512)
+passes both exact Jekyll builds and prose checks with Ruby 3.4.8, Jekyll 4.4.1,
+and Node 20.20.2. The initial PR description retains every template comment
+and checkbox and accurately states these limitations.
+
+The same run checks the unchanged Brands commit
+`e3ac8da8bf579ec54210cc211e1eaa0768052679`: 19,231 images, zero issues. Its eight
+SpaceXAI assets retain the official-source provenance below. The blueprint job
+validates final docs against Core `07c95d71202a7599cd4f91070df8a41a958a0524`:
+two valid cases, missing media rejected, zero executed actions. This is exact
+source attribution, not a claim that this older Core commit is the latest head.
+
+Static HTML inspection confirms the corrected prose. No browser surface is
+available, so visual inspection remains open. Actual public logo delivery
+still awaits the Brands merge. No upstream submission or deployment occurred
+as part of these documentation checks.
+
+## Historical pre-rebuild evidence
+
 > Historical evidence for the superseded pre-September-7 branch chain.
 > Do not attribute these old source pairs, counts, or successful runs to the
 > rebuilt 23-contribution stack. Use [current validation](STAGED_READINESS.md)

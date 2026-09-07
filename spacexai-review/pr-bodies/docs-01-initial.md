@@ -13,9 +13,9 @@
     additional information section.
 -->
 
-Document the new SpaceXAI conversation integration: browser sign-in, account prerequisites, optional Assist access, configuration, troubleshooting, and removal. Explain which conversation and entity data is sent to xAI, link to provider privacy information and terms, and identify the integration as community-maintained.
+Document the new SpaceXAI conversation integration: browser sign-in, eligible subscription prerequisites, the default Assist selection and how to disable it, configuration, troubleshooting, and removal. Explain which conversation and entity data is sent to xAI, link to provider privacy information and terms, and identify the integration as community-maintained.
 
-Prepared from official `next` at `16ad324d9cbadf6d03b94f12ef278b00c7b9999f` on branch `codex/spacexai/staged-docs-01-initial`, commit `ab12c0012807c333c90b34935e982d0b9df40d04`. The diff contains only the new 96-line integration page. The release is quoted as '2026.10' so YAML preserves October. Native remark/textlint and the prescribed Jekyll build passed for this exact commit in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762). The newly generated preview has not been visually inspected; the source matches the previously rendered page, which is not a substitute for a new preview check. Public logo delivery remains pending the separate Brands merge.
+Prepared from official `next` at `16ad324d9cbadf6d03b94f12ef278b00c7b9999f` on branch `codex/spacexai/staged-docs-01-initial`, commit `0a5a5dfb0f779bf027b609781c5117cc78f9d3a7`. The diff contains only the new 96-line integration page. The release is quoted as '2026.10' so YAML preserves October. Native remark/textlint and the prescribed Jekyll build passed for this exact commit in [fork validation](https://github.com/jeffglousher/core/actions/runs/34168495512). The generated HTML contains the corrected prerequisites, Assist default, and permission troubleshooting, but a visual preview check remains pending because no browser surface is available. Public logo delivery remains pending the separate Brands merge.
 
 ## Type of change
 <!--

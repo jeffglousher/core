@@ -55,15 +55,15 @@ Generated videos are downloaded from allowed provider hosts with redirects disab
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-08-client-0-5...codex/spacexai/staged-09-video
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/07c95d71202a7599cd4f91070df8a41a958a0524
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/a0ab0bd3a699ffcb436bf8a63be60229a2b3d06f...26b85560a728196e64fac184bffb32b16f430685
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/26b85560a728196e64fac184bffb32b16f430685
 - Prerequisite: Submit against Home Assistant `dev` only after Core layer 08 merges. The preceding dependency-only layer owns the package version bump; this feature diff does not bundle it. No new upstream PR has been opened.
-- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-04-speech...spacexai/client-05-video
-- Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/spacexai/client-05-video/CHANGELOG.md
+- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/b29c66df6833a2527fa4835aef10c46c26ed49ed...b6087bbd49428839cc4db845f0c5ec33ef3025fd
+- Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/b6087bbd49428839cc4db845f0c5ec33ef3025fd/CHANGELOG.md
 - Dependency release: Version 0.5.0 is not published. Add verified release/PyPI links and installation evidence before submission.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34124119021) tests Core `07c95d71202a7599cd4f91070df8a41a958a0524` with client `5bfafeceeca8a32ae6ace6d4471764c64ff86d69`: 132 tests, 99.3827% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34169849867) tests Core `26b85560a728196e64fac184bffb32b16f430685` with client `b6087bbd49428839cc4db845f0c5ec33ef3025fd`: 136 tests, 99.3827% statement coverage, every integration module above 95%, and zero failures/errors/skips. Scoped native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
 
-- Quality gate: Submission is quality-blocked: this layer inherits `has-entity-name: todo` from speech. The current TTS naming behavior is functional but does not meet the written no-exceptions rule. A shared-framework solution is not approved or included in this 23-contribution plan; do not claim Bronze, Gold, or Platinum readiness.
+- Quality gate: The current `has-entity-name: todo` remains unresolved, so clean quality-scale validation is not established. Address it at the speech wave using existing accepted TTS precedent and, only if necessary, a separate minimal HA naming fix. It does not enlarge or block the initial conversation contribution.
 
 ## Checklist
 <!--

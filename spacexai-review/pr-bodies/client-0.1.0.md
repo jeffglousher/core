@@ -14,13 +14,15 @@ The package owns provider communication so the Home Assistant integration remain
 - Translate authentication failures, permission failures, authorization denial, device-code expiry, rate limits, timeouts, connection failures, and malformed responses into stable package exceptions.
 - Bound provider requests with explicit timeouts and disable SDK retries so callers own retry policy.
 - Create request-scoped SDK clients so refreshed OAuth credentials cannot race through shared mutable state.
-- Validate provider tool calls before exposing them to callers.
+- Validate provider tool-call identifiers, argument objects, and names against the custom functions offered in that request before exposing them to callers.
+- Normalize malformed Responses payloads and numeric OAuth expiry/interval overflow into `InvalidResponseError`. An explicitly supplied token type must be Bearer (case-insensitive); an omitted type retains existing Bearer compatibility.
 - Honor OAuth slow-down responses and preserve the increased polling interval across retries. Timeout backoff remains bounded by the original device-code expiry.
 
 ## Verification
 
-- 87 tests pass on Python 3.14 locally with 96.51% statement coverage.
-- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123466992) passes at `584250d60007714d337abfbcb3124318b8f49b22` on Python 3.12, 3.13, and 3.14.
+- Real-SDK HTTP transport regressions cover malformed provider fields, unoffered function calls, valid text, and valid offered calls. These synthetic robustness cases do not imply an observed provider outage; the approved OAuth identity and login flow are unchanged.
+- 110 tests pass on Python 3.14 locally with 96.59% statement coverage.
+- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34168803786) passes at `f12b460dffecff7ce4f2827fffa8351e06cadcb6` on Python 3.12, 3.13, and 3.14.
 - Ruff lint and format checks pass.
 - Strict MyPy checks pass.
 - The wheel and source distribution build successfully and pass `twine check --strict`.
@@ -39,9 +41,9 @@ After human review and explicit publication approval, merge the reviewed package
 
 The package has not been published and the prepared code has not been merged to `main`. No GitHub publishing environment is configured. PyPI account security and pending-publisher configuration require account-owner verification; they cannot be inferred from public repository state.
 
-Release notes: https://github.com/jeffglousher/spacexai-subscription-client/blob/584250d60007714d337abfbcb3124318b8f49b22/CHANGELOG.md
+Release notes: https://github.com/jeffglousher/spacexai-subscription-client/blob/f12b460dffecff7ce4f2827fffa8351e06cadcb6/CHANGELOG.md
 
-Publication checklist: https://github.com/jeffglousher/spacexai-subscription-client/blob/584250d60007714d337abfbcb3124318b8f49b22/RELEASING.md
+Publication checklist: https://github.com/jeffglousher/spacexai-subscription-client/blob/f12b460dffecff7ce4f2827fffa8351e06cadcb6/RELEASING.md
 
 ## Out of scope
 

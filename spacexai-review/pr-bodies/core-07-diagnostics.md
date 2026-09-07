@@ -55,13 +55,13 @@ Tests verify the public diagnostics endpoint for loaded and unloaded entries, sn
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-10-account...codex/spacexai/staged-11-diagnostics
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/298a208679829f70a8c6c424d1ab5471e8c6da15
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/82d4cc5337e1eb147a9a206da7fc0977d5efa5be...fd1db0993f4b92450784e26dc30d48c27e57f075
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/fd1db0993f4b92450784e26dc30d48c27e57f075
 - Prerequisite: Submit against Home Assistant `dev` only after Core layer 10 merges. No new upstream PR has been opened.
 - Dependency: spacexai-subscription-client remains at 0.5.0; there is no dependency upgrade in this layer.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34124560787) tests Core `298a208679829f70a8c6c424d1ab5471e8c6da15` with client `5bfafeceeca8a32ae6ace6d4471764c64ff86d69`: 145 tests and 3 snapshots, 99.4083% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34169852160) tests Core `fd1db0993f4b92450784e26dc30d48c27e57f075` with client `b6087bbd49428839cc4db845f0c5ec33ef3025fd`: 149 tests and 3 snapshots, 99.4083% statement coverage, every integration module above 95%, and zero failures/errors/skips. Scoped native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
 
-- Quality gate: Submission is quality-blocked: this layer inherits `has-entity-name: todo` from speech. The current TTS naming behavior is functional but does not meet the written no-exceptions rule. A shared-framework solution is not approved or included in this 23-contribution plan; do not claim Bronze, Gold, or Platinum readiness.
+- Quality gate: The current `has-entity-name: todo` remains unresolved, so clean quality-scale validation is not established. Address it at the speech wave using existing accepted TTS precedent and, only if necessary, a separate minimal HA naming fix. It does not enlarge or block the initial conversation contribution.
 
 ## Checklist
 <!--
