@@ -704,7 +704,7 @@ async def test_create_ai_task_subentry_not_loaded(
             {CONF_NAME: "Kitchen voice", CONF_TTS_SPEED: 1.2},
             "Kitchen voice",
             {CONF_TTS_SPEED: 1.2},
-            "tts.kitchen_voice_text_to_speech",
+            "tts.kitchen_voice",
             id="text_to_speech",
         ),
     ],
