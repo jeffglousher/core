@@ -200,14 +200,35 @@ async def test_setup_refreshes_expired_token_and_persists_rotation(
         "new-access-token"
     )
 
+    mock_spacexai_subscription_client.async_list_models.reset_mock()
+    assert await hass.config_entries.async_reload(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert mock_config_entry.data["token"]["refresh_token"] == "new-refresh-token"
+    mock_spacexai_subscription_client.async_list_models.assert_awaited_once_with(
+        "new-access-token"
+    )
+    assert aioclient_mock.call_count == 1
+
 
 @pytest.mark.parametrize(
     ("status", "expected_state"),
     [
         pytest.param(
+            HTTPStatus.BAD_REQUEST,
+            ConfigEntryState.SETUP_ERROR,
+            id="invalid_refresh_grant",
+        ),
+        pytest.param(
             HTTPStatus.UNAUTHORIZED,
             ConfigEntryState.SETUP_ERROR,
             id="revoked_refresh_token",
+        ),
+        pytest.param(
+            HTTPStatus.TOO_MANY_REQUESTS,
+            ConfigEntryState.SETUP_RETRY,
+            id="rate_limited",
         ),
         pytest.param(
             HTTPStatus.INTERNAL_SERVER_ERROR,
