@@ -1,5 +1,7 @@
 """Tests for the SpaceXAI AI Task platform."""
 
+from collections.abc import Awaitable, Callable
+from http import HTTPStatus
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -15,6 +17,7 @@ from spacexai_subscription_client import (
     ResponseFormat,
     SpaceXAISubscriptionError,
 )
+from spacexai_subscription_client.const import TOKEN_URL
 import voluptuous as vol
 
 from homeassistant.components import ai_task, media_source
@@ -27,8 +30,123 @@ from . import setup_integration
 from .conftest import ACCESS_TOKEN
 
 from tests.common import MockConfigEntry
+from tests.test_util.aiohttp import AiohttpClientMocker
 
 ENTITY_ID = "ai_task.grok_ai_task"
+
+
+@pytest.mark.parametrize(
+    "generate",
+    [
+        pytest.param(ai_task.async_generate_data, id="data"),
+        pytest.param(ai_task.async_generate_image, id="image"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("status", "translation_key", "reauth_flow_count"),
+    [
+        pytest.param(HTTPStatus.BAD_REQUEST, "invalid_auth", 1, id="invalid_grant"),
+        pytest.param(HTTPStatus.UNAUTHORIZED, "invalid_auth", 1, id="revoked_token"),
+        pytest.param(HTTPStatus.TOO_MANY_REQUESTS, "api_error", 0, id="rate_limited"),
+        pytest.param(
+            HTTPStatus.INTERNAL_SERVER_ERROR, "api_error", 0, id="provider_error"
+        ),
+    ],
+)
+async def test_generate_with_failed_token_refresh(
+    aioclient_mock: AiohttpClientMocker,
+    generate: Callable[..., Awaitable[object]],
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    status: HTTPStatus,
+    translation_key: str,
+    reauth_flow_count: int,
+) -> None:
+    """Reject AI requests when expired credentials cannot be refreshed."""
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+    hass.config_entries.async_update_entry(
+        mock_config_entry_with_ai_task,
+        data={
+            **mock_config_entry_with_ai_task.data,
+            "token": {
+                **mock_config_entry_with_ai_task.data["token"],
+                "expires_at": 0,
+            },
+        },
+    )
+    aioclient_mock.post(TOKEN_URL, status=status)
+
+    with pytest.raises(HomeAssistantError) as err:
+        await generate(
+            hass,
+            task_name="Expired Credentials",
+            entity_id=ENTITY_ID,
+            instructions="Describe a smart home",
+        )
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == translation_key
+    assert aioclient_mock.call_count == 1
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
+    mock_spacexai_subscription_client.async_generate_image.assert_not_awaited()
+    mock_spacexai_subscription_client.async_edit_image.assert_not_awaited()
+    await hass.async_block_till_done()
+    assert [
+        (flow["context"]["source"], flow["step_id"])
+        for flow in hass.config_entries.flow.async_progress()
+    ] == [("reauth", "reauth_confirm")] * reauth_flow_count
+
+
+@pytest.mark.parametrize(
+    "generate",
+    [
+        pytest.param(ai_task.async_generate_data, id="data"),
+        pytest.param(ai_task.async_generate_image, id="image"),
+    ],
+)
+@pytest.mark.parametrize(
+    "access_token",
+    [pytest.param("", id="empty"), pytest.param(None, id="missing")],
+)
+async def test_generate_with_invalid_stored_token(
+    access_token: str | None,
+    generate: Callable[..., Awaitable[object]],
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Do not send AI requests with unusable stored access credentials."""
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+    hass.config_entries.async_update_entry(
+        mock_config_entry_with_ai_task,
+        data={
+            **mock_config_entry_with_ai_task.data,
+            "token": {
+                **mock_config_entry_with_ai_task.data["token"],
+                "access_token": access_token,
+            },
+        },
+    )
+
+    with pytest.raises(HomeAssistantError) as err:
+        await generate(
+            hass,
+            task_name="Invalid Credentials",
+            entity_id=ENTITY_ID,
+            instructions="Describe a smart home",
+        )
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "invalid_auth"
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
+    mock_spacexai_subscription_client.async_generate_image.assert_not_awaited()
+    mock_spacexai_subscription_client.async_edit_image.assert_not_awaited()
+    await hass.async_block_till_done()
+    flows = hass.config_entries.flow.async_progress()
+    assert len(flows) == 1
+    assert flows[0]["context"]["source"] == "reauth"
+    assert flows[0]["step_id"] == "reauth_confirm"
 
 
 async def test_generate_data(
@@ -430,6 +548,7 @@ async def test_generate_image_permission_denied(
 @pytest.mark.parametrize(
     ("provider_error", "translation_key"),
     [
+        pytest.param(AuthenticationError, "invalid_auth", id="authentication"),
         pytest.param(InvalidResponseError, "invalid_response", id="invalid_response"),
         pytest.param(SpaceXAISubscriptionError, "api_error", id="provider_error"),
     ],
