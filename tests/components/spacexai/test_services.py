@@ -20,7 +20,7 @@ from homeassistant.components.spacexai.media import (
     async_provider_image_url,
     async_publish_media,
 )
-from homeassistant.core import Context, HomeAssistant
+from homeassistant.core import Context, HomeAssistant, ServiceCall
 from homeassistant.exceptions import (
     HomeAssistantError,
     ServiceValidationError,
@@ -68,8 +68,8 @@ async def test_generate_video_persists_authenticated_media(
             return_value=datetime(2026, 8, 30, 12, 0, tzinfo=UTC),
         ),
         patch(
-            "homeassistant.components.spacexai.media.secrets.token_hex",
-            return_value="abcd1234",
+            "homeassistant.components.spacexai.media.secrets",
+            token_hex=MagicMock(return_value="abcd1234"),
         ),
         patch(
             "homeassistant.components.spacexai.media.get_url",
@@ -270,29 +270,39 @@ async def test_publish_local_media(
     )
 
 
-@pytest.mark.usefixtures("mock_spacexai_subscription_client")
 async def test_publish_media_rejects_non_admin(
     hass: HomeAssistant,
     hass_read_only_user: MockUser,
     mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
 ) -> None:
     """Require an administrator before issuing a signed media URL."""
     await setup_integration(hass, mock_config_entry)
 
-    with pytest.raises(Unauthorized):
-        await hass.services.async_call(
-            DOMAIN,
-            "publish_media",
-            {
-                "media": {
-                    "media_content_id": "media-source://media_source/local/porch.jpg",
-                    "media_content_type": "image/jpeg",
-                }
-            },
-            blocking=True,
-            context=Context(user_id=hass_read_only_user.id),
-            return_response=True,
-        )
+    registered = hass.services.async_services_for_domain(DOMAIN)["publish_media"]
+    call = ServiceCall(
+        hass,
+        DOMAIN,
+        "publish_media",
+        {
+            "media": {
+                "media_content_id": "media-source://media_source/local/porch.jpg",
+                "media_content_type": "image/jpeg",
+            }
+        },
+        context=Context(user_id=hass_read_only_user.id),
+        return_response=True,
+    )
+    with patch("homeassistant.components.spacexai.media.async_sign_path") as sign_path:
+        # Unauthorized belongs to HA's admin guard, outside integration translations.
+        task = hass.async_run_hass_job(registered.job, call)
+        assert task is not None
+        with pytest.raises(Unauthorized) as raised:
+            await task
+
+    assert raised.value.user_id == hass_read_only_user.id
+    sign_path.assert_not_called()
+    mock_spacexai_subscription_client.async_generate_video.assert_not_awaited()
 
 
 async def test_persist_video_rejects_unsafe_or_invalid_download(
@@ -308,8 +318,8 @@ async def test_persist_video_rejects_unsafe_or_invalid_download(
 
     with (
         patch(
-            "homeassistant.components.spacexai.media.secrets.token_hex",
-            return_value="failed",
+            "homeassistant.components.spacexai.media.secrets",
+            token_hex=MagicMock(return_value="failed"),
         ),
         pytest.raises(HomeAssistantError) as raised,
     ):
