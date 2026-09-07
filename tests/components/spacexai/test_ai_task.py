@@ -9,14 +9,16 @@ from spacexai_subscription_client import (
     AuthenticationError,
     Completion,
     GeneratedImage,
+    InvalidResponseError,
     Message,
     PermissionDeniedError,
     ResponseFormat,
+    SpaceXAISubscriptionError,
 )
 import voluptuous as vol
 
 from homeassistant.components import ai_task, media_source
-from homeassistant.components.spacexai.const import RECOMMENDED_IMAGE_MODEL
+from homeassistant.components.spacexai.const import DOMAIN, RECOMMENDED_IMAGE_MODEL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er, selector
@@ -121,6 +123,40 @@ async def test_generate_data_invalid_json(
             instructions="Return data",
             structure=vol.Schema({vol.Required("result"): str}),
         )
+
+
+async def test_generate_empty_structured_data(
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Send a valid strict object schema when the requested structure is empty."""
+    mock_spacexai_subscription_client.async_create_response.return_value = Completion(
+        "{}", ()
+    )
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+
+    result = await ai_task.async_generate_data(
+        hass,
+        task_name="Empty Result",
+        entity_id=ENTITY_ID,
+        instructions="Return an empty object",
+        structure=vol.Schema({}),
+    )
+
+    assert result.data == {}
+    response_format = (
+        mock_spacexai_subscription_client.async_create_response.call_args.kwargs[
+            "response_format"
+        ]
+    )
+    assert isinstance(response_format, ResponseFormat)
+    assert response_format.name == "empty_result"
+    assert response_format.schema == {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": False,
+    }
 
 
 async def test_generate_nested_structured_data(
@@ -290,13 +326,49 @@ async def test_generate_data_permission_denied(
     )
     await setup_integration(hass, mock_config_entry_with_ai_task)
 
-    with pytest.raises(HomeAssistantError):
+    with pytest.raises(HomeAssistantError) as err:
         await ai_task.async_generate_data(
             hass,
             task_name="Test Task",
             entity_id=ENTITY_ID,
             instructions="Return data",
         )
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "not_entitled"
+    await hass.async_block_till_done()
+    assert hass.config_entries.flow.async_progress() == []
+
+
+@pytest.mark.parametrize(
+    ("provider_error", "translation_key"),
+    [
+        pytest.param(InvalidResponseError, "invalid_response", id="invalid_response"),
+        pytest.param(SpaceXAISubscriptionError, "api_error", id="provider_error"),
+    ],
+)
+async def test_generate_data_provider_error(
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    provider_error: type[SpaceXAISubscriptionError],
+    translation_key: str,
+) -> None:
+    """Translate invalid and failed provider responses at the public data API."""
+    mock_spacexai_subscription_client.async_create_response.side_effect = provider_error
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+
+    with pytest.raises(HomeAssistantError) as err:
+        await ai_task.async_generate_data(
+            hass,
+            task_name="Test Task",
+            entity_id=ENTITY_ID,
+            instructions="Return data",
+        )
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == translation_key
+    mock_spacexai_subscription_client.async_create_response.assert_awaited_once()
 
 
 async def test_generate_image_permission_denied(
@@ -310,13 +382,49 @@ async def test_generate_image_permission_denied(
     )
     await setup_integration(hass, mock_config_entry_with_ai_task)
 
-    with pytest.raises(HomeAssistantError):
+    with pytest.raises(HomeAssistantError) as err:
         await ai_task.async_generate_image(
             hass,
             task_name="Test Image",
             entity_id=ENTITY_ID,
             instructions="Draw a smart home",
         )
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "not_entitled"
+    await hass.async_block_till_done()
+    assert hass.config_entries.flow.async_progress() == []
+
+
+@pytest.mark.parametrize(
+    ("provider_error", "translation_key"),
+    [
+        pytest.param(InvalidResponseError, "invalid_response", id="invalid_response"),
+        pytest.param(SpaceXAISubscriptionError, "api_error", id="provider_error"),
+    ],
+)
+async def test_generate_image_provider_error(
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    provider_error: type[SpaceXAISubscriptionError],
+    translation_key: str,
+) -> None:
+    """Translate invalid and failed provider responses at the public image API."""
+    mock_spacexai_subscription_client.async_generate_image.side_effect = provider_error
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+
+    with pytest.raises(HomeAssistantError) as err:
+        await ai_task.async_generate_image(
+            hass,
+            task_name="Test Image",
+            entity_id=ENTITY_ID,
+            instructions="Draw a smart home",
+        )
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == translation_key
+    mock_spacexai_subscription_client.async_generate_image.assert_awaited_once()
 
 
 @pytest.mark.parametrize(
