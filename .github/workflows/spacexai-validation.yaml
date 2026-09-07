@@ -15,7 +15,7 @@ on:
       client-ref:
         description: Exact subscription client commit to install
         required: true
-        default: 16b530d1e1afce38977c2e8ea2e1dcef663cd76a
+        default: c4fd662c281b5700a5c5d547b4afe097c8e5be22
         type: string
 
 permissions:
@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jeffglousher/spacexai-subscription-client
-          ref: ${{ inputs.client-ref || '16b530d1e1afce38977c2e8ea2e1dcef663cd76a' }}
+          ref: ${{ inputs.client-ref || 'c4fd662c281b5700a5c5d547b4afe097c8e5be22' }}
           path: client
           persist-credentials: false
       - name: Install system dependencies
@@ -75,6 +75,7 @@ jobs:
             git -C ../client rev-parse HEAD
             python3 --version
             python3 -c 'from importlib.metadata import version; import platform; print(platform.platform()); print("spacexai-subscription-client==" + version("spacexai-subscription-client"))'
+            python3 -c 'from importlib.metadata import version; import json; from pathlib import Path; from packaging.requirements import Requirement; req = Requirement(json.loads(Path("homeassistant/components/spacexai/manifest.json").read_text())["requirements"][0]); assert version(req.name) in req.specifier, "Installed client does not match the manifest"'
             python3 -c 'import inspect, pytest_socket; print("Socket guard:", inspect.getsourcefile(pytest_socket.disable_socket))'
           } | tee validation-sources.txt
       - name: Compile English translations
