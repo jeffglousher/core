@@ -8,6 +8,7 @@ from spacexai_subscription_client import (
     Attachment,
     AuthenticationError,
     InvalidResponseError,
+    PermissionDeniedError,
     ResponseFormat,
     SpaceXAISubscriptionError,
 )
@@ -132,6 +133,11 @@ class SpaceXAIAITaskEntity(ai_task.AITaskEntity):
                 translation_domain=DOMAIN,
                 translation_key="invalid_response",
             ) from err
+        except PermissionDeniedError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="not_entitled",
+            ) from err
         except SpaceXAISubscriptionError as err:
             LOGGER.error("Error communicating with SpaceXAI: %s", type(err).__name__)
             raise HomeAssistantError(
@@ -189,6 +195,11 @@ class SpaceXAIAITaskEntity(ai_task.AITaskEntity):
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="invalid_response",
+            ) from err
+        except PermissionDeniedError as err:
+            raise HomeAssistantError(
+                translation_domain=DOMAIN,
+                translation_key="not_entitled",
             ) from err
         except SpaceXAISubscriptionError as err:
             LOGGER.error("Error communicating with SpaceXAI: %s", type(err).__name__)
