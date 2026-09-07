@@ -1,10 +1,13 @@
 """Tests for SpaceXAI conversation."""
 
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from spacexai_subscription_client import (
+    Attachment,
     AuthenticationError,
+    BuiltinTool,
     Completion,
     InvalidResponseError,
     Message,
@@ -15,7 +18,10 @@ from spacexai_subscription_client import (
 )
 
 from homeassistant.components import conversation
-from homeassistant.components.spacexai.const import MAX_TOOL_ITERATIONS
+from homeassistant.components.spacexai.const import (
+    MAX_ATTACHMENT_SIZE,
+    MAX_TOOL_ITERATIONS,
+)
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.helpers import intent
 
@@ -245,17 +251,259 @@ async def test_tool_iteration_limit(
     )
 
 
-async def test_attachments_not_supported(
+@pytest.mark.parametrize(
+    ("media_type", "expected_media_type"),
+    [
+        pytest.param("image/png", "image/png", id="png"),
+        pytest.param("image/jpg", "image/jpeg", id="jpeg_alias"),
+    ],
+)
+async def test_conversation_with_attachment(
     hass: HomeAssistant,
+    tmp_path: Path,
+    media_type: str,
+    expected_media_type: str,
     mock_config_entry: MockConfigEntry,
     mock_spacexai_subscription_client: MagicMock,
     mock_chat_log: MockChatLog,  # noqa: F811
 ) -> None:
-    """Reject attachments before making a provider request."""
-    mock_chat_log.content.append(
+    """Pass attachments from the current conversation turn to the client."""
+    image = tmp_path / "image.png"
+    image.write_bytes(b"image")
+    mock_chat_log.async_add_user_content(
         conversation.UserContent(
             "Describe this",
-            [conversation.Attachment("media-id", "image/png", Path("image.png"))],
+            [conversation.Attachment("media-id", media_type, image)],
+        )
+    )
+    mock_spacexai_subscription_client.async_create_response.return_value = (
+        _text_response("An image")
+    )
+    await setup_integration(hass, mock_config_entry)
+
+    result = await conversation.async_converse(
+        hass,
+        "Describe this",
+        mock_chat_log.conversation_id,
+        Context(),
+        agent_id="conversation.grok",
+    )
+
+    assert result.response.response_type is intent.IntentResponseType.ACTION_DONE
+    assert mock_spacexai_subscription_client.async_create_response.call_args.kwargs[
+        "input_data"
+    ][-1] == Message(
+        "user",
+        "Describe this",
+        (Attachment("image.png", expected_media_type, b"image"),),
+    )
+
+
+@pytest.mark.parametrize(
+    ("data", "message"),
+    [
+        pytest.param(
+            b"", "The attachment changing.png is empty", id="emptied_after_stat"
+        ),
+        pytest.param(
+            b"x" * (MAX_ATTACHMENT_SIZE + 1),
+            "The selected attachments exceed the 20 MiB limit at changing.png",
+            id="grew_after_stat",
+        ),
+    ],
+)
+async def test_attachment_changed_during_read(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    data: bytes,
+    message: str,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    mock_chat_log: MockChatLog,  # noqa: F811
+) -> None:
+    """Reject changed files through the conversation interface."""
+    path = tmp_path / "changing.png"
+    path.write_bytes(b"123")
+    mock_chat_log.async_add_user_content(
+        conversation.UserContent(
+            "Describe this",
+            [conversation.Attachment("media-id", "image/png", path)],
+        )
+    )
+    await setup_integration(hass, mock_config_entry)
+
+    with patch("pathlib.Path.open") as mock_open:
+        mock_open.return_value.__enter__.return_value.read.return_value = data
+        result = await conversation.async_converse(
+            hass,
+            "Describe this",
+            mock_chat_log.conversation_id,
+            Context(),
+            agent_id="conversation.grok",
+        )
+
+    assert result.response.response_type is intent.IntentResponseType.ERROR
+    assert result.response.speech["plain"]["speech"] == message
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
+    mock_open.return_value.__enter__.return_value.read.assert_called_once_with(
+        MAX_ATTACHMENT_SIZE + 1
+    )
+
+
+async def test_only_latest_message_attachments_are_loaded(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    mock_chat_log: MockChatLog,  # noqa: F811
+) -> None:
+    """Ignore unavailable attachments from earlier conversation turns."""
+    mock_chat_log.content.extend(
+        [
+            conversation.UserContent(
+                "Old",
+                [
+                    conversation.Attachment(
+                        "missing", "image/png", tmp_path / "missing.png"
+                    )
+                ],
+            ),
+            conversation.AssistantContent("conversation.grok", "Reply"),
+        ]
+    )
+    mock_spacexai_subscription_client.async_create_response.return_value = (
+        _text_response("Done")
+    )
+    await setup_integration(hass, mock_config_entry)
+
+    result = await conversation.async_converse(
+        hass,
+        "New",
+        mock_chat_log.conversation_id,
+        Context(),
+        agent_id="conversation.grok",
+    )
+
+    assert result.response.response_type is intent.IntentResponseType.ACTION_DONE
+    assert mock_spacexai_subscription_client.async_create_response.call_args.kwargs[
+        "input_data"
+    ][1:] == [
+        Message("user", "Old"),
+        Message("assistant", "Reply"),
+        Message("user", "New"),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("filename", "media_type", "message"),
+    [
+        pytest.param(
+            "missing.png",
+            "image/png",
+            "The attachment missing.png could not be read",
+            id="missing",
+        ),
+        pytest.param(
+            "data.txt",
+            "text/plain",
+            "The attachment data.txt is not a JPEG image, PNG image, or PDF",
+            id="type",
+        ),
+    ],
+)
+async def test_reject_invalid_attachment(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    filename: str,
+    media_type: str,
+    message: str,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    mock_chat_log: MockChatLog,  # noqa: F811
+) -> None:
+    """Reject unsupported or unavailable files without calling the provider."""
+    mock_chat_log.async_add_user_content(
+        conversation.UserContent(
+            "Describe this",
+            [conversation.Attachment("media-id", media_type, tmp_path / filename)],
+        )
+    )
+    await setup_integration(hass, mock_config_entry)
+
+    result = await conversation.async_converse(
+        hass,
+        "Describe this",
+        mock_chat_log.conversation_id,
+        Context(),
+        agent_id="conversation.grok",
+    )
+
+    assert result.response.response_type is intent.IntentResponseType.ERROR
+    assert result.response.speech["plain"]["speech"] == message
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
+
+
+@pytest.mark.parametrize(
+    ("size", "message"),
+    [
+        pytest.param(0, "The attachment image.png is empty", id="empty"),
+        pytest.param(
+            MAX_ATTACHMENT_SIZE + 1,
+            "The selected attachments exceed the 20 MiB limit at image.png",
+            id="too_large",
+        ),
+    ],
+)
+async def test_reject_attachment_size(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    size: int,
+    message: str,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    mock_chat_log: MockChatLog,  # noqa: F811
+) -> None:
+    """Reject empty and oversized attachments before reading their bytes."""
+    path = tmp_path / "image.png"
+    with path.open("wb") as file:
+        file.truncate(size)
+    mock_chat_log.async_add_user_content(
+        conversation.UserContent(
+            "Describe this",
+            [conversation.Attachment("media-id", "image/png", path)],
+        )
+    )
+    await setup_integration(hass, mock_config_entry)
+
+    result = await conversation.async_converse(
+        hass,
+        "Describe this",
+        mock_chat_log.conversation_id,
+        Context(),
+        agent_id="conversation.grok",
+    )
+
+    assert result.response.response_type is intent.IntentResponseType.ERROR
+    assert result.response.speech["plain"]["speech"] == message
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
+
+
+async def test_reject_attachments_over_combined_limit(
+    hass: HomeAssistant,
+    tmp_path: Path,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    mock_chat_log: MockChatLog,  # noqa: F811
+) -> None:
+    """Bound total attachment bytes across multiple files."""
+    paths = [tmp_path / "first.png", tmp_path / "second.png"]
+    for path in paths:
+        with path.open("wb") as file:
+            file.truncate(MAX_ATTACHMENT_SIZE // 2 + 1)
+    mock_chat_log.async_add_user_content(
+        conversation.UserContent(
+            "Describe this",
+            [conversation.Attachment(path.name, "image/png", path) for path in paths],
         )
     )
     await setup_integration(hass, mock_config_entry)
@@ -270,6 +518,35 @@ async def test_attachments_not_supported(
 
     assert result.response.response_type is intent.IntentResponseType.ERROR
     assert result.response.speech["plain"]["speech"] == (
-        "Attachments are not supported by this version of the SpaceXAI integration"
+        "The selected attachments exceed the 20 MiB limit at second.png"
     )
     mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
+
+
+async def test_provider_tools(
+    hass: HomeAssistant,
+    mock_config_entry_with_provider_tools: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    mock_chat_log: MockChatLog,  # noqa: F811
+) -> None:
+    """Enable only the configured provider-hosted tools."""
+    mock_spacexai_subscription_client.async_create_response.return_value = (
+        _text_response("Done")
+    )
+    await setup_integration(hass, mock_config_entry_with_provider_tools)
+
+    await conversation.async_converse(
+        hass,
+        "Research this",
+        mock_chat_log.conversation_id,
+        Context(),
+        agent_id="conversation.grok",
+    )
+
+    assert mock_spacexai_subscription_client.async_create_response.call_args.kwargs[
+        "tools"
+    ] == [
+        BuiltinTool("web_search"),
+        BuiltinTool("x_search"),
+        BuiltinTool("code_interpreter"),
+    ]
