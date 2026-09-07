@@ -1,3 +1,52 @@
+# Current package release-hardening evidence — September 7, 2026
+
+The following exact prepared heads supersede the package SHAs/counts in the
+historical record below. All are pushed; main is not merged and no version
+has been published.
+
+- Version 0.1.0: `584250d60007714d337abfbcb3124318b8f49b22`; 87 tests, 96.51% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123466992).
+- Version 0.2.0: `72b9275207521580215c681597a2da20a7c9ff83`; 93 tests, 96.93% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123471193).
+- Version 0.3.0: `03bb0ee35e78df69f94c852e22887d4148fec0e4`; 121 tests, 97.93% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123467044).
+- Version 0.4.0: `30587578411c3a605daccf1b86ec14022b15ce27`; 153 tests, 98.47% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123467280).
+- Version 0.5.0: `5bfafeceeca8a32ae6ace6d4471764c64ff86d69`; 182 tests, 98.17% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123467554).
+
+All fifteen public Python jobs pass lint/format, strict MyPy, tests, wheel/sdist
+builds, strict Twine, exact distribution contracts, and isolated imports.
+The 28 added release-contract tests exercise invalid source/tag/main combinations,
+missing release notes, wrong/missing artifact members, changed source bytes,
+metadata mismatches, and extra distributions. Release workflows passed
+actionlint 1.7.12. No provider runtime source, pyproject metadata, or lockfile
+changed in this additive hardening.
+
+Release preflight checks the actual release SHA against current main and the
+version/changelog contract. Publisher gating requires the complete exact-SHA
+three-Python matrix; only the isolated publisher receives OIDC permission.
+The wheel contains the typing marker, license, and exact package source.
+The sdist contract also covers source, tests, scripts, docs, workflows, lock,
+and license. Builds/imports run independently for both artifacts.
+
+The prepared-source preflight was exercised against current main
+`40e8a3bd46653eecbb6269eb7e59cc9ecf91f75c` and correctly rejected the
+unmerged prepared release. This does not replace human review: ancestry,
+source equality, and CI cannot establish that a person understands the code.
+
+Remaining account/publication work: human review and explicit approval;
+merge reviewed source to main; required-reviewer GitHub pypi environment;
+account-owner verification of PyPI security and pending Trusted Publisher;
+release approval; and actual PyPI metadata, provenance, distributions, and
+clean-install checks after publication. No GitHub environment is configured.
+PyPI account-specific state is not publicly verifiable. The actual release
+publisher has not been exercised because no release is authorized.
+
+[Current release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/584250d60007714d337abfbcb3124318b8f49b22/RELEASING.md)
+and [current stack proof](STAGED_READINESS.md) distinguish these gates from
+completed automated checks. Follow-on releases inherit the same safeguards.
+
+## Historical package repair record
+
+The text below preserves earlier source/test/runtime attribution. Those SHAs
+and old successful runs are historical, not the current five prepared heads.
+
 # Package repair evidence — 2026-09-06
 
 The prepared Python package stack is committed and pushed to `jeffglousher/spacexai-subscription-client`. This record concerns package implementation and validation, not Home Assistant deployment or completion of PyPI account setup.

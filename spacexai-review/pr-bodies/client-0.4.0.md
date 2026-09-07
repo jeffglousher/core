@@ -8,14 +8,17 @@ Tests verify transcription and synthesis requests, supported output formats, res
 
 ## Verification
 
-- 125 tests pass locally on Python 3.14.5 with 98.47% statement coverage.
-- [Public CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34081007042) passes at `9133ea56b89e6b35081f2bb19826bb83088582c8` on Python 3.12, 3.13, and 3.14.
+- 153 tests pass locally on Python 3.14.5 with 98.47% statement coverage.
+- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123467280) passes at `30587578411c3a605daccf1b86ec14022b15ce27` on Python 3.12, 3.13, and 3.14.
 - Ruff lint/format, strict MyPy, wheel and source builds, and strict Twine validation pass. CI independently installs and imports each artifact.
+
+- All three Python jobs validate exact wheel/sdist contents, metadata, typing marker, license, and isolated imports. The count includes 28 release-contract tests.
+- Release automation requires the exact release SHA to equal current `main`, a matching version tag, nonempty versioned changelog notes, and a successful exact-SHA three-Python matrix before the isolated publisher can run. Human review is a separate requirement; it is not inferred from ancestry or green CI.
 
 ## Release dependency
 
 This layer follows 0.3.0. Publish it after that release and human review of this change. Version 0.4.0 has not been published; the matching Home Assistant layer must wait for publication and clean installation from PyPI.
 
 - [Incremental source diff](https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-03-image...spacexai/client-04-speech).
-- [Changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/9133ea56b89e6b35081f2bb19826bb83088582c8/CHANGELOG.md).
-- [Publishing checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/9133ea56b89e6b35081f2bb19826bb83088582c8/RELEASING.md). Follow the same verified workflow with version/tag `v0.4.0`.
+- [Changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/30587578411c3a605daccf1b86ec14022b15ce27/CHANGELOG.md).
+- [Publishing checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/30587578411c3a605daccf1b86ec14022b15ce27/RELEASING.md). Follow the same verified workflow with version/tag `v0.4.0`.

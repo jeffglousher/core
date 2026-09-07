@@ -1,120 +1,97 @@
 # SpaceXAI first-wave readiness
 
-Verified September 6, 2026. This supersedes the September 2 readiness report.
-The first four contributions are implemented, validated, and staged for human
-review. Publication and human submission gates remain. No upstream PR or
-PyPI release was opened by this work.
+Verified September 7, 2026. The four initial contributions are implemented,
+validated, and prepared for human review. They are not upstream-ready:
+publication, human review, fresh initial-login proof, and a new docs visual
+check remain. No upstream PR or package release was opened by this work.
 
-## Canonical first-wave heads
+## Exact first-wave source
 
-- Python: `harden-initial-release`, `c4fd662c281b5700a5c5d547b4afe097c8e5be22`, version 0.1.0.
-- Core: `codex/spacexai/core-01-ready`, `c9e6db462a36cd5a70e12672d09579bd757f0e1b`.
+- Python 0.1.0: `harden-initial-release`, `584250d60007714d337abfbcb3124318b8f49b22`.
+- Core: `codex/spacexai/staged-01-initial`, `ec01be7f73a4650546ad93a0620aedad3f9e3756`.
 - Brands: `spacexai-initial`, `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
-- Docs: `codex/spacexai/docs-01-initial-next`, `fcc39e84baa705e1c7cdc0eb4102e937dccfe487`.
+- Docs: `codex/spacexai/staged-docs-01-initial`, `ab12c0012807c333c90b34935e982d0b9df40d04`.
 
-All four heads are pushed to the corresponding jeffglousher forks.
-Core is one focused commit directly on official dev at
-`d8840c5879458bd2dd504587f4d57cb6b1dfe4f9`. Its 18-file diff contains only the
-integration, tests, and generated ownership/dependency/typing wiring.
-Docs is one new 96-line page on official next at
-`2e9d474293b521eba15699e397b4ee7881074cc0`.
+All four are pushed to the corresponding jeffglousher forks. Core is based on
+official dev `be2e14f4273335fb5ef02b7f636cd01800e1491a`: 18 changed files containing
+only the initial integration, tests, and generated dependency/ownership/type
+wiring. Docs adds one 96-line page on official next
+`16ad324d9cbadf6d03b94f12ef278b00c7b9999f`. These are the new canonical refs;
+old published history remains available without force pushes.
 
-Old published Core and docs refs are preserved historical copies, not a second
-active submission chain. Published history was not rewritten or deleted.
+## Verified checks
 
-## Verified evidence
+- Python: [exact-head CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123466992)
+  passes all Python 3.12/3.13/3.14 jobs. There are 87 tests and 96.51% statement
+  coverage, including 28 release-contract tests. Ruff, strict MyPy, builds,
+  strict Twine checks, exact distribution contents, and isolated wheel/sdist
+  imports pass.
+- Initial Core: [exact-pair native run](https://github.com/jeffglousher/core/actions/runs/34123627426)
+  passes 37 tests without failures, errors, or skips; 239/241 statements
+  (99.1701%), with every module above 95%. Unchanged script/setup, the upstream
+  full-tree general-hook subset, and standard contribution-file hooks pass,
+  including native MyPy/Pylint, requirements, and typing generation. Tests
+  keep the standard socket guard; no Windows compatibility shim is used.
+- [Exact first/final generated validation](https://github.com/jeffglousher/core/actions/runs/34124881178)
+  leaves tracked files unchanged. Initial Core has exactly the acknowledged
+  `dependency-transparency: todo` blocker and no other errors/warnings.
+  This is a staging-gate pass, not clean hassfest. The combined workflow fails
+  because final speech/downstream also has the unresolved entity-naming rule.
+- [Native docs and Brands validation](https://github.com/jeffglousher/core/actions/runs/34124125762)
+  builds the exact new initial and final docs with the prescribed Jekyll command
+  and passes prose checks. Brands at the exact SHA above passes the complete
+  validator: 19,231 images, zero issues. All six docs layers also pass individual
+  prose/whitespace checks. New render artifacts exist but have not been visually
+  inspected; prior source-identical previews are not a new visual check.
 
-- Python: 59 tests, 96.51% local coverage; strict types, lint, formatting, wheel
-  and source builds, strict Twine checks, and isolated installs pass.
-  [Public CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34078265048)
-  passes at the exact head on Python 3.12, 3.13, and 3.14. Unofficial identity,
-  SPDX licensing, source/issues links, and PEP 561 typing marker are verified.
-- Initial Core:
-  [native Linux validation](https://github.com/jeffglousher/core/actions/runs/34078831785)
-  passes at the exact pair above: 39 tests, no failures/errors/skips. Setup,
-  config flow, and constants have 100% coverage; conversation 97.70%; overall
-  99.17%. Native Ruff 0.16.5, formatting, MyPy, and Pylint pass.
-- All seven Core layers pass native Linux tests: 39, 53, 85, 101, 123, 134,
-  and 137 tests respectively, with no failures/errors/skips. The final layer
-  also verifies three snapshots. Every integration module exceeds 95%; final
-  aggregate coverage is 99.28%. Native Ruff, formatting, MyPy, and Pylint pass
-  at every layer. CORE_LINUX_EVIDENCE.md records exact source pairs and runs.
-- Docs and Brands:
-  [native validation](https://github.com/jeffglousher/core/actions/runs/34080892563)
-  passes full initial/final Jekyll builds, prose linters, and the complete
-  Bash/ImageMagick validator (19,231 images, zero issues). All six docs heads
-  also pass individual prose checks. The final blueprint passes native HA
-  schema/input/template validation without executing actions. Eight assets have verified retained
-  official-source provenance and were not changed.
-- The initial rendered page was opened in a browser: layout and October release
-  metadata render correctly. The public brand CDN displays its expected
-  placeholder until the separate Brands contribution merges.
+OAuth device authorization remains the only login path and the approved provider
+identity is unchanged. The unofficial package owns protocol handling, absolute
+device-code expiry, polling backoff, and distinct permission/authentication
+errors. Core remains the HA adapter.
 
-OAuth device authorization remains the only login path. Provider identity approval
-is unchanged. Absolute device-code expiry and backoff survive retries; permission
-denial is distinct from invalid credentials. Core remains a thin HA adapter.
+## Remaining first-wave gates
 
-## Remaining gates
+1. A human must review, understand, and be able to explain each contribution.
+   The initial Core draft accurately links
+   [previous Core #178765](https://github.com/home-assistant/core/pull/178765),
+   which the author closed. No maintainer approval/rejection or discussion
+   exemption is inferred. Personal template attestations remain unchecked.
+2. Review and explicitly approve merging the package into main. Its prepared
+   source is not merged. Configure the GitHub pypi environment with required
+   human approval and verify PyPI account security and the exact pending
+   Trusted Publisher. No publishing environment currently exists; private PyPI
+   setup cannot be verified from public repository state.
+3. Publish 0.1.0 only after those human/account gates. Release automation requires
+   the exact current-main SHA, matching version tag, nonempty versioned
+   changelog, full exact-SHA three-Python matrix, and exact artifact contract.
+   It cannot prove human review. Verify actual PyPI metadata, provenance,
+   distributions, and clean installation after publication.
+4. Then mark dependency-transparency done in a follow-up Core commit,
+   regenerate, and obtain genuinely clean native hassfest and tests with the
+   released dependency. A development wheelhouse is not PyPI publication.
+5. Verify a fresh initial-only Home Assistant installation and UI OAuth login on
+   an isolated native host with an empty dedicated configuration and human
+   provider authorization. The existing full-stack OAuth entry is not this
+   proof. No suitable isolated native host is presently available here.
+6. Visually review the newly generated docs preview and later the public logo
+   after Brands merges. Recheck upstream freshness and replace staging links
+   with actual PR/release links when human-reviewed submissions are made.
 
-1. Publish Python 0.1.0 after personal review/merge and setup of the exact
-   approval-gated GitHub pypi environment and pending publisher. Verify both
-   distributions, provenance, immutable tag, metadata, and clean PyPI install.
-   The checked-in RELEASING.md contains the full checklist.
-2. Only then mark dependency-transparency done. It intentionally remains todo
-   and blocks Bronze hassfest. [Native generated validation](https://github.com/jeffglousher/core/actions/runs/34081231119)
-   passes for initial and final: regeneration leaves tracked files unchanged,
-   and scoped hassfest reports exactly this one error with no other findings.
-3. Complete human review under HA's AI policy, confirm relevant prior discussion,
-   replace staging comparisons with actual PR/release links, and personally
-   complete template attestations.
-4. Recheck upstream freshness immediately before submitting. Keep follow-ons
-   staged until their predecessors merge; do not open dependent upstream PRs.
+The [release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/584250d60007714d337abfbcb3124318b8f49b22/RELEASING.md)
+contains the package publication sequence. Keep follow-ons staged until their
+predecessors merge; do not open dependent upstream PRs.
 
-## Refreshed test system
+## Follow-ons and runtime are separate gates
 
-Dogfood commit `ae2897793bc9498a0d5714286d57dc21afdc912a` includes final Core
-`2315fa45b978aa1ebf637c111d0c1410d68d12ea` and fixed package
-`b2d823452e5054ece8b7a90fb7b172f5ac1d1a7c`. It is pushed and deployed. Source
-hashes, generated translations, configuration check, restart, loaded OAuth
-entry, and the single-overlay condition were verified.
+The [23-layer map](STACK.md) now separates four Core dependency bumps from their
+features. All eleven Core layers pass native integration tests, but speech and
+downstream remain quality-blocked by `has-entity-name: todo`. The written rule
+has no exception for the current functional TTS naming behavior. No 24th
+shared-framework change is approved or included; no Bronze, Gold, or Platinum
+award is claimed.
 
-Live conversation, AI text, image generation and signed retrieval, independent
-STT, and video passed. TTS initially exposed a first-chunk truncation bug. The
-repair landed in package 0.4.0 and propagated to 0.5.0, with real stream regression
-tests and updated public CI. After redeployment, an uncached speech request
-returned 31,488 bytes of valid MP3, about 1.97 seconds; STT of that exact audio
-returned the expected sentence. Conversation and AI text also passed again.
-RUNTIME_VERIFICATION.md gives a sanitized account of the exact checks and limits.
-
-## Validation limits corrected
-
-Earlier Windows HA test counts used compatibility shims including a disabled
-pytest socket guard. They are retired as native HA evidence. All Linux runs
-above use the original safeguards and exact installed package versions. The
-old shim directory was moved to retired-win-test-shims in this local staging
-directory, outside the test launch path, and remains recoverable.
-
-script/setup was attempted in the new Windows worktree: it fails because it
-expects .venv/bin/activate while Windows creates .venv/Scripts/activate.
-Linux CI uses a scoped native environment with the exact unpublished client;
-full bootstrap cannot install the PyPI pin until publication.
-
-The required local uv run --no-sync prek run --all-files was attempted.
-Ruff, formatting, codespell, zizmor, JSON, branch, YAML, and prettier checks pass;
-the MyPy hook launcher stops with program not found. This is not a full prek
-pass. Integration-specific native Linux lint and type checks do pass.
-
-## Publication sequence
-
-1. Human-review and publish Python 0.1.0; verify the actual PyPI artifacts.
-2. Satisfy dependency-transparency in a follow-up Core commit; regenerate and
-   rerun hassfest and native checks.
-3. Human-review and submit the initial Core, Brands, and Docs, cross-link their
-   actual PRs, and verify the rendered page after Brands lands.
-4. Keep the other layers on the fork, submitting only after prerequisites merge.
-
-STACK.md maps all layers. PACKAGE_REPAIR_EVIDENCE.md and
-DOCS_BRANDS_REPAIR_EVIDENCE.md contain detailed checks and exact sources.
-DOCS_QUALITY_REPAIR_EVIDENCE.md records the final follow-on documentation repairs.
-DOGFOOD_DEPLOYMENT.md remains explicitly historical. The September 6 deployment
-and live checks are recorded separately in DOGFOOD_DEPLOYMENT_20260906.md.
+The exact new full-stack dogfood is deployed and running; bounded conversation,
+AI text, fresh TTS, audio decoding, and STT round-trip checks pass.
+[Runtime evidence](RUNTIME_VERIFICATION.md) records the exact new source and
+limits. Existing-account full-stack success does not prove a fresh initial-only login. [Current validation](STAGED_READINESS.md) records exact
+source pairs and preserves prior evidence as historical.

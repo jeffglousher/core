@@ -15,7 +15,7 @@
 
 Explain multiple conversation agents, the Name field and its suggested value, reconfiguration, JPEG/PNG/PDF attachments, and optional provider tools. Document which attachment content and tool queries leave Home Assistant.
 
-Prepared branch: `codex/spacexai/docs-02-conversation-next`, commit `a8cfef8b0c9abd7aeaa4addb67e5be837d85d257`. Review its incremental diff against `codex/spacexai/docs-01-initial-next`. Submit against `next` after the prerequisite documentation and Core changes merge. Local remark, textlint, and whitespace checks pass. This layer is included in final docs commit `babe0b6292d05002457184872f47e8f8c2e02e0d`, whose native linters and prescribed Jekyll build passed in [fork validation](https://github.com/jeffglousher/core/actions/runs/34080892563). This is cumulative render evidence, not a separate Jekyll run for this intermediate commit.
+Prepared branch: `codex/spacexai/staged-docs-02-conversation`, commit `ed3c8555040ce5910af857c5aabeb64cfd166dde`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-01-initial...codex/spacexai/staged-docs-02-conversation) against `codex/spacexai/staged-docs-01-initial`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Cumulative final docs at `30997c988948e3a3e9f138ed350960cd28ce81b3` passed native linters and the prescribed Jekyll build in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762). This is cumulative build evidence, not a separate Jekyll run for this intermediate commit. No newly generated preview has been visually inspected.
 
 ## Type of change
 <!--
@@ -37,7 +37,7 @@ Prepared branch: `codex/spacexai/docs-02-conversation-next`, commit `a8cfef8b0c9
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: https://github.com/jeffglousher/core/compare/codex/spacexai/core-01-ready...codex/spacexai/core-02-conversation-ready
+- Link to parent pull request in the codebase: Not opened; [prepared Core layer 03](https://github.com/jeffglousher/core/compare/codex/spacexai/staged-02-client-0-2...codex/spacexai/staged-03-conversation).
 - Link to parent pull request in the Brands repository: Not applicable; the initial integration supplies the existing assets.
 - This PR fixes or closes issue: Not applicable; this documents conversation attachments and tools.
 

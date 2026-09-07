@@ -15,7 +15,7 @@
 
 Document same-account browser reauthentication while preserving entity settings. Explain automatic token refresh, authorization storage, and why a different account cannot replace an existing account during reauthentication.
 
-Prepared branch: `codex/spacexai/docs-06-account-next`. Review its incremental diff against `codex/spacexai/docs-05-video-next`. Submit against `next` after the prerequisite documentation and Core changes merge. Native remark/textlint and the prescribed Jekyll build passed for commit `babe0b6292d05002457184872f47e8f8c2e02e0d` in [fork validation](https://github.com/jeffglousher/core/actions/runs/34080892563). The native Home Assistant blueprint schema, input substitution, and response-template checks also passed, with no actions executed. The rendered page contains the repaired names, import badge, and polling guidance; final human review remains required.
+Prepared branch: `codex/spacexai/staged-docs-06-account`, commit `30997c988948e3a3e9f138ed350960cd28ce81b3`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-05-video...codex/spacexai/staged-docs-06-account) against `codex/spacexai/staged-docs-05-video`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Native linters and the prescribed Jekyll build passed in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762). No newly generated preview has been visually inspected. [Blueprint validation](https://github.com/jeffglousher/core/actions/runs/34124125762) also passed using rebuilt Core09 `07c95d71202a7599cd4f91070df8a41a958a0524` and final docs `30997c988948e3a3e9f138ed350960cd28ce81b3`: two valid input cases, missing media rejected, and zero actions executed. The companion speech and downstream Core layers remain quality-blocked by has-entity-name: todo; this documentation build does not resolve that gate.
 
 ## Type of change
 <!--
@@ -37,7 +37,7 @@ Prepared branch: `codex/spacexai/docs-06-account-next`. Review its incremental d
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: https://github.com/jeffglousher/core/compare/codex/spacexai/core-05-video-ready...codex/spacexai/core-06-account-ready
+- Link to parent pull request in the codebase: Not opened; [prepared Core layer 10](https://github.com/jeffglousher/core/compare/codex/spacexai/staged-09-video...codex/spacexai/staged-10-account).
 - Link to parent pull request in the Brands repository: Not applicable; the initial integration supplies the existing assets.
 - This PR fixes or closes issue: Not applicable; this documents account recovery.
 

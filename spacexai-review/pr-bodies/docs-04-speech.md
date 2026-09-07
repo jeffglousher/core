@@ -15,7 +15,7 @@
 
 Document adding and naming the Grok speech entities, selecting them for Assist, supported recording formats, voices, and speed. Match the suggested Grok TTS name shown in Home Assistant. Explain that speech recognition sends recordings and speech synthesis sends text to xAI.
 
-Prepared branch: `codex/spacexai/docs-04-speech-next`, commit `80c17f28c6744574b9aca12934eb5d4941ccf108`. Review its incremental diff against `codex/spacexai/docs-03-ai-task-next`. Submit against `next` after the prerequisite documentation and Core changes merge. Local remark, textlint, and whitespace checks pass. This layer is included in final docs commit `babe0b6292d05002457184872f47e8f8c2e02e0d`, whose native linters and prescribed Jekyll build passed in [fork validation](https://github.com/jeffglousher/core/actions/runs/34080892563). This is cumulative render evidence, not a separate Jekyll run for this intermediate commit.
+Prepared branch: `codex/spacexai/staged-docs-04-speech`, commit `54a6c6bd83aeb70637e2badf50fc0d183a137364`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-03-ai-task...codex/spacexai/staged-docs-04-speech) against `codex/spacexai/staged-docs-03-ai-task`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Cumulative final docs at `30997c988948e3a3e9f138ed350960cd28ce81b3` passed native linters and the prescribed Jekyll build in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762). This is cumulative build evidence, not a separate Jekyll run for this intermediate commit. No newly generated preview has been visually inspected. The companion speech and downstream Core layers remain quality-blocked by has-entity-name: todo; this documentation build does not resolve that gate.
 
 ## Type of change
 <!--
@@ -37,7 +37,7 @@ Prepared branch: `codex/spacexai/docs-04-speech-next`, commit `80c17f28c6744574b
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: https://github.com/jeffglousher/core/compare/codex/spacexai/core-03-ai-task-ready...codex/spacexai/core-04-speech-ready
+- Link to parent pull request in the codebase: Not opened; [prepared Core layer 07](https://github.com/jeffglousher/core/compare/codex/spacexai/staged-06-client-0-4...codex/spacexai/staged-07-speech).
 - Link to parent pull request in the Brands repository: Not applicable; the initial integration supplies the existing assets.
 - This PR fixes or closes issue: Not applicable; this documents speech support.
 

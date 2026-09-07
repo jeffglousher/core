@@ -51,15 +51,17 @@ Authentication failures from conversation, AI Task, speech, and video start the 
 
 - This PR fixes or closes issue: Not applicable; this adds spacexai account reauthentication.
 - This PR is related to issue: No separate issue recorded.
-- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/docs-05-video-next...codex/spacexai/docs-06-account-next).
+- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-05-video...codex/spacexai/staged-docs-06-account).
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/core-05-video-ready...codex/spacexai/core-06-account-ready
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/99c30c08fb74e97ba1fdba02b809ebb966d0a91b
-- Prerequisite: Submit against Home Assistant `dev` after the preceding Core layer merges. This is a prepared description; no upstream PR has been opened.
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-09-video...codex/spacexai/staged-10-account
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/984008407509045939e32d7263c33977806b944d
+- Prerequisite: Submit against Home Assistant `dev` only after Core layer 09 merges. No new upstream PR has been opened.
 - Dependency: spacexai-subscription-client remains at 0.5.0; there is no dependency upgrade in this layer.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34081055760) passed 134 tests against client commit `b2d823452e5054ece8b7a90fb7b172f5ac1d1a7c`, including its complete bounded speech-stream repair, with 99.2736% aggregate coverage and every integration module above 95%. Ruff, formatting, MyPy, and Pylint passed. Human review and dependency publication remain required before submission.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34124550362) tests Core `984008407509045939e32d7263c33977806b944d` with client `5bfafeceeca8a32ae6ace6d4471764c64ff86d69`: 142 tests, 99.4019% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+
+- Quality gate: Submission is quality-blocked: this layer inherits `has-entity-name: todo` from speech. The current TTS naming behavior is functional but does not meet the written no-exceptions rule. A shared-framework solution is not approved or included in this 23-contribution plan; do not claim Bronze, Gold, or Platinum readiness.
 
 ## Checklist
 <!--

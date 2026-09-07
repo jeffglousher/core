@@ -1,3 +1,9 @@
+> Historical evidence for the superseded pre-September-7 branch chain.
+> Do not attribute these old source pairs, counts, or successful runs to the
+> rebuilt 23-contribution stack. Use [current validation](STAGED_READINESS.md)
+> and the [canonical map](STACK.md). Current final Core still fails the two
+> acknowledged quality rules; no clean final hassfest or tier award is claimed.
+
 # Native generated wiring validation — 2026-09-07 UTC
 
 [Fork-only validation run 34081231119](https://github.com/jeffglousher/core/actions/runs/34081231119) completed successfully for the exact current canonical initial and final Core/client pairs on Ubuntu 24.04 with Python 3.14.5. The workflow success means generated wiring matches and the only scoped hassfest finding is the explicitly recorded unpublished dependency; it is not a clean hassfest or merge-readiness claim.

@@ -15,7 +15,7 @@
 
 Document the administrator-only Generate video and Publish media actions in separate action pages, with UI instructions and existing automation examples. Include one reusable blueprint for a scheduled local-media notification without provider requests or generation charges. Explain billable generation, local source uploads, video polling timing, size limits, and temporary links that grant access to recipients.
 
-Prepared branch: `codex/spacexai/docs-05-video-next`, commit `c24a9d5cc4be4797fd43e5c3ca495afc81ec4a47`. Review its incremental diff against `codex/spacexai/docs-04-speech-next`. Submit against `next` after the prerequisite documentation and Core changes merge. Local remark, textlint, and whitespace checks pass. This layer is included in final docs commit `babe0b6292d05002457184872f47e8f8c2e02e0d`, whose native linters and prescribed Jekyll build passed in [fork validation](https://github.com/jeffglousher/core/actions/runs/34080892563). This is cumulative render evidence, not a separate Jekyll run for this intermediate commit.
+Prepared branch: `codex/spacexai/staged-docs-05-video`, commit `f10ee3fb40ccb707cc7e5d66c5a6146fa1bb12b6`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-04-speech...codex/spacexai/staged-docs-05-video) against `codex/spacexai/staged-docs-04-speech`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Cumulative final docs at `30997c988948e3a3e9f138ed350960cd28ce81b3` passed native linters and the prescribed Jekyll build in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762). This is cumulative build evidence, not a separate Jekyll run for this intermediate commit. No newly generated preview has been visually inspected. [Blueprint validation](https://github.com/jeffglousher/core/actions/runs/34124125762) also passed using rebuilt Core09 `07c95d71202a7599cd4f91070df8a41a958a0524` and final docs `30997c988948e3a3e9f138ed350960cd28ce81b3`: two valid input cases, missing media rejected, and zero actions executed. The companion speech and downstream Core layers remain quality-blocked by has-entity-name: todo; this documentation build does not resolve that gate.
 
 ## Type of change
 <!--
@@ -37,7 +37,7 @@ Prepared branch: `codex/spacexai/docs-05-video-next`, commit `c24a9d5cc4be4797fd
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: https://github.com/jeffglousher/core/compare/codex/spacexai/core-04-speech-ready...codex/spacexai/core-05-video-ready
+- Link to parent pull request in the codebase: Not opened; [prepared Core layer 09](https://github.com/jeffglousher/core/compare/codex/spacexai/staged-08-client-0-5...codex/spacexai/staged-09-video).
 - Link to parent pull request in the Brands repository: Not applicable; the initial integration supplies the existing assets.
 - This PR fixes or closes issue: Not applicable; this documents video generation and media sharing.
 

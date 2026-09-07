@@ -51,17 +51,17 @@ Attachment reads are bounded and validated before provider submission. Tests cov
 
 - This PR fixes or closes issue: Not applicable; this adds spacexai conversation agents.
 - This PR is related to issue: No separate issue recorded.
-- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/docs-01-initial-next...codex/spacexai/docs-02-conversation-next).
+- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-01-initial...codex/spacexai/staged-docs-02-conversation).
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/core-01-ready...codex/spacexai/core-02-conversation-ready
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/a27a9ff9af041d1ae48b41a89f3f85466ec62506
-- Prerequisite: Submit against Home Assistant `dev` after the preceding Core layer merges. This is a prepared description; no upstream PR has been opened.
-- Dependency diff: https://github.com/jeffglousher/spacexai-subscription-client/compare/harden-initial-release...spacexai/client-02-conversation
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-02-client-0-2...codex/spacexai/staged-03-conversation
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/be2990dc701c8e612dabd9fa6e43427dd5a43f9d
+- Prerequisite: Submit against Home Assistant `dev` only after Core layer 02 merges. The preceding dependency-only layer owns the package version bump; this feature diff does not bundle it. No new upstream PR has been opened.
+- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/harden-initial-release...spacexai/client-02-conversation
 - Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/spacexai/client-02-conversation/CHANGELOG.md
 - Dependency release: Version 0.2.0 is not published. Add verified release/PyPI links and installation evidence before submission.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34079227294) passed 53 tests against client commit `25952c5f839a30cd26e374d1eae6408fa46392c1`, with 99.0964% aggregate coverage and every integration module above 95%. Ruff, formatting, MyPy, and Pylint passed. Human review and dependency publication remain required before submission.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34123635119) tests Core `be2990dc701c8e612dabd9fa6e43427dd5a43f9d` with client `72b9275207521580215c681597a2da20a7c9ff83`: 51 tests, 99.0991% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
 
 ## Checklist
 <!--

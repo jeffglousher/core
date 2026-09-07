@@ -51,17 +51,19 @@ Generated videos are downloaded from allowed provider hosts with redirects disab
 
 - This PR fixes or closes issue: Not applicable; this adds spacexai video and media actions.
 - This PR is related to issue: No separate issue recorded.
-- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/docs-04-speech-next...codex/spacexai/docs-05-video-next).
+- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-04-speech...codex/spacexai/staged-docs-05-video).
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/core-04-speech-ready...codex/spacexai/core-05-video-ready
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/b64085011ba8309005ec645d9500d76c45ba8c64
-- Prerequisite: Submit against Home Assistant `dev` after the preceding Core layer merges. This is a prepared description; no upstream PR has been opened.
-- Dependency diff: https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-04-speech...spacexai/client-05-video
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-08-client-0-5...codex/spacexai/staged-09-video
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/07c95d71202a7599cd4f91070df8a41a958a0524
+- Prerequisite: Submit against Home Assistant `dev` only after Core layer 08 merges. The preceding dependency-only layer owns the package version bump; this feature diff does not bundle it. No new upstream PR has been opened.
+- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-04-speech...spacexai/client-05-video
 - Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/spacexai/client-05-video/CHANGELOG.md
 - Dependency release: Version 0.5.0 is not published. Add verified release/PyPI links and installation evidence before submission.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34081054381) passed 123 tests against client commit `b2d823452e5054ece8b7a90fb7b172f5ac1d1a7c`, including its complete bounded speech-stream repair, with 99.2500% aggregate coverage and every integration module above 95%. Ruff, formatting, MyPy, and Pylint passed. Human review and dependency publication remain required before submission.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34124119021) tests Core `07c95d71202a7599cd4f91070df8a41a958a0524` with client `5bfafeceeca8a32ae6ace6d4471764c64ff86d69`: 132 tests, 99.3827% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+
+- Quality gate: Submission is quality-blocked: this layer inherits `has-entity-name: todo` from speech. The current TTS naming behavior is functional but does not meet the written no-exceptions rule. A shared-framework solution is not approved or included in this 23-contribution plan; do not claim Bronze, Gold, or Platinum readiness.
 
 ## Checklist
 <!--

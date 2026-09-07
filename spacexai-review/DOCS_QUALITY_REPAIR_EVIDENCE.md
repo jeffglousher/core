@@ -1,3 +1,9 @@
+> Historical evidence for the superseded pre-September-7 branch chain.
+> Do not attribute these old source pairs, counts, or successful runs to the
+> rebuilt 23-contribution stack. Use [current validation](STAGED_READINESS.md)
+> and the [canonical map](STACK.md). Current final Core still fails the two
+> acknowledged quality rules; no clean final hassfest or tier award is claimed.
+
 # Documentation quality repair evidence
 
 Verified 2026-09-07 UTC (2026-09-06 America/Chicago). These are prepared documentation changes on the user's fork, not submitted upstream PRs or a quality-tier award.

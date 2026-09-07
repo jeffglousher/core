@@ -1,3 +1,60 @@
+# Current verified runtime — September 7, 2026
+
+The rebuilt full stack is deployed and running. This is an existing-account
+dogfood deployment, not proof of a fresh initial-only OAuth installation.
+
+## Exact source and deployment
+
+- Dogfood branch: `codex/spacexai/dogfood-staged-20260907`.
+- Dogfood commit: `08b259eed599e5d0e15a386d015244afa2221bba`.
+- Canonical final Core: `298a208679829f70a8c6c424d1ab5471e8c6da15`, an ancestor
+  of dogfood.
+- Client 0.5.0: `5bfafeceeca8a32ae6ace6d4471764c64ff86d69`.
+- Integration development version: `0.9.0.dev20260907`.
+- Existing HA base remains `2026.10.0.dev202608300226`; no base-image,
+  security, or stored-credential changes were made.
+
+Only the development manifest version and exact source requirement pin differ
+from the canonical integration. All 17 archived files were byte-compared
+against Git, and 13 deployed runtime hashes matched the remote files.
+Compiled translations were verified from the exact source.
+
+Configuration check and restart passed. Redacted runtime API inspection
+confirmed running state, the existing OAuth entry loaded, all four platform
+subentry types, and the exact development version/source pin. Exactly one
+SpaceXAI overlay is active. The previous overlay is retained outside the
+custom-components scan directory for rollback; current credentials were kept.
+
+## Bounded live checks on the new deployment
+
+- Conversation and AI text returned the expected generic responses; together
+  they took 8.08 seconds.
+- A fresh uncached TTS request returned 34,176 bytes in 0.68 seconds. Full
+  FFmpeg decoding produced 2.136 seconds of audio: 68,352 bytes at 16 kHz,
+  mono, 16-bit PCM.
+- STT of that exact decoded speech succeeded with the expected normalized
+  sentence in 0.28 seconds. This confirms complete audio, not only a media URL
+  or first network chunk.
+- The 100 available log lines contained zero SpaceXAI errors. This is a bounded
+  log inspection, not a whole-lifetime no-error claim.
+
+No paid image or video regeneration was performed in this batch, and no home
+device was controlled. Their new native success/failure tests pass; the earlier
+live image/video artifacts below belong to the previous deployment. Do not
+relabel those old smokes as running this exact new stack.
+
+The speech entity-naming quality gate remains unresolved despite functional
+TTS/STT success. A fresh initial-only Home Assistant setup and human OAuth login
+still require an isolated native host. No tokens, entry identifiers, host
+addresses, signed URLs, raw logs, or private audio are included here.
+
+## Historical prior deployment and live checks
+
+The record below concerns dogfood `ae2897793bc9498a0d5714286d57dc21afdc912a`,
+old Core `2315fa45b978aa1ebf637c111d0c1410d68d12ea`, and old client
+`b2d823452e5054ece8b7a90fb7b172f5ac1d1a7c`. It preserves earlier
+attribution and is superseded as current runtime status.
+
 # Assembled-stack live verification
 
 Verified September 6, 2026, America/Chicago. This is a test-system result, not an

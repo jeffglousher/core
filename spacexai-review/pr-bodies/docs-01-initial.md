@@ -15,7 +15,7 @@
 
 Document the new SpaceXAI conversation integration: browser sign-in, account prerequisites, optional Assist access, configuration, troubleshooting, and removal. Explain which conversation and entity data is sent to xAI, link to provider privacy information and terms, and identify the integration as community-maintained.
 
-Prepared from `next` on branch `codex/spacexai/docs-01-initial-next`. The diff contains only the new integration page. The release is quoted as `'2026.10'` so YAML preserves October. Native remark/textlint and the prescribed Jekyll build passed for commit `fcc39e84baa705e1c7cdc0eb4102e937dccfe487` in [fork validation](https://github.com/jeffglousher/core/actions/runs/34078694067); the rendered initial page was also inspected in a browser. The public brand logo remains pending the separate Brands merge.
+Prepared from official `next` at `16ad324d9cbadf6d03b94f12ef278b00c7b9999f` on branch `codex/spacexai/staged-docs-01-initial`, commit `ab12c0012807c333c90b34935e982d0b9df40d04`. The diff contains only the new 96-line integration page. The release is quoted as '2026.10' so YAML preserves October. Native remark/textlint and the prescribed Jekyll build passed for this exact commit in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762). The newly generated preview has not been visually inspected; the source matches the previously rendered page, which is not a substitute for a new preview check. Public logo delivery remains pending the separate Brands merge.
 
 ## Type of change
 <!--
@@ -37,7 +37,7 @@ Prepared from `next` on branch `codex/spacexai/docs-01-initial-next`. The diff c
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: https://github.com/home-assistant/core/compare/dev...jeffglousher:core:codex/spacexai/core-01-ready
+- Link to parent pull request in the codebase: Not opened; [prepared Core layer 01](https://github.com/jeffglousher/core/compare/be2e14f4273335fb5ef02b7f636cd01800e1491a...codex/spacexai/staged-01-initial).
 - Link to parent pull request in the Brands repository: https://github.com/home-assistant/brands/compare/master...jeffglousher:brands:spacexai-initial
 - This PR fixes or closes issue: Not applicable; this documents a new integration.
 

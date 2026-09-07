@@ -54,15 +54,18 @@ Tests cover authorization failures and recovery, account validation, token rotat
 -->
 
 - This PR fixes or closes issue: Not applicable; this is a new integration.
-- This PR is related to issue: No discussion or issue link recorded; confirm relevant prior discussion before submission.
-- Link to documentation pull request: Not opened; [prepared documentation diff](https://github.com/home-assistant/home-assistant.io/compare/next...jeffglousher:home-assistant.io:codex/spacexai/docs-01-initial-next).
+- This PR is related to issue: [Previous contribution #178765](https://github.com/home-assistant/core/pull/178765). The author closed that PR; this replacement narrows the initial scope to Bronze conversation support and moves provider communication into a separate Python library.
+- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/16ad324d9cbadf6d03b94f12ef278b00c7b9999f...codex/spacexai/staged-docs-01-initial).
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 - Client source: https://github.com/jeffglousher/spacexai-subscription-client/compare/main...harden-initial-release
 - Client release: Version 0.1.0 is not yet published. Add the verified PyPI and GitHub release links before submitting.
 - Brands pull request staging diff: https://github.com/home-assistant/brands/compare/master...jeffglousher:brands:spacexai-initial
-- Prepared Core diff: https://github.com/home-assistant/core/compare/dev...jeffglousher:core:codex/spacexai/core-01-ready
-- Validation: [native Linux tests and checks](https://github.com/jeffglousher/core/actions/runs/34078831785) pass for Core `c9e6db462a36` and client `c4fd662c281b`: 39 tests, 99.17% coverage. [Native generated-file validation](https://github.com/jeffglousher/core/actions/runs/34081231119) leaves tracked wiring unchanged; scoped hassfest reports only the unpublished dependency. Publication, clean post-publication hassfest, and human review remain submission gates.
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/be2e14f4273335fb5ef02b7f636cd01800e1491a...codex/spacexai/staged-01-initial
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/ec01be7f73a4650546ad93a0620aedad3f9e3756
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34123627426) tests Core `ec01be7f73a4650546ad93a0620aedad3f9e3756` with client `584250d60007714d337abfbcb3124318b8f49b22`: 37 tests, 99.1701% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. The same exact-source run also passes unchanged script/setup and standard native hooks; strict hassfest remains blocked only by dependency-transparency: todo. Human review and dependency publication remain required.
+
+- First-install validation: Fresh initial-only Home Assistant UI/OAuth login still needs an isolated native host and human authorization; the existing full-stack test system is not that evidence.
 
 ## Checklist
 <!--

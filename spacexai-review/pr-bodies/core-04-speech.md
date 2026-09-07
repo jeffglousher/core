@@ -51,17 +51,19 @@ The speech entities use shared account and token handling. Tests cover speech co
 
 - This PR fixes or closes issue: Not applicable; this adds spacexai speech platforms.
 - This PR is related to issue: No separate issue recorded.
-- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/docs-03-ai-task-next...codex/spacexai/docs-04-speech-next).
+- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-03-ai-task...codex/spacexai/staged-docs-04-speech).
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/core-03-ai-task-ready...codex/spacexai/core-04-speech-ready
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/9f96bf6adc9ccc6dbc23ae66b099c86f4ca1831e
-- Prerequisite: Submit against Home Assistant `dev` after the preceding Core layer merges. This is a prepared description; no upstream PR has been opened.
-- Dependency diff: https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-03-image...spacexai/client-04-speech
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-06-client-0-4...codex/spacexai/staged-07-speech
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/e0064c95b46d596e430d83e7cc20b092a0676c32
+- Prerequisite: Submit against Home Assistant `dev` only after Core layer 06 merges. The preceding dependency-only layer owns the package version bump; this feature diff does not bundle it. No new upstream PR has been opened.
+- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-03-image...spacexai/client-04-speech
 - Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/spacexai/client-04-speech/CHANGELOG.md
 - Dependency release: Version 0.4.0 is not published. Add verified release/PyPI links and installation evidence before submission.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34081052741) passed 101 tests against client commit `9133ea56b89e6b35081f2bb19826bb83088582c8`, including its complete bounded speech-stream repair, with 99.6820% aggregate coverage and every integration module above 95%. Ruff, formatting, MyPy, and Pylint passed. Human review and dependency publication remain required before submission.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34124102607) tests Core `e0064c95b46d596e430d83e7cc20b092a0676c32` with client `30587578411c3a605daccf1b86ec14022b15ce27`: 102 tests, 99.6830% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+
+- Quality gate: Submission is quality-blocked: this speech layer introduces `has-entity-name: todo`. The current TTS naming behavior is functional but does not meet the written no-exceptions rule. A shared-framework solution is not approved or included in this 23-contribution plan; do not claim Bronze, Gold, or Platinum readiness.
 
 ## Checklist
 <!--

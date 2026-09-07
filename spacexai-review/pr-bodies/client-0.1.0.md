@@ -19,8 +19,8 @@ The package owns provider communication so the Home Assistant integration remain
 
 ## Verification
 
-- 59 tests pass on Python 3.14 locally with 96.51% statement coverage.
-- [Public CI at the reviewed commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34078265048) passes on Python 3.12, 3.13, and 3.14.
+- 87 tests pass on Python 3.14 locally with 96.51% statement coverage.
+- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34123466992) passes at `584250d60007714d337abfbcb3124318b8f49b22` on Python 3.12, 3.13, and 3.14.
 - Ruff lint and format checks pass.
 - Strict MyPy checks pass.
 - The wheel and source distribution build successfully and pass `twine check --strict`.
@@ -30,15 +30,18 @@ The package owns provider communication so the Home Assistant integration remain
 - GitHub Issues are enabled. Public CI runs on the prepared branches; the release workflow is configured for PyPI trusted publishing.
 - The build job has read-only repository access; only the isolated publish job receives `id-token: write`.
 
+- All three Python jobs validate exact wheel/sdist contents, metadata, typing marker, license, and isolated imports. The count includes 28 release-contract tests.
+- Release automation requires the exact release SHA to equal current `main`, a matching version tag, nonempty versioned changelog notes, and a successful exact-SHA three-Python matrix before the isolated publisher can run. Human review is a separate requirement; it is not inferred from ancestry or green CI.
+
 ## Release
 
-After human review, merge this PR, confirm CI on `main`, configure the `pypi` environment with a required human reviewer and a matching PyPI pending publisher, and publish GitHub release `v0.1.0`. The release workflow verifies that the tag matches `pyproject.toml`, validates and installs both artifacts, and publishes `spacexai-subscription-client==0.1.0` to PyPI through Trusted Publishing.
+After human review and explicit publication approval, merge the reviewed package to `main`, confirm its CI, configure the `pypi` environment with required human approval and a matching PyPI pending publisher, and release `v0.1.0` from that exact current-main commit. The workflow rechecks source, changelog, all three supported Python versions, and both distribution contracts before Trusted Publishing. The release path itself has not been exercised by publishing.
 
-The package has not been published. The GitHub publishing environment and PyPI pending publisher still need account setup before the release is ready to approve.
+The package has not been published and the prepared code has not been merged to `main`. No GitHub publishing environment is configured. PyPI account security and pending-publisher configuration require account-owner verification; they cannot be inferred from public repository state.
 
-Release notes: https://github.com/jeffglousher/spacexai-subscription-client/blob/harden-initial-release/CHANGELOG.md
+Release notes: https://github.com/jeffglousher/spacexai-subscription-client/blob/584250d60007714d337abfbcb3124318b8f49b22/CHANGELOG.md
 
-Publication checklist: https://github.com/jeffglousher/spacexai-subscription-client/blob/harden-initial-release/RELEASING.md
+Publication checklist: https://github.com/jeffglousher/spacexai-subscription-client/blob/584250d60007714d337abfbcb3124318b8f49b22/RELEASING.md
 
 ## Out of scope
 

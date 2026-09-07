@@ -12,8 +12,6 @@
 -->
 
 
-None.
-
 ## Proposed change
 <!--
   Describe the big picture of your changes here to communicate to the
@@ -23,9 +21,9 @@ None.
 -->
 
 
-Add downloadable diagnostics containing entry state, available model identifiers, selected feature flags, and subentry types. An explicit allowlist excludes credentials, account identity, user-authored prompts, and conversation/media content.
+Bump spacexai-subscription-client from 0.4.0 to 0.5.0. This updates only the SpaceXAI manifest and generated requirements. The existing feature set stays unchanged; new client capabilities are exposed in a later, separate feature contribution.
 
-Tests verify the public diagnostics endpoint for loaded and unloaded entries, snapshots, and omission of sensitive fields. This change adds diagnostics support; it does not claim a higher integration quality tier.
+The preceding Core layer is tested against this exact newer client before submission. No compatibility adapter is added. The package versions are currently unpublished: this is fork-only preparation, not a submission-ready dependency upgrade.
 
 ## Type of change
 <!--
@@ -35,10 +33,10 @@ Tests verify the public diagnostics endpoint for loaded and unloaded entries, sn
   split it into multiple PRs. This makes things easier and faster to code review.
 -->
 
-- [ ] Dependency upgrade
+- [x] Dependency upgrade
 - [ ] Bugfix (non-breaking change which fixes an issue)
 - [ ] New integration (thank you!)
-- [x] New feature (which adds functionality to an existing integration)
+- [ ] New feature (which adds functionality to an existing integration)
 - [ ] Deprecation (breaking change to happen in the future)
 - [ ] Breaking change (fix/feature causing existing functionality to break)
 - [ ] Code quality improvements to existing code or addition of tests
@@ -49,17 +47,19 @@ Tests verify the public diagnostics endpoint for loaded and unloaded entries, sn
   Please be sure to fill out additional details, if applicable.
 -->
 
-- This PR fixes or closes issue: Not applicable; this adds spacexai diagnostics.
-- This PR is related to issue: No separate issue recorded.
-- Link to documentation pull request: Not required for this diagnostic-data-only change.
+- This PR fixes or closes issue: Not applicable; dependency upgrade.
+- This PR is related to issue: No separate issue.
+- Link to documentation pull request: Not applicable; no user-facing feature changes.
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-10-account...codex/spacexai/staged-11-diagnostics
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/298a208679829f70a8c6c424d1ab5471e8c6da15
-- Prerequisite: Submit against Home Assistant `dev` only after Core layer 10 merges. No new upstream PR has been opened.
-- Dependency: spacexai-subscription-client remains at 0.5.0; there is no dependency upgrade in this layer.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34124560787) tests Core `298a208679829f70a8c6c424d1ab5471e8c6da15` with client `5bfafeceeca8a32ae6ace6d4471764c64ff86d69`: 145 tests and 3 snapshots, 99.4083% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-07-speech...codex/spacexai/staged-08-client-0-5
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/ba3515225a7087d7d8aa89dd8495b54755a1e2e3
+- Package source comparison: https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-04-speech...spacexai/client-05-video
+- Package changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/spacexai/client-05-video/CHANGELOG.md
+- Publication gate: Version 0.5.0 is not published. The dependency resolver returns HTTP 404 for the package. Verify actual PyPI artifacts, release tags, and immutable release comparisons before replacing these staging links.
+- Submission order: Wait for the preceding Core layer to merge and the new package version to be published. Then refresh onto official dev, regenerate requirements, and rerun the preceding feature's tests with the released package. Do not open a dependent upstream PR.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34124111027) tests Core `ba3515225a7087d7d8aa89dd8495b54755a1e2e3` with client `5bfafeceeca8a32ae6ace6d4471764c64ff86d69`: 102 tests, 99.6830% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
 
 - Quality gate: Submission is quality-blocked: this layer inherits `has-entity-name: todo` from speech. The current TTS naming behavior is functional but does not meet the written no-exceptions rule. A shared-framework solution is not approved or included in this 23-contribution plan; do not claim Bronze, Gold, or Platinum readiness.
 
@@ -82,7 +82,7 @@ Tests verify the public diagnostics endpoint for loaded and unloaded entries, sn
 - [ ] I have followed the [development checklist][dev-checklist]
 - [ ] I have followed the [perfect PR recommendations][perfect-pr]
 - [ ] The code has been formatted using Ruff (`ruff format homeassistant tests`)
-- [x] Tests have been added to verify that the new code works.
+- [ ] Tests have been added to verify that the new code works.
 - [ ] Any generated code has been carefully reviewed for correctness and compliance with project standards.
 
 If user exposed functionality or configuration variables are added/changed:

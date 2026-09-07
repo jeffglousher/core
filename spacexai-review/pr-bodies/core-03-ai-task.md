@@ -51,17 +51,17 @@ Tests cover strict structured schemas, nested and empty objects, image requests 
 
 - This PR fixes or closes issue: Not applicable; this adds spacexai ai task entities.
 - This PR is related to issue: No separate issue recorded.
-- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/docs-02-conversation-next...codex/spacexai/docs-03-ai-task-next).
+- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/staged-docs-02-conversation...codex/spacexai/staged-docs-03-ai-task).
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/core-02-conversation-ready...codex/spacexai/core-03-ai-task-ready
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/53b75924a577da6aee2a35ddba13d617e094d83f
-- Prerequisite: Submit against Home Assistant `dev` after the preceding Core layer merges. This is a prepared description; no upstream PR has been opened.
-- Dependency diff: https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-02-conversation...spacexai/client-03-image
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/codex/spacexai/staged-04-client-0-3...codex/spacexai/staged-05-ai-task
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/9dd2b6ab1e719d4c9e3d76af4b392408a5b21a96
+- Prerequisite: Submit against Home Assistant `dev` only after Core layer 04 merges. The preceding dependency-only layer owns the package version bump; this feature diff does not bundle it. No new upstream PR has been opened.
+- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-02-conversation...spacexai/client-03-image
 - Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/spacexai/client-03-image/CHANGELOG.md
 - Dependency release: Version 0.3.0 is not published. Add verified release/PyPI links and installation evidence before submission.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34080052271) passed 85 tests against client commit `80e36af0863d5b31742fddd6edd0ccdb306f1bcc`, with 99.5624% aggregate coverage and every integration module above 95%. Ruff, formatting, MyPy, and Pylint passed. Human review and dependency publication remain required before submission.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34123998947) tests Core `9dd2b6ab1e719d4c9e3d76af4b392408a5b21a96` with client `03bb0ee35e78df69f94c852e22887d4148fec0e4`: 83 tests, 99.5633% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
 
 ## Checklist
 <!--
