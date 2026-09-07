@@ -13,12 +13,20 @@ on:
       core-ref:
         description: Exact Core commit to validate
         required: true
-        default: c9e6db462a36cd5a70e12672d09579bd757f0e1b
+        default: ec01be7f73a4650546ad93a0620aedad3f9e3756
         type: string
       client-ref:
         description: Exact subscription client commit to install
         required: true
         default: c4fd662c281b5700a5c5d547b4afe097c8e5be22
+        type: string
+      standard-hooks:
+        description: Also build the full development environment and run native hooks
+        default: false
+        type: boolean
+      base-ref:
+        description: Exact upstream base for contribution-scoped native hooks
+        default: be2e14f4273335fb5ef02b7f636cd01800e1491a
         type: string
 
 permissions:
@@ -30,6 +38,7 @@ concurrency:
 
 jobs:
   integration:
+    name: Integration tests and scoped checks
     if: github.repository == 'jeffglousher/core'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -50,7 +59,7 @@ jobs:
       - name: Check out Core under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.core-ref || 'c9e6db462a36cd5a70e12672d09579bd757f0e1b' }}
+          ref: ${{ inputs.core-ref || 'ec01be7f73a4650546ad93a0620aedad3f9e3756' }}
           path: core
           persist-credentials: false
       - name: Check out subscription client under test
@@ -91,6 +100,15 @@ jobs:
         run: |
           source .venv/bin/activate
           python3 -m script.translations develop --all
+      - name: Verify dependency wiring was generated
+        run: |
+          source .venv/bin/activate
+          set -o pipefail
+          {
+            python3 -m script.gen_requirements_all
+            git diff --exit-code HEAD --
+            python3 -m script.gen_requirements_all validate
+          } 2>&1 | tee requirements-validation.txt
       - name: Run integration tests with native socket safeguards
         run: |
           source .venv/bin/activate
@@ -127,4 +145,111 @@ jobs:
             core/coverage.xml
             core/coverage-gate.txt
             core/junit.xml
+            core/requirements-validation.txt
+          if-no-files-found: warn
+
+  standard-hooks:
+    name: Native development setup and standard hooks
+    if: github.repository == 'jeffglousher/core' && inputs.standard-hooks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: core
+        shell: bash
+    env:
+      HASS_CI: 1
+    steps:
+      - name: Check out validation tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          path: validation
+          persist-credentials: false
+      - name: Check out Core under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.core-ref }}
+          path: core
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check out subscription client under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jeffglousher/spacexai-subscription-client
+          ref: ${{ inputs.client-ref }}
+          path: client
+          persist-credentials: false
+      - name: Install upstream development system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y \
+            bluez ffmpeg libturbojpeg libxml2-utils libavcodec-dev libavdevice-dev \
+            libavfilter-dev libavformat-dev libavutil-dev libswresample-dev \
+            libswscale-dev libudev-dev
+      - name: Set up uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          version: 0.12.6
+      - name: Build exact unpublished client for development setup
+        run: |
+          uv build --wheel ../client --out-dir "$RUNNER_TEMP/spacexai-wheelhouse"
+          printf 'UV_FIND_LINKS=%s/spacexai-wheelhouse\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          sha256sum "$RUNNER_TEMP"/spacexai-wheelhouse/*.whl | tee hooks-client-wheel.txt
+      - name: Run unchanged repository setup
+        run: |
+          uv venv .venv --python "$(cat .python-version)"
+          source .venv/bin/activate
+          set -o pipefail
+          script/setup 2>&1 | tee hooks-setup.txt
+          uv pip install --reinstall --no-deps "$RUNNER_TEMP"/spacexai-wheelhouse/*.whl
+      - name: Record exact development sources
+        env:
+          BASE_REF: ${{ inputs.base-ref }}
+        run: |
+          source .venv/bin/activate
+          {
+            git rev-parse HEAD
+            git -C ../client rev-parse HEAD
+            git rev-parse "$BASE_REF"
+            git merge-base --is-ancestor "$BASE_REF" HEAD
+            python3 --version
+            python3 -c 'from importlib.metadata import version; import json; from pathlib import Path; from packaging.requirements import Requirement; req = Requirement(json.loads(Path("homeassistant/components/spacexai/manifest.json").read_text())["requirements"][0]); installed = version(req.name); print(f"{req.name}=={installed}"); assert installed in req.specifier'
+            git diff --exit-code HEAD --
+          } | tee hooks-sources.txt
+      - name: Run full-tree general hooks as in upstream CI
+        env:
+          PREK_SKIP: no-commit-to-branch,mypy,pylint,gen_requirements_all,hassfest,hassfest-metadata,hassfest-mypy-config,zizmor
+        run: |
+          source .venv/bin/activate
+          set -o pipefail
+          uv run --no-sync prek run --all-files 2>&1 | tee hooks-general.txt
+      - name: Run standard native hooks on every contribution file
+        env:
+          BASE_REF: ${{ inputs.base-ref }}
+          # The strict generated validator below records the publication gate.
+          PREK_SKIP: hassfest
+        run: |
+          source .venv/bin/activate
+          set -o pipefail
+          mapfile -d '' contribution_files < <(git diff --name-only --diff-filter=ACMRTUXB -z "$BASE_REF" HEAD)
+          test "${#contribution_files[@]}" -gt 0
+          printf '%s\n' "${contribution_files[@]}" | tee hooks-files.txt
+          uv run --no-sync prek run --files "${contribution_files[@]}" 2>&1 | tee hooks-contribution.txt
+          git diff --exit-code HEAD --
+      - name: Check all generated wiring and the exact publication gate
+        if: success() || failure()
+        run: |
+          source .venv/bin/activate
+          set -o pipefail
+          python3 ../validation/script/spacexai_validate_generated.py 2>&1 | tee generated-validation.txt
+      - name: Upload native hook evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spacexai-native-hooks-${{ github.run_id }}
+          path: |
+            core/hooks-*.txt
+            core/generated-*.txt
+            core/generated-*.json
           if-no-files-found: warn
