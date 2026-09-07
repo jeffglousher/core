@@ -3,7 +3,7 @@
 from collections.abc import AsyncIterable
 from unittest.mock import MagicMock, patch
 
-from spacexai_subscription_client import SpaceXAISubscriptionError
+from spacexai_subscription_client import AuthenticationError, SpaceXAISubscriptionError
 
 from homeassistant.components import stt
 from homeassistant.core import HomeAssistant
@@ -141,6 +141,27 @@ async def test_transcription_error(
     )
 
     assert result == stt.SpeechResult(None, stt.SpeechResultState.ERROR)
+
+
+async def test_transcription_authentication_error_starts_reauth(
+    hass: HomeAssistant,
+    mock_config_entry_with_speech: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Start reauthentication when speech transcription rejects the token."""
+    mock_spacexai_subscription_client.async_transcribe.side_effect = AuthenticationError
+    await setup_integration(hass, mock_config_entry_with_speech)
+
+    result = await _entity(hass).async_process_audio_stream(
+        _metadata(stt.AudioFormats.OGG, stt.AudioCodecs.OPUS),
+        _audio_stream(b"audio"),
+    )
+
+    assert result == stt.SpeechResult(None, stt.SpeechResultState.ERROR)
+    flows = hass.config_entries.flow.async_progress()
+    assert len(flows) == 1
+    assert flows[0]["context"]["source"] == "reauth"
+    assert flows[0]["step_id"] == "reauth_confirm"
 
 
 async def test_transcription_rejects_empty_and_oversized_audio(
