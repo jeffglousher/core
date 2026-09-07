@@ -24,9 +24,9 @@ jobs:
       matrix:
         include:
           - layer: initial
-            revision: fcc39e84baa705e1c7cdc0eb4102e937dccfe487
+            revision: ab12c0012807c333c90b34935e982d0b9df40d04
           - layer: final
-            revision: babe0b6292d05002457184872f47e8f8c2e02e0d
+            revision: 30997c988948e3a3e9f138ed350960cd28ce81b3
     defaults:
       run:
         working-directory: docs
@@ -122,7 +122,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jeffglousher/home-assistant.io
-          ref: babe0b6292d05002457184872f47e8f8c2e02e0d
+          ref: 30997c988948e3a3e9f138ed350960cd28ce81b3
           path: docs
           persist-credentials: false
       - name: Set up uv
