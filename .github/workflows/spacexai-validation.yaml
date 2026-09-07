@@ -10,7 +10,7 @@ on:
       core-ref:
         description: Exact Core commit to validate
         required: true
-        default: 6a8425ec0472c7bf5d896574d6e41b24cb041628
+        default: c9e6db462a36cd5a70e12672d09579bd757f0e1b
         type: string
       client-ref:
         description: Exact subscription client commit to install
@@ -22,7 +22,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: spacexai-validation-${{ github.ref }}
+  group: spacexai-validation-${{ inputs.core-ref || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
       - name: Check out Core under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.core-ref || '6a8425ec0472c7bf5d896574d6e41b24cb041628' }}
+          ref: ${{ inputs.core-ref || 'c9e6db462a36cd5a70e12672d09579bd757f0e1b' }}
           path: core
           persist-credentials: false
       - name: Check out subscription client under test
