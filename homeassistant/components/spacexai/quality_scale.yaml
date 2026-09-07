@@ -1,8 +1,6 @@
 rules:
   # Bronze
-  action-setup:
-    status: exempt
-    comment: The integration does not provide actions.
+  action-setup: done
   appropriate-polling:
     status: exempt
     comment: The integration only makes requests for user-initiated AI and speech operations.
@@ -11,9 +9,7 @@ rules:
   config-flow-test-coverage: done
   config-flow: done
   dependency-transparency: todo
-  docs-actions:
-    status: exempt
-    comment: The integration does not provide actions.
+  docs-actions: done
   docs-conditions:
     status: exempt
     comment: The integration does not provide conditions.
@@ -34,9 +30,7 @@ rules:
   unique-config-entry: done
 
   # Silver
-  action-exceptions:
-    status: exempt
-    comment: The integration does not provide actions.
+  action-exceptions: done
   config-entry-unloading: done
   docs-configuration-parameters: todo
   docs-installation-parameters: todo

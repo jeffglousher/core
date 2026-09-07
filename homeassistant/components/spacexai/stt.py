@@ -13,9 +13,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from . import SpaceXAIConfigEntry
 from .const import LOGGER
 from .entity import SpaceXAISpeechEntity
+from .models import SpaceXAIConfigEntry
 
 PARALLEL_UPDATES = 0
 MAX_STT_SIZE = 25 * 1024 * 1024
