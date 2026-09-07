@@ -1,0 +1,136 @@
+name: SpaceXAI documentation and Brands validation
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - codex/spacexai-docs-validation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spacexai-docs-brands-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  documentation:
+    if: github.repository == 'jeffglousher/core'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - layer: initial
+            revision: fcc39e84baa705e1c7cdc0eb4102e937dccfe487
+          - layer: final
+            revision: 28a35e6d433cef61639ad3f5c1a956dc653b4b97
+    defaults:
+      run:
+        working-directory: docs
+        shell: bash
+    steps:
+      - name: Check out exact documentation source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jeffglousher/home-assistant.io
+          ref: ${{ matrix.revision }}
+          path: docs
+          persist-credentials: false
+      - name: Install Ruby and locked Jekyll dependencies
+        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1
+        with:
+          ruby-version: 3.4.8
+          working-directory: docs
+          bundler-cache: true
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: docs/.nvmrc
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - name: Record and verify tested source
+        env:
+          EXPECTED_SHA: ${{ matrix.revision }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          {
+            git rev-parse HEAD
+            ruby --version
+            bundle exec jekyll --version
+            node --version
+          } | tee validation-sources.txt
+      - name: Run native documentation linters
+        run: |
+          npm ci
+          mapfile -t pages < <(find source/_integrations source/_actions -name 'spacexai*.markdown' -type f)
+          npx --no-install remark --quiet --frail --no-stdout "${pages[@]}"
+          npx --no-install textlint "${pages[@]}"
+      - name: Build with the prescribed Jekyll task
+        run: |
+          set -o pipefail
+          bundle exec rake generate 2>&1 | tee native-build.txt
+          test -s public/integrations/spacexai/index.html
+      - name: Save rendered pages and native build evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spacexai-docs-${{ matrix.layer }}-${{ github.run_id }}
+          path: |
+            docs/validation-sources.txt
+            docs/native-build.txt
+            docs/public/integrations/spacexai/
+            docs/public/actions/spacexai.generate_video/
+            docs/public/actions/spacexai.publish_media/
+            docs/public/stylesheets/
+            docs/public/javascripts/
+            docs/public/assets/
+            docs/public/favicon.png
+            docs/public/images/home-assistant-logo.svg
+          if-no-files-found: warn
+          retention-days: 14
+
+  brands:
+    if: github.repository == 'jeffglousher/core'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: brands
+        shell: bash
+    steps:
+      - name: Check out exact Brands source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jeffglousher/brands
+          ref: e3ac8da8bf579ec54210cc211e1eaa0768052679
+          path: brands
+          persist-credentials: false
+      - name: Install native image validation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y imagemagick optipng
+      - name: Record and verify tested source
+        run: |
+          test "$(git rev-parse HEAD)" = 'e3ac8da8bf579ec54210cc211e1eaa0768052679'
+          {
+            git rev-parse HEAD
+            identify -version
+            sha256sum core_integrations/spacexai/*.png
+          } | tee validation-sources.txt
+      - name: Run the repository image validator
+        run: |
+          set -o pipefail
+          bash .github/workflows/validate/validate.sh 2>&1 | tee native-validation.txt
+      - name: Save native validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spacexai-brands-${{ github.run_id }}
+          path: |
+            brands/validation-sources.txt
+            brands/native-validation.txt
+          if-no-files-found: warn
+          retention-days: 14
