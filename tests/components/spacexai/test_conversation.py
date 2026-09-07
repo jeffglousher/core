@@ -3,6 +3,7 @@
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from spacexai_subscription_client import (
     AuthenticationError,
     Completion,
@@ -15,13 +16,16 @@ from spacexai_subscription_client import (
 )
 
 from homeassistant.components import conversation
+from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.components.spacexai.const import MAX_TOOL_ITERATIONS
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.helpers import intent
+from homeassistant.helpers.json import json_loads
+from homeassistant.setup import async_setup_component
 
 from . import setup_integration
 
-from tests.common import MockConfigEntry
+from tests.common import MockConfigEntry, async_mock_service
 from tests.components.conversation import MockChatLog, mock_chat_log  # noqa: F401
 
 
@@ -97,6 +101,80 @@ async def test_home_assistant_tool_call(
         ].kwargs["input_data"]
     )
     assert ToolResult("call-1", '"tool result"') in second_input
+
+
+@pytest.mark.parametrize(
+    ("exposed", "expected_targets", "expected_error"),
+    [
+        pytest.param(True, [["light.desk"]], None, id="exposed"),
+        pytest.param(False, [], "MatchFailedError", id="not_exposed"),
+    ],
+)
+async def test_assist_tool_respects_entity_exposure(
+    hass: HomeAssistant,
+    mock_config_entry_with_assist: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+    exposed: bool,
+    expected_targets: list[list[str]],
+    expected_error: str | None,
+) -> None:
+    """Execute real Assist tools only for exposed entities."""
+    assert await async_setup_component(hass, "intent", {})
+    hass.states.async_set("light.desk", "off", {"friendly_name": "Desk"})
+    hass.states.async_set("light.hall", "off", {"friendly_name": "Hall"})
+    async_expose_entity(hass, conversation.DOMAIN, "light.desk", exposed)
+    async_expose_entity(hass, conversation.DOMAIN, "light.hall", True)
+    calls = async_mock_service(hass, "light", "turn_on")
+    mock_spacexai_subscription_client.async_create_response.side_effect = [
+        Completion(
+            "",
+            (ToolCall("call-1", "intent__HassTurnOn", {"name": "Desk"}),),
+        ),
+        _text_response("Request handled"),
+    ]
+    await setup_integration(hass, mock_config_entry_with_assist)
+
+    result = await conversation.async_converse(
+        hass, "Turn on Desk", None, Context(), agent_id="conversation.grok"
+    )
+
+    assert result.response.response_type is intent.IntentResponseType.ACTION_DONE
+    assert [call.data["entity_id"] for call in calls] == expected_targets
+    requests = mock_spacexai_subscription_client.async_create_response.call_args_list
+    assert len(requests) == 2
+    tools = {tool.name: tool for tool in requests[0].kwargs["tools"]}
+    assert tools["intent__HassTurnOn"].parameters["type"] == "object"
+    tool_results = [
+        item
+        for item in requests[1].kwargs["input_data"]
+        if isinstance(item, ToolResult)
+    ]
+    assert len(tool_results) == 1
+    assert json_loads(tool_results[0].output).get("error") == expected_error
+
+
+async def test_conversation_without_assist_does_not_offer_tools(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Keep provider requests tool-free when Assist access is disabled."""
+    mock_spacexai_subscription_client.async_create_response.return_value = (
+        _text_response("Hello")
+    )
+    await setup_integration(hass, mock_config_entry)
+
+    result = await conversation.async_converse(
+        hass, "Hello", None, Context(), agent_id="conversation.grok"
+    )
+
+    assert result.response.response_type is intent.IntentResponseType.ACTION_DONE
+    assert (
+        mock_spacexai_subscription_client.async_create_response.call_args.kwargs[
+            "tools"
+        ]
+        == []
+    )
 
 
 async def test_empty_response(
