@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - codex/spacexai-validation
+    paths:
+      - .github/workflows/spacexai-validation.yaml
   workflow_dispatch:
     inputs:
       core-ref:
