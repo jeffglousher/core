@@ -1,5 +1,6 @@
 """Tests for SpaceXAI conversation."""
 
+import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -20,7 +21,6 @@ from homeassistant.components.homeassistant.exposed_entities import async_expose
 from homeassistant.components.spacexai.const import MAX_TOOL_ITERATIONS
 from homeassistant.core import Context, HomeAssistant
 from homeassistant.helpers import intent
-from homeassistant.helpers.json import json_loads
 from homeassistant.setup import async_setup_component
 
 from . import setup_integration
@@ -150,7 +150,7 @@ async def test_assist_tool_respects_entity_exposure(
         if isinstance(item, ToolResult)
     ]
     assert len(tool_results) == 1
-    assert json_loads(tool_results[0].output).get("error") == expected_error
+    assert json.loads(tool_results[0].output).get("error") == expected_error
 
 
 async def test_conversation_without_assist_does_not_offer_tools(
