@@ -190,7 +190,7 @@
       "message": "The signed-in account cannot access the SpaceXAI subscription API. Confirm that the account has an eligible subscription."
     },
     "too_many_image_attachments": {
-      "message": "Image editing supports up to three source images."
+      "message": "Image editing supports up to five source images."
     },
     "tool_iteration_limit": {
       "message": "The SpaceXAI conversation exceeded the tool-call limit."
