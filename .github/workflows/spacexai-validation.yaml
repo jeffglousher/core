@@ -1,0 +1,115 @@
+name: SpaceXAI Linux validation
+
+# yamllint disable-line rule:truthy
+on:
+  push:
+    branches:
+      - codex/spacexai-validation
+  workflow_dispatch:
+    inputs:
+      core-ref:
+        description: Exact Core commit to validate
+        required: true
+        default: 6a8425ec0472c7bf5d896574d6e41b24cb041628
+        type: string
+      client-ref:
+        description: Exact subscription client commit to install
+        required: true
+        default: 16b530d1e1afce38977c2e8ea2e1dcef663cd76a
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spacexai-validation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    if: github.repository == 'jeffglousher/core'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: core
+        shell: bash
+    env:
+      PYTHONASYNCIODEBUG: 1
+      HASS_CI: 1
+    steps:
+      - name: Check out Core under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.core-ref || '6a8425ec0472c7bf5d896574d6e41b24cb041628' }}
+          path: core
+          persist-credentials: false
+      - name: Check out subscription client under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: jeffglousher/spacexai-subscription-client
+          ref: ${{ inputs.client-ref || '16b530d1e1afce38977c2e8ea2e1dcef663cd76a' }}
+          path: client
+          persist-credentials: false
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y bluez ffmpeg libturbojpeg libxml2-utils
+      - name: Set up uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          version: 0.12.6
+      - name: Install scoped test environment
+        run: |
+          uv venv .venv --python "$(cat .python-version)"
+          source .venv/bin/activate
+          uv pip install -r requirements.txt -r requirements_test.txt -e . ../client --config-settings editable_mode=compat
+          python3 -m script.install_integration_requirements conversation assist_pipeline intent mqtt ai_task stt tts
+      - name: Record sources and installed package
+        run: |
+          source .venv/bin/activate
+          {
+            printf 'Core commit: '
+            git rev-parse HEAD
+            printf 'Client commit: '
+            git -C ../client rev-parse HEAD
+            python3 --version
+            python3 -c 'from importlib.metadata import version; import platform; print(platform.platform()); print("spacexai-subscription-client==" + version("spacexai-subscription-client"))'
+            python3 -c 'import inspect, pytest_socket; print("Socket guard:", inspect.getsourcefile(pytest_socket.disable_socket))'
+          } | tee validation-sources.txt
+      - name: Compile English translations
+        run: |
+          source .venv/bin/activate
+          python3 -m script.translations develop --all
+      - name: Run integration tests with native socket safeguards
+        run: |
+          source .venv/bin/activate
+          set -o pipefail
+          python3 -b -X dev -m pytest -qq --timeout=9 --numprocesses auto --snapshot-details \
+            --cov=homeassistant.components.spacexai --cov-report=term-missing --cov-report=json:coverage.json \
+            --cov-report=xml:coverage.xml --junitxml=junit.xml -p no:sugar \
+            tests/components/spacexai 2>&1 | tee pytest-spacexai.txt
+      - name: Check integration lint and typing
+        if: success() || failure()
+        run: |
+          source .venv/bin/activate
+          set -o pipefail
+          {
+            ruff check homeassistant/components/spacexai tests/components/spacexai
+            ruff format --check homeassistant/components/spacexai tests/components/spacexai
+            mypy --follow-imports=silent homeassistant/components/spacexai
+            pylint homeassistant/components/spacexai
+          } 2>&1 | tee lint-spacexai.txt
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spacexai-linux-${{ github.run_id }}
+          path: |
+            core/validation-sources.txt
+            core/pytest-spacexai.txt
+            core/lint-spacexai.txt
+            core/coverage.json
+            core/coverage.xml
+            core/junit.xml
+          if-no-files-found: warn
