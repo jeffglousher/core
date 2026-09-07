@@ -13,8 +13,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: spacexai-generated-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   generated:
+    name: Generated wiring and strict quality gate
     if: github.repository == 'jeffglousher/core'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -23,11 +28,11 @@ jobs:
       matrix:
         include:
           - layer: initial
-            core-ref: c9e6db462a36cd5a70e12672d09579bd757f0e1b
-            client-ref: c4fd662c281b5700a5c5d547b4afe097c8e5be22
+            core-ref: ec01be7f73a4650546ad93a0620aedad3f9e3756
+            client-ref: 584250d60007714d337abfbcb3124318b8f49b22
           - layer: final
-            core-ref: 2315fa45b978aa1ebf637c111d0c1410d68d12ea
-            client-ref: b2d823452e5054ece8b7a90fb7b172f5ac1d1a7c
+            core-ref: 298a208679829f70a8c6c424d1ab5471e8c6da15
+            client-ref: 5bfafeceeca8a32ae6ace6d4471764c64ff86d69
     defaults:
       run:
         working-directory: core
