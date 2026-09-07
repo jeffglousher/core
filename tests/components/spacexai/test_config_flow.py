@@ -1,7 +1,6 @@
 """Tests for the SpaceXAI config flow."""
 
 import asyncio
-from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -16,7 +15,6 @@ from spacexai_subscription_client import (
     PermissionDeniedError,
     RateLimitError,
     RequestTimeoutError,
-    SpaceXAISubscriptionClient,
     SpaceXAISubscriptionError,
 )
 
@@ -37,6 +35,8 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.httpx_client import get_async_client
 
 from . import setup_integration
 from .conftest import ACCESS_TOKEN, REFRESH_TOKEN
@@ -84,6 +84,50 @@ async def _finish_device_progress(
     return await hass.config_entries.flow.async_configure(result["flow_id"])
 
 
+async def _finish_conversation(
+    hass: HomeAssistant,
+    result: ConfigFlowResult,
+    model: str = "grok-4.6",
+) -> None:
+    """Create an entry and verify the saved account and conversation settings."""
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "conversation"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        {
+            CONF_MODEL: model,
+            CONF_PROMPT: "Be concise.",
+            CONF_LLM_HASS_API: [],
+        },
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert result["title"] == "Home User"
+    assert result["result"].unique_id == "account-123"
+    assert result["data"] == {
+        "auth_implementation": DOMAIN,
+        "token": TOKEN_DATA,
+    }
+    assert result["subentries"] == [
+        {
+            "subentry_type": "conversation",
+            "title": "Grok",
+            "unique_id": None,
+            "data": {
+                CONF_MODEL: model,
+                CONF_PROMPT: "Be concise.",
+            },
+        },
+        {
+            "subentry_type": "ai_task_data",
+            "title": "Grok AI Task",
+            "unique_id": None,
+            "data": {CONF_MODEL: model},
+        },
+    ]
+
+
 def _set_successful_poll(mock_flow_client: MagicMock) -> None:
     """Make token polling wait until the progress form has been asserted."""
     mock_flow_client.poll_event = asyncio.Event()
@@ -109,9 +153,9 @@ def _set_poll_error(
 
 
 @pytest.fixture
-def mock_flow_client() -> Generator[MagicMock]:
+def mock_flow_client(mock_spacexai_subscription_client: MagicMock) -> MagicMock:
     """Return a successful mocked client for the config flow."""
-    client = MagicMock(spec=SpaceXAISubscriptionClient)
+    client = mock_spacexai_subscription_client
     client.async_request_device_authorization = AsyncMock(
         return_value=DEVICE_AUTHORIZATION
     )
@@ -121,11 +165,7 @@ def mock_flow_client() -> Generator[MagicMock]:
     )
     client.async_list_models = AsyncMock(return_value=("grok-4.5", "grok-4.6"))
     _set_successful_poll(client)
-    with patch(
-        "homeassistant.components.spacexai.config_flow.create_client",
-        return_value=client,
-    ):
-        yield client
+    return client
 
 
 @pytest.mark.usefixtures("mock_setup_entry")
@@ -133,8 +173,16 @@ async def test_full_oauth_flow(
     hass: HomeAssistant,
     mock_flow_client: MagicMock,
 ) -> None:
-    """Complete device login and create one Conversation subentry."""
-    result = await _start_flow(hass)
+    """Complete device login and create the default account subentries."""
+    with patch(
+        "homeassistant.components.spacexai.SpaceXAISubscriptionClient",
+        return_value=mock_flow_client,
+    ) as client_class:
+        result = await _start_flow(hass)
+
+    client_class.assert_called_once_with(
+        async_get_clientsession(hass), get_async_client(hass)
+    )
     result = await _finish_device_progress(hass, mock_flow_client, result)
 
     assert result["type"] is FlowResultType.FORM
@@ -145,31 +193,47 @@ async def test_full_oauth_flow(
         "grok-4.6",
     ]
 
-    result = await hass.config_entries.flow.async_configure(
-        result["flow_id"],
-        {
-            CONF_MODEL: "grok-4.6",
-            CONF_PROMPT: "Be concise.",
-            CONF_LLM_HASS_API: [],
-        },
+    await _finish_conversation(hass, result)
+    mock_flow_client.async_poll_device_token.assert_awaited_once_with(
+        DEVICE_AUTHORIZATION
     )
+    mock_flow_client.async_get_account.assert_awaited_once_with(ACCESS_TOKEN)
+    mock_flow_client.async_list_models.assert_awaited_once_with(ACCESS_TOKEN)
 
-    assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Home User"
-    assert result["result"].unique_id == "account-123"
-    assert result["data"] == {
-        "auth_implementation": DOMAIN,
-        "token": TOKEN_DATA,
-    }
-    subentries = list(result["subentries"])
-    assert len(subentries) == 2
-    assert subentries[0]["subentry_type"] == "conversation"
-    assert subentries[0]["data"] == {
-        CONF_MODEL: "grok-4.6",
-        CONF_PROMPT: "Be concise.",
-    }
-    assert subentries[1]["subentry_type"] == "ai_task_data"
-    assert subentries[1]["data"] == {CONF_MODEL: "grok-4.6"}
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_abort_during_device_polling(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+) -> None:
+    """Cancel pending device polling when the user closes the login flow."""
+    poll_started = asyncio.Event()
+    poll_cancelled = asyncio.Event()
+
+    async def _async_poll(_authorization: DeviceAuthorization) -> OAuthToken:
+        poll_started.set()
+        try:
+            await mock_flow_client.poll_event.wait()
+        except asyncio.CancelledError:
+            poll_cancelled.set()
+            raise
+        return OAuthToken(TOKEN_DATA)
+
+    mock_flow_client.async_poll_device_token.side_effect = _async_poll
+    result = await _start_flow(hass)
+
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    async with asyncio.timeout(1):
+        await poll_started.wait()
+
+    hass.config_entries.flow.async_abort(result["flow_id"])
+    await hass.async_block_till_done()
+
+    assert poll_cancelled.is_set()
+    assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert not hass.config_entries.async_entries(DOMAIN)
+    mock_flow_client.async_get_account.assert_not_awaited()
+    mock_flow_client.async_list_models.assert_not_awaited()
 
 
 @pytest.mark.usefixtures("mock_setup_entry")
@@ -226,8 +290,7 @@ async def test_device_authorization_connection_error(
 
     assert result["type"] is FlowResultType.SHOW_PROGRESS
     result = await _finish_device_progress(hass, mock_flow_client, result)
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "conversation"
+    await _finish_conversation(hass, result)
     assert mock_flow_client.async_request_device_authorization.await_count == 2
 
 
@@ -261,8 +324,7 @@ async def test_device_authorization_transient_poll_error_and_retry(
 
     assert result["type"] is FlowResultType.SHOW_PROGRESS
     result = await _finish_device_progress(hass, mock_flow_client, result)
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "conversation"
+    await _finish_conversation(hass, result)
     mock_flow_client.async_request_device_authorization.assert_awaited_once()
 
 
@@ -297,8 +359,7 @@ async def test_device_authorization_terminal_poll_error_and_retry(
 
     assert result["type"] is FlowResultType.SHOW_PROGRESS
     result = await _finish_device_progress(hass, mock_flow_client, result)
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "conversation"
+    await _finish_conversation(hass, result)
     assert mock_flow_client.async_request_device_authorization.await_count == 2
 
 
@@ -384,8 +445,7 @@ async def test_account_validation_connection_error_and_retry(
         result["flow_id"], user_input={}
     )
 
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "conversation"
+    await _finish_conversation(hass, result)
     mock_flow_client.async_request_device_authorization.assert_awaited_once()
 
 
@@ -409,8 +469,8 @@ async def test_account_has_no_models(
         result["flow_id"], user_input={}
     )
 
-    assert result["type"] is FlowResultType.FORM
-    assert result["step_id"] == "conversation"
+    await _finish_conversation(hass, result, model="grok-4.5")
+    mock_flow_client.async_request_device_authorization.assert_awaited_once()
 
 
 @pytest.mark.usefixtures("mock_spacexai_subscription_client")
