@@ -252,3 +252,43 @@ async def test_setup_expired_token_refresh_error(
     await hass.async_block_till_done()
 
     assert mock_config_entry.state is expected_state
+
+
+async def test_setup_token_refresh_timeout_and_retry(
+    aioclient_mock: AiohttpClientMocker,
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Keep credentials and retry setup after a token endpoint timeout."""
+    mock_config_entry.data["token"]["expires_at"] = 0
+    original_token = dict(mock_config_entry.data["token"])
+    aioclient_mock.post(TOKEN_URL, exc=TimeoutError)
+    mock_config_entry.add_to_hass(hass)
+
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY
+    assert mock_config_entry.data["token"] == original_token
+    mock_spacexai_subscription_client.async_list_models.assert_not_awaited()
+
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(
+        TOKEN_URL,
+        json={
+            "access_token": "new-access-token",
+            "refresh_token": "new-refresh-token",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        },
+    )
+
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert mock_config_entry.data["token"]["refresh_token"] == "new-refresh-token"
+    mock_spacexai_subscription_client.async_list_models.assert_awaited_once_with(
+        "new-access-token"
+    )
