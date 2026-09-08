@@ -71,8 +71,9 @@ class SpaceXAIConfigFlow(ConfigFlow, domain=DOMAIN):
 
         if self._login_task is None:
             assert self._client is not None
-            self._login_task = self.hass.async_create_task(
+            self._login_task = self.hass.async_create_background_task(
                 self._client.async_poll_device_token(self._device),
+                "SpaceXAI device authorization",
             )
 
         if self._login_task.done():

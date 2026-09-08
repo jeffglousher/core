@@ -21,7 +21,7 @@ from spacexai_subscription_client import (
 from homeassistant.components.spacexai.const import DOMAIN
 from homeassistant.config_entries import SOURCE_USER, ConfigFlowResult
 from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CoreState, HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.httpx_client import get_async_client
@@ -211,6 +211,41 @@ async def test_abort_during_device_polling(
 
     assert poll_cancelled.is_set()
     assert not hass.config_entries.flow.async_progress_by_handler(DOMAIN)
+    assert not hass.config_entries.async_entries(DOMAIN)
+    mock_flow_client.async_get_account.assert_not_awaited()
+    mock_flow_client.async_list_models.assert_not_awaited()
+
+
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_shutdown_during_device_polling(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Cancel pending device polling before Home Assistant's final writes."""
+    poll_started = asyncio.Event()
+    cancellation_state: asyncio.Future[CoreState] = hass.loop.create_future()
+
+    async def _async_poll(_authorization: DeviceAuthorization) -> OAuthToken:
+        poll_started.set()
+        try:
+            await mock_flow_client.poll_event.wait()
+        except asyncio.CancelledError:
+            cancellation_state.set_result(hass.state)
+            raise
+        return OAuthToken(TOKEN_DATA)
+
+    mock_flow_client.async_poll_device_token.side_effect = _async_poll
+    result = await _start_flow(hass)
+
+    assert result["type"] is FlowResultType.SHOW_PROGRESS
+    async with asyncio.timeout(1):
+        await poll_started.wait()
+
+    await hass.async_stop()
+
+    assert cancellation_state.result() is CoreState.stopping
+    assert "was still running after final writes shutdown stage" not in caplog.text
     assert not hass.config_entries.async_entries(DOMAIN)
     mock_flow_client.async_get_account.assert_not_awaited()
     mock_flow_client.async_list_models.assert_not_awaited()
