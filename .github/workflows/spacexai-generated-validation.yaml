@@ -28,11 +28,11 @@ jobs:
       matrix:
         include:
           - layer: initial
-            core-ref: 1be5415320b9f511d568df7990d5f32ffb0df0df
-            client-ref: f12b460dffecff7ce4f2827fffa8351e06cadcb6
+            core-ref: cbe618c9800419de39601496779da68e5dd8ed23
+            client-ref: b5513112b12a14baa43c295cf82cec8be3604ba7
           - layer: final
-            core-ref: fd1db0993f4b92450784e26dc30d48c27e57f075
-            client-ref: b6087bbd49428839cc4db845f0c5ec33ef3025fd
+            core-ref: b8be5c4f783900a8e50db8cb577756d4f8901136
+            client-ref: f58ec77aebff01fe6bf4b72e97a2370b023647a2
     defaults:
       run:
         working-directory: core
