@@ -55,11 +55,11 @@ Authentication failures from conversation, AI Task, speech, and video start the 
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/26b85560a728196e64fac184bffb32b16f430685...82d4cc5337e1eb147a9a206da7fc0977d5efa5be
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/82d4cc5337e1eb147a9a206da7fc0977d5efa5be
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/22180c78bea231061810d1427a4a3acd36014dde...fc87cca838e64db775d94842d5d21830a81a797c
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/fc87cca838e64db775d94842d5d21830a81a797c
 - Prerequisite: Submit against Home Assistant `dev` only after Core layer 09 merges. No new upstream PR has been opened.
 - Dependency: spacexai-subscription-client remains at 0.5.0; there is no dependency upgrade in this layer.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34169851037) tests Core `82d4cc5337e1eb147a9a206da7fc0977d5efa5be` with client `b6087bbd49428839cc4db845f0c5ec33ef3025fd`: 146 tests, 99.4019% statement coverage, every integration module above 95%, and zero failures/errors/skips. Scoped native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34175316461) tests Core `fc87cca838e64db775d94842d5d21830a81a797c` with client `f58ec77aebff01fe6bf4b72e97a2370b023647a2`: 154 tests, 99.4019% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review, dependency publication, and refreshing/retesting against current upstream remain required.
 
 - Quality gate: The current `has-entity-name: todo` remains unresolved, so clean quality-scale validation is not established. Address it at the speech wave using existing accepted TTS precedent and, only if necessary, a separate minimal HA naming fix. It does not enlarge or block the initial conversation contribution.
 

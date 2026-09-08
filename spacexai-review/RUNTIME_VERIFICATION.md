@@ -1,60 +1,66 @@
 # Current verified runtime — September 7, 2026
 
-The rebuilt full stack is deployed and running. This is an existing-account
-dogfood deployment, not proof of a fresh initial-only OAuth installation.
+The timeout-corrected full stack is deployed and running. This is an
+existing-account dogfood deployment, not proof of a fresh initial-only
+OAuth installation.
 
 ## Exact source and deployment
 
 - Dogfood branch: `codex/spacexai/dogfood-staged-20260907`.
-- Dogfood commit: `85ac0fd099cdfb94ebc604ee9677aa16f61719c8`.
-- Canonical final Core: `fd1db0993f4b92450784e26dc30d48c27e57f075`, an ancestor
+- Dogfood commit: `18be39973b1361ebe23605dc4a605ae0d69cff43`.
+- Canonical final Core: `b8be5c4f783900a8e50db8cb577756d4f8901136`, an ancestor
   of dogfood.
-- Client 0.5.0: `b6087bbd49428839cc4db845f0c5ec33ef3025fd`.
+- Client 0.5.0: `f58ec77aebff01fe6bf4b72e97a2370b023647a2`.
 - Integration development version: `0.9.0.dev20260907`.
 - Existing HA base remains `2026.10.0.dev202608300226`; no base-image,
   security, or stored-credential changes were made.
 
-Only the development manifest version and exact source requirement pin differ
-from the canonical integration. All 17 archived files were byte-compared
-against Git, and 13 deployed runtime hashes matched the remote files.
+The reviewed production correction changes two existing timeout-handler lines
+in final Core. Only the development manifest version and exact source
+requirement pin differ from the canonical integration. All 17 archived files
+were byte-compared against Git, and 13 deployed runtime hashes matched.
 Compiled translations were verified against unchanged source and the retained
-generated English file. Archive verification caught Windows newline conversion;
-the regenerated archive passed a byte-for-byte comparison before deployment.
+generated English file. The archive was generated without Windows newline
+conversion and verified before activation.
 
-Configuration check and restart passed. Redacted runtime API inspection
-confirmed running state, the existing OAuth entry loaded, all four platform
-subentry types, and the exact development version/source pin. The protected
-Core container does not expose installed dependency-file hashes through the
-SSH app, so this is not an independent installed-wheel hash check. Exactly one
-SpaceXAI overlay is active. The previous overlay is retained outside the
-custom-components scan directory for rollback; current credentials were kept.
+[Exact full-stack native validation](https://github.com/jeffglousher/core/actions/runs/34175318077)
+and independent re-review passed before activation. Configuration check and
+restart passed. Redacted runtime inspection confirmed running state, the
+existing OAuth entry loaded, all four platform subentry types, and the exact
+development version/source pin. The protected Core container does not expose
+installed dependency-file hashes through the SSH app, so this is not an
+independent installed-wheel hash check. Exactly one SpaceXAI overlay is active.
+The previous overlay is retained outside the custom-components scan directory
+for rollback; current credentials were kept.
 
 ## Bounded live checks on the new deployment
 
 - Conversation and AI text returned the expected generic responses; together
-  they took 5.34 seconds.
-- A fresh uncached TTS request returned 34,176 bytes in 0.60 seconds. Full
+  they took 9.00 seconds.
+- A fresh uncached TTS request returned 34,176 bytes in 0.55 seconds. Complete
   FFmpeg decoding produced 2.136 seconds of audio: 68,352 bytes at 16 kHz,
   mono, 16-bit PCM.
 - STT of that exact decoded speech succeeded with the expected normalized
-  sentence in 0.42 seconds. This confirms complete audio, not only a media URL
+  sentence in 0.53 seconds. This confirms complete audio, not only a media URL
   or first network chunk.
 - The 100 available log lines contained zero SpaceXAI errors. This is a bounded
   log inspection, not a whole-lifetime no-error claim.
 
-No paid image or video regeneration was performed in this batch, and no home
-device was controlled. Their new native success/failure tests pass; the earlier
-live image/video artifacts below belong to the previous deployment. Do not
-relabel those old smokes as running this exact new stack.
+No image or video regeneration was performed in this batch, and no home
+device was controlled. Their native tests pass; earlier live image/video
+artifacts below belong to the historical deployment. No real provider outage
+or forced credential expiry was induced on the running test system; timeout
+failure/recovery is covered by the native public-interface regressions.
 
-The speech entity-naming quality gate remains unresolved despite functional
-TTS/STT success. A fresh initial-only Home Assistant setup and human OAuth login
-still require an isolated native host. No tokens, entry identifiers, host
-addresses, signed URLs, raw logs, or private audio are included here.
+Speech entity naming remains quality-blocked despite functional TTS/STT
+success. A fresh initial-only setup and human OAuth login still need an
+isolated native host. No tokens, entry identifiers, host addresses, signed
+URLs, raw logs, or private audio are included here.
 
-[The previous September 7 runtime record](https://github.com/jeffglousher/core/blob/c1ae633f17322fe3f17738deebe842779f2d00f5/spacexai-review/RUNTIME_VERIFICATION.md)
-retains its own source identities and measurements. Its prior overlay and
-private smoke artifacts were preserved; new receipts use the new commit ID.
+[The previous September 7 runtime record](https://github.com/jeffglousher/core/blob/40e9dc4893fb663b38649145e47e0f7c9bfec019/spacexai-review/RUNTIME_VERIFICATION.md)
+retains its own source identities and measurements for dogfood `85ac0fd099cd`.
+Its overlay and smoke artifacts were preserved; new receipts use the new
+commit ID.
 
 ## Historical prior deployment and live checks
 

@@ -15,7 +15,7 @@
 
 Explain multiple conversation agents, the Name field and its suggested value, reconfiguration, JPEG/PNG/PDF attachments, and optional provider tools. Document which attachment content and tool queries leave Home Assistant.
 
-Prepared branch: `codex/spacexai/staged-docs-02-conversation`, commit `ce493b6c2d545d3f0b0b8f887a01c140b4e35347`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/0a5a5dfb0f779bf027b609781c5117cc78f9d3a7...ce493b6c2d545d3f0b0b8f887a01c140b4e35347) against `codex/spacexai/staged-docs-01-initial` at `0a5a5dfb0f779bf027b609781c5117cc78f9d3a7`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Cumulative final docs at `69221dc8a853972e4b4fcbf78d4fbba8047b393d` passed native linters and the prescribed Jekyll build in [fork validation](https://github.com/jeffglousher/core/actions/runs/34168495512). This is cumulative build evidence, not a separate Jekyll run for this intermediate commit. No newly generated preview has been visually inspected.
+Prepared branch: `codex/spacexai/staged-docs-02-conversation`, commit `ce493b6c2d545d3f0b0b8f887a01c140b4e35347`. Review its [incremental diff](https://github.com/jeffglousher/home-assistant.io/compare/0a5a5dfb0f779bf027b609781c5117cc78f9d3a7...ce493b6c2d545d3f0b0b8f887a01c140b4e35347) against `codex/spacexai/staged-docs-01-initial` at `0a5a5dfb0f779bf027b609781c5117cc78f9d3a7`. Submit against `next` only after prerequisite documentation and Core changes merge. This exact layer passes remark, textlint, and whitespace checks. Cumulative final docs at `69221dc8a853972e4b4fcbf78d4fbba8047b393d` passed native linters and the prescribed Jekyll build in [fork validation](https://github.com/jeffglousher/core/actions/runs/34168495512). This is cumulative build evidence, not a separate Jekyll run for this intermediate commit. This intermediate commit has not been visually inspected separately; the exact cumulative final integration page has been inspected at desktop width.
 
 ## Type of change
 <!--
@@ -37,7 +37,7 @@ Prepared branch: `codex/spacexai/staged-docs-02-conversation`, commit `ce493b6c2
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: Not opened; [prepared Core layer 03](https://github.com/jeffglousher/core/compare/23d3cadc96f939b3a0bb63409c31e3844aabae1c...c52ad690083d732abc49a64edd0f79730dd65fac).
+- Link to parent pull request in the codebase: Not opened; [prepared Core layer 03](https://github.com/jeffglousher/core/compare/bfb6bf9ccb55d1e42267175201affdd9d642c052...a3adf7f56bb35d70b8b4db5acb1a59709574245e).
 - Link to parent pull request in the Brands repository: Not applicable; the initial integration supplies the existing assets.
 - This PR fixes or closes issue: Not applicable; this documents conversation attachments and tools.
 

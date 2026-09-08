@@ -53,13 +53,13 @@ The preceding Core layer is tested against this exact newer client before submis
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/c52ad690083d732abc49a64edd0f79730dd65fac...33d48cf808320e6123cc6141fd759c75cb49afea
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/33d48cf808320e6123cc6141fd759c75cb49afea
-- Package source comparison: https://github.com/jeffglousher/spacexai-subscription-client/compare/573e22c48b9e182ab27fcc0d3d4027d0e9e4a142...f98151c06729b7bb5a930bc863075cc396b25bf6
-- Package changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/f98151c06729b7bb5a930bc863075cc396b25bf6/CHANGELOG.md
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/a3adf7f56bb35d70b8b4db5acb1a59709574245e...7057018ab57429d82dbbf43123f530bb5323ece2
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/7057018ab57429d82dbbf43123f530bb5323ece2
+- Package source comparison: https://github.com/jeffglousher/spacexai-subscription-client/compare/fc13749a2d9befa62b9581ccd4e3a60a9ef3c54e...44e84f8b4962dfd52098f5520655bdddc3def88b
+- Package changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/44e84f8b4962dfd52098f5520655bdddc3def88b/CHANGELOG.md
 - Publication gate: Version 0.3.0 is not published. The dependency resolver returns HTTP 404 for the package. Verify actual PyPI artifacts, release tags, and immutable release comparisons before replacing these staging links.
 - Submission order: Wait for the preceding Core layer to merge and the new package version to be published. Then refresh onto official dev, regenerate requirements, and rerun the preceding feature's tests with the released package. Do not open a dependent upstream PR.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34169546289) tests Core `33d48cf808320e6123cc6141fd759c75cb49afea` with client `f98151c06729b7bb5a930bc863075cc396b25bf6`: 55 tests, 99.0991% statement coverage, every integration module above 95%, and zero failures/errors/skips. Scoped native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34175274032) tests Core `7057018ab57429d82dbbf43123f530bb5323ece2` with client `44e84f8b4962dfd52098f5520655bdddc3def88b`: 58 tests, 99.0991% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review, dependency publication, and refreshing/retesting against current upstream remain required.
 
 ## Checklist
 <!--

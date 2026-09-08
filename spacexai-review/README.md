@@ -24,9 +24,12 @@ five package layers, six docs layers, and one Brands change. Four separate Core
 dependency upgrades now precede the features that need them. Follow-ons remain
 staged until their prerequisites merge or release.
 
+Recorded Core and docs bases are behind the freshly checked upstream tips;
+refresh and retest before human-reviewed upstream submission.
+
 [Current validation and gates](STAGED_READINESS.md) identifies exact source pairs
 and native run links. All eleven Core layers pass their integration tests; the
-final layer has 149 tests and three snapshots. This is not a clean final
+final layer has 157 tests and three snapshots. This is not a clean final
 quality verdict: speech and every later Core layer remain blocked by
 `has-entity-name: todo`, in addition to unpublished dependencies.
 
@@ -37,22 +40,40 @@ with current protocol hardening and all fifteen Python CI results.
 
 ## Human and publication boundaries
 
-No package version is published. The prepared package is not merged to main,
-and its GitHub publishing environment is not configured. PyPI account security
-and pending-publisher setup require account-owner verification. Release
-automation checks source and artifacts; it does not prove human review.
+No package version is published, and the prepared package is not merged to main.
+Verified GitHub controls now require owner approval in the `pypi` environment,
+limit it to `v*` tags, and disallow administrator bypass. Protected main requires
+a PR and the three strict Python CI checks; version tags cannot be changed or
+deleted. These controls do not prove independent human review or distinguish
+an agent using the owner's identity from the owner. An agent must not approve
+publication. Tag protection is not release-asset immutability.
+
+Current main still has the legacy release workflow. It uses the protected
+`pypi` environment, but the stronger exact-main preflight, full release matrix,
+and artifact contract are only on the prepared branch until its reviewed merge.
+PyPI account security and the exact pending publisher remain unverified; the
+browser reached sign-in without a login attempt. See the [first-wave checklist](FIRST_WAVE_READINESS.md)
+for these distinct publication gates.
 
 Under [Home Assistant's AI policy](https://developers.home-assistant.io/docs/ai_policy),
 a human must review, understand, and be able to explain every submitted change.
-Personal attestations remain unchecked. The initial draft links the
-[previous contribution #178765](https://github.com/home-assistant/core/pull/178765);
-it does not invent maintainer approval or rejection.
+Personal attestations remain unchecked. The earliest and only publicly found
+`jeffglousher` Core contribution is [#178765](https://github.com/home-assistant/core/pull/178765).
+The author account closed it unmerged on August 18, 2026, without a written
+closure explanation. Its reviews were automated, not a human maintainer
+rejection. The [provenance summary](FIRST_WAVE_READINESS.md#original-contribution-provenance)
+separates that record from our conclusions about the rewritten code.
 
 The plan remains 23 prepared contributions, with a conditional HA naming-fix
 slot beside the later speech wave if still needed. This is not a new Python
 package and does not enlarge or block the initial conversation contribution.
-No Bronze, Gold, or Platinum award is claimed. New rendered docs still need
-visual review, and a fresh initial-only Home Assistant OAuth login still needs
+No Bronze, Gold, or Platinum award is claimed. The exact initial docs preview
+was visually checked at desktop and mobile widths: readable, with no overlap.
+Its missing public integration logo is expected until Brands merges; a missing
+footer image is a preview-artifact limitation. The exact final docs also pass
+desktop visual inspection. Interactive controls and separate previews of all
+six docs layers were not exercised. A fresh initial-only Home Assistant OAuth
+login still needs
 an isolated native host and human authorization. Full-stack runtime status is
 recorded separately in [runtime verification](RUNTIME_VERIFICATION.md).
 

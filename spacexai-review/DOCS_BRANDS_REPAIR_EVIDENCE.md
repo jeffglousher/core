@@ -22,10 +22,16 @@ validates final docs against Core `07c95d71202a7599cd4f91070df8a41a958a0524`:
 two valid cases, missing media rejected, zero executed actions. This is exact
 source attribution, not a claim that this older Core commit is the latest head.
 
-Static HTML inspection confirms the corrected prose. No browser surface is
-available, so visual inspection remains open. Actual public logo delivery
-still awaits the Brands merge. No upstream submission or deployment occurred
-as part of these documentation checks.
+Static HTML inspection confirms the corrected prose. On September 7, the exact
+initial artifact was visually inspected at desktop (1280 pixels) and mobile
+(390 pixels) widths, and the exact final integration page at desktop width.
+Headless Chromium used an isolated profile and loopback-only artifact servers.
+Content, configuration cards, privacy disclosures, and troubleshooting render
+readably without overlap. This did not exercise interactive controls or visually
+inspect each intermediate layer separately. The unpublished integration logo
+remains a CDN placeholder; the partial preview artifact also omits the generic
+HA footer image. Actual public logo delivery still awaits the Brands merge.
+No upstream submission or deployment occurred as part of these checks.
 
 ## Historical pre-rebuild evidence
 

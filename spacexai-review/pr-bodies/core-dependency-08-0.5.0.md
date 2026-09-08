@@ -53,13 +53,13 @@ The preceding Core layer is tested against this exact newer client before submis
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/2c59f3dc5e7ad02e12eeea8072e25a804ce5c698...a0ab0bd3a699ffcb436bf8a63be60229a2b3d06f
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/a0ab0bd3a699ffcb436bf8a63be60229a2b3d06f
-- Package source comparison: https://github.com/jeffglousher/spacexai-subscription-client/compare/b29c66df6833a2527fa4835aef10c46c26ed49ed...b6087bbd49428839cc4db845f0c5ec33ef3025fd
-- Package changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/b6087bbd49428839cc4db845f0c5ec33ef3025fd/CHANGELOG.md
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/5494fee60b2b4f4720ee93463bf25b9375040d36...a7a0e4b5f6fbad3cc36bec34d4199bb766614735
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/a7a0e4b5f6fbad3cc36bec34d4199bb766614735
+- Package source comparison: https://github.com/jeffglousher/spacexai-subscription-client/compare/b6b1d7d301b66bd29e24d2c0c309fa3e775f9881...f58ec77aebff01fe6bf4b72e97a2370b023647a2
+- Package changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/f58ec77aebff01fe6bf4b72e97a2370b023647a2/CHANGELOG.md
 - Publication gate: Version 0.5.0 is not published. The dependency resolver returns HTTP 404 for the package. Verify actual PyPI artifacts, release tags, and immutable release comparisons before replacing these staging links.
 - Submission order: Wait for the preceding Core layer to merge and the new package version to be published. Then refresh onto official dev, regenerate requirements, and rerun the preceding feature's tests with the released package. Do not open a dependent upstream PR.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34169848657) tests Core `a0ab0bd3a699ffcb436bf8a63be60229a2b3d06f` with client `b6087bbd49428839cc4db845f0c5ec33ef3025fd`: 106 tests, 99.6830% statement coverage, every integration module above 95%, and zero failures/errors/skips. Scoped native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34175312827) tests Core `a7a0e4b5f6fbad3cc36bec34d4199bb766614735` with client `f58ec77aebff01fe6bf4b72e97a2370b023647a2`: 113 tests, 99.6830% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review, dependency publication, and refreshing/retesting against current upstream remain required.
 
 - Quality gate: The current `has-entity-name: todo` remains unresolved, so clean quality-scale validation is not established. Address it at the speech wave using existing accepted TTS precedent and, only if necessary, a separate minimal HA naming fix. It does not enlarge or block the initial conversation contribution.
 

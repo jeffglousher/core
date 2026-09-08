@@ -27,6 +27,8 @@ Add the SpaceXAI generate_video action for a prompt and optional reference image
 
 Generated videos are downloaded from allowed provider hosts with redirects disabled and bounded reads, then stored in Home Assistant media. Tests cover input validation, moderation, translated provider failures, signed URLs, and media download restrictions. The video protocol is implemented by spacexai-subscription-client 0.5.0.
 
+Token-refresh timeouts return a translated HA error before provider calls or local media creation.
+
 ## Type of change
 <!--
   What type of change does your PR introduce to Home Assistant?
@@ -55,13 +57,13 @@ Generated videos are downloaded from allowed provider hosts with redirects disab
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/a0ab0bd3a699ffcb436bf8a63be60229a2b3d06f...26b85560a728196e64fac184bffb32b16f430685
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/26b85560a728196e64fac184bffb32b16f430685
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/a7a0e4b5f6fbad3cc36bec34d4199bb766614735...22180c78bea231061810d1427a4a3acd36014dde
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/22180c78bea231061810d1427a4a3acd36014dde
 - Prerequisite: Submit against Home Assistant `dev` only after Core layer 08 merges. The preceding dependency-only layer owns the package version bump; this feature diff does not bundle it. No new upstream PR has been opened.
-- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/b29c66df6833a2527fa4835aef10c46c26ed49ed...b6087bbd49428839cc4db845f0c5ec33ef3025fd
-- Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/b6087bbd49428839cc4db845f0c5ec33ef3025fd/CHANGELOG.md
+- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/b6b1d7d301b66bd29e24d2c0c309fa3e775f9881...f58ec77aebff01fe6bf4b72e97a2370b023647a2
+- Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/f58ec77aebff01fe6bf4b72e97a2370b023647a2/CHANGELOG.md
 - Dependency release: Version 0.5.0 is not published. Add verified release/PyPI links and installation evidence before submission.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34169849867) tests Core `26b85560a728196e64fac184bffb32b16f430685` with client `b6087bbd49428839cc4db845f0c5ec33ef3025fd`: 136 tests, 99.3827% statement coverage, every integration module above 95%, and zero failures/errors/skips. Scoped native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review and dependency publication remain required.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34175314769) tests Core `22180c78bea231061810d1427a4a3acd36014dde` with client `f58ec77aebff01fe6bf4b72e97a2370b023647a2`: 144 tests, 99.3827% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review, dependency publication, and refreshing/retesting against current upstream remain required.
 
 - Quality gate: The current `has-entity-name: todo` remains unresolved, so clean quality-scale validation is not established. Address it at the speech wave using existing accepted TTS precedent and, only if necessary, a separate minimal HA naming fix. It does not enlarge or block the initial conversation contribution.
 

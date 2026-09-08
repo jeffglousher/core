@@ -29,7 +29,7 @@ The unofficial `spacexai-subscription-client` library owns provider communicatio
 
 This initial contribution targets Bronze and only the conversation platform. Attachments, provider-hosted tools, AI Task, media generation, speech, diagnostics, reauthentication, and reconfiguration are excluded.
 
-Tests cover completed login retries, cancellation, account validation, token rotation across reload, conversation responses, real Assist exposure controls, and provider failures. Permission denial is distinguished from invalid credentials.
+Tests cover completed login retries, cancellation, account validation, token rotation across reload, conversation responses, real Assist exposure controls, and provider failures. Permission denial is distinguished from invalid credentials. Token-endpoint timeout regressions verify normal setup retry, a translated conversation error, retained credentials, successful recovery, and cancellation.
 
 ## Type of change
 <!--
@@ -62,8 +62,8 @@ Tests cover completed login retries, cancellation, account validation, token rot
 - Client release: Version 0.1.0 is not yet published. Add the verified PyPI and GitHub release links before submitting.
 - Brands pull request staging diff: https://github.com/home-assistant/brands/compare/master...jeffglousher:brands:spacexai-initial
 - Prepared Core diff: https://github.com/jeffglousher/core/compare/be2e14f4273335fb5ef02b7f636cd01800e1491a...codex/spacexai/staged-01-initial
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/1be5415320b9f511d568df7990d5f32ffb0df0df
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34169029198) tests Core `1be5415320b9f511d568df7990d5f32ffb0df0df` with client `f12b460dffecff7ce4f2827fffa8351e06cadcb6`: 41 tests, 99.1701% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. The same exact-source run also passes unchanged script/setup and standard native hooks; strict hassfest remains blocked only by dependency-transparency: todo. Human review and dependency publication remain required.
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/cbe618c9800419de39601496779da68e5dd8ed23
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34175174869) tests Core `cbe618c9800419de39601496779da68e5dd8ed23` with client `b5513112b12a14baa43c295cf82cec8be3604ba7`: 44 tests, 99.1701% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. The same exact-source run also passes unchanged script/setup and standard native hooks; strict hassfest remains blocked only by dependency-transparency: todo. Human review, dependency publication, and refreshing/retesting against current upstream remain required.
 
 - First-install validation: Fresh initial-only Home Assistant UI/OAuth login still needs an isolated native host and human authorization; the existing full-stack test system is not that evidence.
 

@@ -4,28 +4,37 @@ The following exact prepared heads supersede the package SHAs/counts in the
 historical record below. All are pushed; main is not merged and no version
 has been published.
 
-- Version 0.1.0: `f12b460dffecff7ce4f2827fffa8351e06cadcb6`; 110 tests, 96.59% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34168803786).
-- Version 0.2.0: `573e22c48b9e182ab27fcc0d3d4027d0e9e4a142`; 119 tests, 96.99% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34169272336).
-- Version 0.3.0: `f98151c06729b7bb5a930bc863075cc396b25bf6`; 147 tests, 97.96% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34169495197).
-- Version 0.4.0: `b29c66df6833a2527fa4835aef10c46c26ed49ed`; 179 tests, 98.49% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34169671109).
-- Version 0.5.0: `b6087bbd49428839cc4db845f0c5ec33ef3025fd`; 208 tests, 98.19% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34169834827).
+- Version 0.1.0: `b5513112b12a14baa43c295cf82cec8be3604ba7`; 118 tests, 96.59% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34174829112).
+- Version 0.2.0: `fc13749a2d9befa62b9581ccd4e3a60a9ef3c54e`; 127 tests, 96.99% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34174992495).
+- Version 0.3.0: `44e84f8b4962dfd52098f5520655bdddc3def88b`; 155 tests, 97.96% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34174992428).
+- Version 0.4.0: `b6b1d7d301b66bd29e24d2c0c309fa3e775f9881`; 187 tests, 98.49% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34174992423).
+- Version 0.5.0: `f58ec77aebff01fe6bf4b72e97a2370b023647a2`; 216 tests, 98.19% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34174992203).
 
 All fifteen public Python jobs pass lint/format, strict MyPy, tests, wheel/sdist
-builds, strict Twine, exact distribution contracts, and isolated imports.
+builds, strict Twine, the wheel-member/required-source contracts, and isolated imports.
 Coverage above is from Python 3.14.5; the same test counts pass on all three
 versions. Python 3.12/3.13 coverage is 96.85%, 97.23%, 98.11%, 98.59%, and
 98.30% in release order. Every job's test, artifact contract, strict Twine,
 and isolated wheel/sdist installation steps were read back as successful.
 All five remote branch heads match local Git; all package checkouts are clean.
 
-The 28 release-contract tests exercise invalid source/tag/main combinations,
-missing release notes, wrong/missing artifact members, changed source bytes,
-metadata mismatches, and extra distributions. Release workflows passed
-actionlint 1.7.12 in the preceding release-hardening revision and are unchanged.
-This repair changes provider runtime validation and tests in `client.py` and
-`test_client.py`; package versions, metadata, lockfile, workflows, public API,
-OAuth identity, and login flow are unchanged. Published history was retained
-using one additive initial commit and parent merges through the four follow-ons.
+The 36 release-contract tests exercise invalid source/tag/main combinations,
+missing release notes, missing or unexpected wheel members, duplicate wheel
+names, changed required source bytes, metadata mismatches, and extra distributions.
+Eight new cases failed before this repair and pass afterward. The wheel allows
+only the package source, typing marker, license, and standard METADATA/WHEEL/RECORD
+members produced by the actual builds; duplicate names are rejected before reads.
+Required source bytes are also checked in the sdist, without claiming a universal
+archive-security audit or exhaustive WHEEL/RECORD content validation.
+
+The latest additive initial commit and parent merges changed only
+`script/check_release.py`, `tests/test_release.py`, and `RELEASING.md`.
+Exact comparisons against the preceding provider-boundary checkpoint confirm
+runtime source, package versions, metadata, lockfile, and workflows are unchanged
+in all five layers. The previously repaired provider behavior below remains
+included. Independent read-only review found no issue in this narrow change.
+Release workflow actionlint 1.7.12 evidence remains from the preceding,
+unchanged workflow revision.
 
 ## Provider-boundary repairs
 
@@ -57,12 +66,12 @@ a completed check. The package's declared CI checks all pass.
 
 ## Release gates
 
-Release preflight checks the actual release SHA against current main and the
+Release preflight checks the actual release SHA against main at preflight and the
 version/changelog contract. Publisher gating requires the complete exact-SHA
 three-Python matrix; only the isolated publisher receives OIDC permission.
-The wheel contains the typing marker, license, and exact package source.
-The sdist contract also covers source, tests, scripts, docs, workflows, lock,
-and license. Builds/imports run independently for both artifacts.
+The wheel member set and required package-source bytes are checked. The sdist
+check covers required source, tests, scripts, docs, workflows, lock, and license
+bytes. Builds/imports run independently for both artifacts.
 
 During the preceding release-hardening validation, the prepared-source
 preflight was exercised against main
@@ -70,17 +79,57 @@ preflight was exercised against main
 unmerged prepared release. This does not replace human review: ancestry,
 source equality, and CI cannot establish that a person understands the code.
 
-Remaining account/publication work: human review and explicit approval;
-merge reviewed source to main; required-reviewer GitHub pypi environment;
-account-owner verification of PyPI security and pending Trusted Publisher;
-release approval; and actual PyPI metadata, provenance, distributions, and
-clean-install checks after publication. No GitHub environment is configured.
-PyPI account-specific state is not publicly verifiable. The actual release
-publisher has not been exercised because no release is authorized.
+GitHub controls are now configured and independently verified. The retained
+local receipt `PUBLICATION_CONTROLS_20260907.json` records the 2026-09-08
+00:56:47 UTC readback: the `pypi` environment accepts only `v*` tags,
+requires `jeffglousher`, and disables administrator bypass. Protected `main`
+requires a PR and the three strict GitHub Actions Python checks, enforces the
+rules for administrators, and blocks force pushes/deletion. The `v*` tag
+ruleset blocks updates/deletion with no bypass actors. It does not prohibit tag
+creation or establish GitHub release-asset immutability.
 
-[Current release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/f12b460dffecff7ce4f2827fffa8351e06cadcb6/RELEASING.md)
+The sole maintainer can approve their own environment deployment, and the
+required PR approval count is zero; neither setting establishes independent
+human code review or distinguishes a person from an agent using their account.
+An agent must never supply the maintainer's code-review attestation or deployment
+approval. No such approval or publication was performed.
+
+Current `main` is still `40e8a3bd46653eecbb6269eb7e59cc9ecf91f75c` with
+the legacy release workflow. The prepared initial source `b5513112b12a14baa43c295cf82cec8be3604ba7`
+contains the exact-current-main preflight and complete matrix/artifact contract;
+those prepared guarantees are not active on main until genuine human review and
+merge. The environment gate covers both inspected workflows.
+
+Retained local `PACKAGE_RUNTIME_LICENSES_20260907.json` records 25 actual
+runtime dependency names, versions, and raw license metadata on `win32` with
+Python 3.14.5, together with the extraction code and `uv tree --locked --no-dev`
+output. Its lockfile SHA-256 is
+`a87e2ff2ca6f9f87735c0154add9d6a2a43a96f089de09bc88428bb46134c1e8`.
+This is reproducible machine evidence, not completed human compatibility review
+or proof covering every operating system, Python version, or optional extra.
+
+Remaining work: genuine maintainer code and license-compatibility review; merge
+reviewed source to main; account-owner verification of PyPI security and the exact
+pending Trusted Publisher binding; explicit release authorization and human
+environment approval; publication; and PyPI metadata, provenance, distributions,
+and clean-install verification afterward. Private PyPI account state remains
+unverified: the available account page requires sign-in. The publisher has not
+been exercised by a release.
+
+[Current release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/b5513112b12a14baa43c295cf82cec8be3604ba7/RELEASING.md)
 and [current stack proof](STAGED_READINESS.md) distinguish these gates from
 completed automated checks. Follow-on releases inherit the same safeguards.
+
+## Historical provider-boundary checkpoint — September 7, 2026
+
+These previously successful runs precede the publication-only wheel-contract
+repair. They are historical evidence, not the current prepared source heads.
+
+- Version 0.1.0: `f12b460dffecff7ce4f2827fffa8351e06cadcb6`; 110 tests, 96.59% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34168803786).
+- Version 0.2.0: `573e22c48b9e182ab27fcc0d3d4027d0e9e4a142`; 119 tests, 96.99% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34169272336).
+- Version 0.3.0: `f98151c06729b7bb5a930bc863075cc396b25bf6`; 147 tests, 97.96% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34169495197).
+- Version 0.4.0: `b29c66df6833a2527fa4835aef10c46c26ed49ed`; 179 tests, 98.49% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34169671109).
+- Version 0.5.0: `b6087bbd49428839cc4db845f0c5ec33ef3025fd`; 208 tests, 98.19% statement coverage; [three-Python CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34169834827).
 
 ## Historical package repair record
 
