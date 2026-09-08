@@ -8,12 +8,14 @@ import wave
 
 import pytest
 from spacexai_subscription_client import AuthenticationError, SpaceXAISubscriptionError
+from spacexai_subscription_client.const import TOKEN_URL
 
 from homeassistant.core import HomeAssistant
 
 from . import setup_integration
 
 from tests.common import MockConfigEntry
+from tests.test_util.aiohttp import AiohttpClientMocker
 from tests.typing import ClientSessionGenerator
 
 STT_URL = "/api/stt/stt.grok_speech_to_text"
@@ -28,6 +30,65 @@ async def _audio_stream(*chunks: bytes) -> AsyncIterable[bytes]:
     """Yield audio chunks."""
     for chunk in chunks:
         yield chunk
+
+
+async def test_token_refresh_timeout_and_retry(
+    aioclient_mock: AiohttpClientMocker,
+    hass: HomeAssistant,
+    hass_client: ClientSessionGenerator,
+    mock_config_entry_with_speech: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Return a speech error on a refresh timeout and recover on the next request."""
+    await setup_integration(hass, mock_config_entry_with_speech)
+    expired_token = {**mock_config_entry_with_speech.data["token"], "expires_at": 0}
+    hass.config_entries.async_update_entry(
+        mock_config_entry_with_speech,
+        data={**mock_config_entry_with_speech.data, "token": expired_token},
+    )
+    aioclient_mock.post(TOKEN_URL, exc=TimeoutError)
+    client = await hass_client()
+
+    response = await client.post(
+        STT_URL, headers=OGG_HEADERS, data=_audio_stream(b"audio")
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert await response.json() == {"text": None, "result": "error"}
+    assert mock_config_entry_with_speech.data["token"] == expired_token
+    mock_spacexai_subscription_client.async_transcribe.assert_not_awaited()
+    await hass.async_block_till_done()
+    assert hass.config_entries.flow.async_progress() == []
+
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(
+        TOKEN_URL,
+        json={
+            "access_token": "new-access-token",
+            "refresh_token": "new-refresh-token",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        },
+    )
+    response = await client.post(
+        STT_URL, headers=OGG_HEADERS, data=_audio_stream(b"audio")
+    )
+
+    assert response.status == HTTPStatus.OK
+    assert await response.json() == {
+        "text": "Turn on the kitchen light",
+        "result": "success",
+    }
+    assert mock_config_entry_with_speech.data["token"]["refresh_token"] == (
+        "new-refresh-token"
+    )
+    mock_spacexai_subscription_client.async_transcribe.assert_awaited_once_with(
+        "new-access-token",
+        audio=b"audio",
+        filename="speech.ogg",
+        media_type="audio/ogg",
+        language="en",
+    )
 
 
 async def test_capabilities_and_ogg_transcription(

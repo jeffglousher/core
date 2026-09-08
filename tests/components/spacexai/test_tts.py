@@ -10,6 +10,7 @@ from spacexai_subscription_client import (
     PermissionDeniedError,
     SpaceXAISubscriptionError,
 )
+from spacexai_subscription_client.const import TOKEN_URL
 
 from homeassistant.components import media_source, tts
 from homeassistant.components.spacexai.const import DOMAIN
@@ -21,7 +22,60 @@ from homeassistant.setup import async_setup_component
 from . import setup_integration
 
 from tests.common import MockConfigEntry
+from tests.test_util.aiohttp import AiohttpClientMocker
 from tests.typing import ClientSessionGenerator, WebSocketGenerator
+
+
+@pytest.mark.usefixtures("mock_tts_cache_dir")
+async def test_token_refresh_timeout_and_retry(
+    aioclient_mock: AiohttpClientMocker,
+    hass: HomeAssistant,
+    mock_config_entry_with_speech: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Keep credentials after a transient refresh failure and retry speech."""
+    await setup_integration(hass, mock_config_entry_with_speech)
+    expired_token = {**mock_config_entry_with_speech.data["token"], "expires_at": 0}
+    hass.config_entries.async_update_entry(
+        mock_config_entry_with_speech,
+        data={**mock_config_entry_with_speech.data, "token": expired_token},
+    )
+    aioclient_mock.post(TOKEN_URL, exc=TimeoutError)
+    media_source_id = tts.generate_media_source_id(
+        hass, "Hello", "tts.grok_tts", "en", cache=False
+    )
+
+    with pytest.raises(HomeAssistantError) as err:
+        await tts.async_get_media_source_audio(hass, media_source_id)
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "api_error"
+    assert mock_config_entry_with_speech.data["token"] == expired_token
+    mock_spacexai_subscription_client.async_synthesize_speech.assert_not_awaited()
+    await hass.async_block_till_done()
+    assert hass.config_entries.flow.async_progress() == []
+
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(
+        TOKEN_URL,
+        json={
+            "access_token": "new-access-token",
+            "refresh_token": "new-refresh-token",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        },
+    )
+
+    assert await tts.async_get_media_source_audio(hass, media_source_id) == (
+        "mp3",
+        b"speech",
+    )
+    assert mock_config_entry_with_speech.data["token"]["refresh_token"] == (
+        "new-refresh-token"
+    )
+    mock_spacexai_subscription_client.async_synthesize_speech.assert_awaited_once_with(
+        "new-access-token", text="Hello", voice_id="eve", language="en", speed=1.1
+    )
 
 
 async def test_media_browser_distinguishes_tts_subentries(
