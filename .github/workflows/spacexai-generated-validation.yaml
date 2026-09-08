@@ -28,7 +28,7 @@ jobs:
       matrix:
         include:
           - layer: initial
-            core-ref: 7a41a0358c01a58700bde227fa0a951d28f5e638
+            core-ref: 25e04203dad36c741b56ff7a789b85f6a76b7f7e
             client-ref: 155d76c5b940108be707bb379c02d476b893b758
             client-source: pypi
           - layer: final

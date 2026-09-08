@@ -13,7 +13,7 @@ on:
       core-ref:
         description: Exact Core commit to validate
         required: true
-        default: 7a41a0358c01a58700bde227fa0a951d28f5e638
+        default: 25e04203dad36c741b56ff7a789b85f6a76b7f7e
         type: string
       client-ref:
         description: Exact client source commit to install or verify against PyPI
@@ -29,6 +29,10 @@ on:
           - checkout
       standard-hooks:
         description: Also build the full development environment and run native hooks
+        default: false
+        type: boolean
+      shutdown-control:
+        description: Prove the shutdown regression fails against the previous initial source
         default: false
         type: boolean
       base-ref:
@@ -68,7 +72,7 @@ jobs:
       - name: Check out Core under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.core-ref || '7a41a0358c01a58700bde227fa0a951d28f5e638' }}
+          ref: ${{ inputs.core-ref || '25e04203dad36c741b56ff7a789b85f6a76b7f7e' }}
           path: core
           persist-credentials: false
       - name: Check out subscription client under test
@@ -147,6 +151,38 @@ jobs:
             git diff --exit-code HEAD --
             python3 -m script.gen_requirements_all validate
           } 2>&1 | tee requirements-validation.txt
+      - name: Prove the shutdown regression detects the previous behavior
+        if: inputs.shutdown-control
+        run: |
+          source .venv/bin/activate
+          git fetch --no-tags --depth=1 origin 7a41a0358c01a58700bde227fa0a951d28f5e638
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          import sys
+          import xml.etree.ElementTree as ET
+
+          source = Path("homeassistant/components/spacexai/config_flow.py")
+          fixed = source.read_bytes()
+          old = subprocess.check_output(["git", "show", f"7a41a0358c01a58700bde227fa0a951d28f5e638:{source.as_posix()}"])
+          assert old != fixed
+          target = "tests/components/spacexai/test_config_flow.py::test_shutdown_during_device_polling"
+          try:
+              source.write_bytes(old)
+              result = subprocess.run([sys.executable, "-b", "-X", "dev", "-m", "pytest", "-q", "--timeout=9", "--numprocesses=0", "-p", "no:sugar", "--junitxml=shutdown-negative.xml", target], capture_output=True, text=True)
+              Path("shutdown-negative.txt").write_text(result.stdout + result.stderr)
+              tree = ET.parse("shutdown-negative.xml")
+              failures = tree.findall(".//testcase/failure")
+              assert result.returncode == 1 and len(failures) == 1
+              assert not tree.findall(".//testcase/error") and not tree.findall(".//testcase/skipped")
+              failure = (failures[0].text or "").lower()
+              assert "not_running" in failure and "stopping" in failure
+              print("Negative control passed: old source cancels polling only at not_running, not stopping")
+          finally:
+              source.write_bytes(fixed)
+          assert source.read_bytes() == fixed
+          PY
+          git diff --exit-code HEAD --
       - name: Run integration tests with native socket safeguards
         run: |
           source .venv/bin/activate
@@ -178,6 +214,7 @@ jobs:
           path: |
             core/validation-sources.txt
             core/pytest-spacexai.txt
+            core/shutdown-negative.*
             core/lint-spacexai.txt
             core/coverage.json
             core/coverage.xml
