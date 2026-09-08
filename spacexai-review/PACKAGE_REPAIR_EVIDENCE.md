@@ -1,6 +1,50 @@
 # Current package boundary and release evidence — September 8, 2026
 
-## Current public-contract coverage checkpoint
+## Current publication verification — 0.1.0
+
+[PR #1](https://github.com/jeffglousher/spacexai-subscription-client/pull/1)
+is merged and [0.1.0 is published on PyPI](https://pypi.org/project/spacexai-subscription-client/0.1.0/).
+The [release and tag `v0.1.0`](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0)
+and verified `main` point to `155d76c5b940108be707bb379c02d476b893b758`.
+Its tree, `cd4996876c12b2fc3a30f77e134c621d65523d86`, is identical to the
+reviewed preparation head `e3269374781fcbe8f0d55713219e089bebb2d08b`.
+[Release workflow 34243434378](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34243434378)
+succeeded: source preflight, all three Python release-check jobs, and PyPI
+publication. Each Python job passed 127 tests with 100% statement coverage;
+artifact upload ran only on Python 3.14, as designed. GitHub records
+`jeffglousher` approving the `pypi` environment. This records the approval
+event, not an independent attestation of who operated that account.
+
+Both downloaded PyPI distributions match their published SHA-256 values:
+
+- `spacexai_subscription_client-0.1.0-py3-none-any.whl`: `2d7e8d92087afc3e72ec5839e93631284c378acd4e21121cbc60dc473c767b32`.
+- `spacexai_subscription_client-0.1.0.tar.gz`: `6f6a44acc6de85f27d2a2fba1a07106b39802da6e75b0102c42a8e0e7b09915b`.
+
+The unchanged release checker passed against exact release source bytes,
+including the wheel member contract and required sdist source bytes; strict
+Twine checks passed. PyPI metadata reports `Apache-2.0`, Python `>=3.12`,
+the expected dependencies and project links, and neither artifact is yanked.
+Six clean, non-editable installations passed: the PyPI-index wheel and the
+PyPI-hosted sdist independently on Python 3.12.13, 3.13.15, and 3.14.5 on
+Windows. Each verified the public import, version, typing marker, and exact
+installed client bytes. Linux release-CI artifact imports also passed.
+
+Official `pypi-attestations==0.0.30` verification passed for both artifacts.
+Additional cryptographic policies verified the signed repository,
+`release.yml` workflow identity, `refs/tags/v0.1.0`, exact release commit,
+GitHub issuer, and `release` event. The `pypi` environment matched PyPI
+publisher metadata and GitHub's gate record separately; it was **not**
+asserted to be cryptographically bound by those policies.
+
+The detailed local receipt is retained under
+`.tmp-spacexai-stack/pypi-0.1.0-verification-20260908/receipt.json`.
+This verifies published artifacts, not universal archive security, private
+account security, human license-compatibility review, or live provider use.
+Versions 0.2.0–0.5.0 remain unpublished. The
+[released checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/155d76c5b940108be707bb379c02d476b893b758/RELEASING.md)
+remains the process reference; the initial release must not be repeated.
+
+## Historical pre-publication coverage checkpoint
 
 Seven additional public-behavior cases cover malformed provider data, HTTP 408,
 interim polling delays, and independent token copies. Only

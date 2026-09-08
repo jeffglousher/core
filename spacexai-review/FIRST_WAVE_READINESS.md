@@ -1,172 +1,140 @@
 # SpaceXAI first-wave readiness
 
-Verified September 8, 2026. The four initial contributions are implemented
-and prepared for human review. They are not upstream-ready: publication,
-human review, and fresh initial-login proof remain. The exact initial docs
-have now been visually inspected. No upstream PR or package release was
-opened by this work.
+Verified September 8, 2026. The initial Python package is published and its
+post-publication checks pass. Three HA companion contributions remain prepared
+for human review, not submitted upstream. Fresh initial-only UI/OAuth acceptance
+and human review still remain.
 
 ## Exact first-wave source
 
-- Python 0.1.0: `harden-initial-release`, `e3269374781fcbe8f0d55713219e089bebb2d08b`.
-- Core: `codex/spacexai/staged-01-initial`, `5d623e0a730ded8c3b4d4fa41af064d9955ad623`.
+- Python 0.1.0: [release v0.1.0](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0), `155d76c5b940108be707bb379c02d476b893b758`.
+- Core: `codex/spacexai/initial-release-0-1`, `7a41a0358c01a58700bde227fa0a951d28f5e638`.
 - Brands: `spacexai-initial`, `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
-- Docs: `codex/spacexai/staged-docs-01-initial`, `0a5a5dfb0f779bf027b609781c5117cc78f9d3a7`.
+- Docs: `codex/spacexai/docs-initial-release-0-1`, `44526b046fa26d4ddf0ab037850a54e30ecbf1d0`.
 
-All four are pushed to the corresponding jeffglousher forks. Core is based on
-official dev `be2e14f4273335fb5ef02b7f636cd01800e1491a`: 18 changed files containing
-only the initial integration, tests, and generated dependency/ownership/type
-wiring. Docs adds one 96-line page on official next
-`16ad324d9cbadf6d03b94f12ef278b00c7b9999f`. These are the new canonical refs;
-old published history remains available without force pushes.
+Core has one commit and exactly 18 changed files on the checked official dev
+`38aacedef39eb3f077ce4a112a58bf7286af5e2c`. Docs has one commit and one 96-line
+page on official next `1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a`.
+Both candidates and their fixed fork review bases are pushed. The prior staged
+branches and review bases were preserved, not rewritten or deleted.
 
-These recorded bases are not the current upstream tips. A fresh check found
-Core dev `1f889c45a3952af07513e05c51043de86f02c499` 73 commits ahead and docs
-next `5b1b0ec30067dcd4840a9446bd054e728612ece7` 12 commits ahead. The docs
-changes do not alter the initial page; the shared configuration plugin only
-adds an allowed type. Core's used OAuth, Conversation, Assist, and LLM APIs are
-unchanged; only generated metadata and aggregate requirements overlap our diff.
-No source migration was identified. This static inspection is not a current-tip build.
-Refresh and retest before human-reviewed upstream submission.
+Core runtime and tests are byte-identical to the prepared initial `5d623e0a`;
+only `dependency-transparency` changes from `todo` to `done`. The manifest
+already pinned 0.1.0. Generated additions preserve the current upstream files.
+No initial API migration was identified. The docs page is byte-identical to
+`0a5a5dfb`. Recheck upstream freshness at actual submission time.
 
-## Verified checks
+## Published dependency verification
 
-- Python: [exact-head CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34234111085)
-  passes all Python 3.12/3.13/3.14 jobs. There are 127 tests and 100% statement
-  coverage: 288/288 statements on Python 3.12/3.13 and 266/266 on Python 3.14,
-  with zero missing or excluded statements. This includes 36 release-contract
-  tests. Ruff, strict MyPy, builds,
-  strict Twine checks, exact wheel members/required source bytes, and isolated wheel/sdist
-  imports pass.
-- Initial Core with client `e3269374`: [exact-pair native run](https://github.com/jeffglousher/core/actions/runs/34234130097)
-  passes 46 tests without failures, errors, or skips; 241/241 statements
-  (100%), with zero excluded statements. Unchanged script/setup, the upstream
-  full-tree general-hook subset, and standard contribution-file hooks pass,
-  including native MyPy/Pylint, requirements, and typing generation. Tests
-  keep the standard socket guard; no Windows compatibility shim is used.
-- The same [exact initial native run](https://github.com/jeffglousher/core/actions/runs/34234130097)
-  leaves tracked generated files unchanged. Initial Core has exactly the acknowledged
-  `dependency-transparency: todo` blocker and no other errors/warnings.
-  This is a staging-gate pass, not clean hassfest. Later speech naming remains
-  a separate follow-on gate; it is not present in this initial layer.
-- [Native docs and Brands validation](https://github.com/jeffglousher/core/actions/runs/34168495512)
-  builds the exact new initial and final docs with the prescribed Jekyll command
-  and passes prose checks. Brands at the exact SHA above passes the complete
-  validator: 19,231 images, zero issues. All six docs layers also pass individual
-  prose/whitespace checks. The exact initial docs `0a5a5dfb` from this run were
-  visually inspected at desktop width 1280 and mobile width 390: readable,
-  without overlapping content. The unpublished integration logo is expected
-  to be unavailable from the public Brands CDN. A missing footer image belongs
-  to the downloaded preview artifact, not the integration prose. The exact
-  final docs `69221dc8` were also inspected at desktop width 1280: readable
-  headings, tables, cards, privacy, and troubleshooting, without overlap.
-  This checks those two rendered pages, not interactive controls or separate
-  previews of all six docs layers.
+[Package PR #1](https://github.com/jeffglousher/spacexai-subscription-client/pull/1)
+is merged. Its merge/release tree exactly matches the reviewed `e3269374` source.
+[Release run 34243434378](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34243434378)
+passes source preflight, Python 3.12/3.13/3.14 release checks, and publishing.
+Each Python job passes 127 tests with 100% statement coverage. GitHub records
+`jeffglousher` approving the protected `pypi` environment, consistent with the
+user's confirmation; no agent approval was performed.
 
-The final coverage pass adds tests only, including public language discovery and
-handling a stored non-conversation subentry. Production code and coverage
-exclusions are unchanged. The percentages above measure statements, not branches;
-100% coverage does not replace human review or fresh-login verification.
+[PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/) provides
+both unyanked distributions with the expected version, Apache-2.0 license,
+Python >=3.12, and project links. Downloaded hashes, exact wheel members, and
+required distribution source bytes match the release. Strict Twine passes.
 
-OAuth device authorization remains the only login path and the approved provider
-identity is unchanged. The unofficial package owns protocol handling, absolute
-device-code expiry, polling backoff, and distinct permission/authentication
-errors. This pass also rejects malformed response fields, unoffered function
-calls, unsupported explicit token types, and invalid numeric token metadata.
-Real SDK wire tests exercise these boundaries. The latest repair moves two
-expiry timestamp computations into existing normalization and adds two named
-public OAuth regressions for oversized JSON integers. This is a malformed-response
-contract fix, not an observed provider outage; HA runtime code is unchanged.
-Core remains the HA adapter:
-this pass additionally maps OAuth refresh timeouts to normal retry/API errors.
-Public endpoint regressions verify retained tokens, successful retry, and
-cancellation. Existing shared-session and real Assist exposure tests still pass. Docs clarifies subscription eligibility,
-selected-by-default Assist access, and supported first-layer troubleshooting.
+Both files pass official cryptographic attestation verification plus explicit
+checks for the signed repository, workflow, tag, release SHA, issuer, and event.
+The `pypi` environment is supported by publisher metadata and GitHub approval
+records; it is not claimed as cryptographically bound by the verifier.
 
-## Original contribution provenance
+All six clean post-publication wheel/sdist installations pass on Windows with
+Python 3.12.13, 3.13.15, and 3.14.5, including version, public import, typing,
+non-editable installation, and exact runtime bytes.
+[Package evidence](PACKAGE_REPAIR_EVIDENCE.md) includes hashes and limitations.
+This does not re-attest private account security or human license review.
 
-The public author search found one `jeffglousher` Core submission:
-[#178765, Add SpaceXAI Conversation integration.](https://github.com/home-assistant/core/pull/178765),
-opened August 11, 2026. The author account closed it unmerged on August 18.
-There is no written closure explanation and no human maintainer review to
-attribute a rejection to. All 77 review records and 24 inline threads are
-from bots; the [single-platform request](https://github.com/home-assistant/core/pull/178765#pullrequestreview-4908920675)
-was Home Assistant automation. The author's [scope explanation](https://github.com/home-assistant/core/pull/178765#issuecomment-5259723684)
-is not a closure explanation. Historical unresolved thread markers are not
-proof that the rewritten initial code still has those defects.
+## Current Core verification
 
-One original [timeout finding](https://github.com/home-assistant/core/pull/178765#discussion_r3760223813)
-was still valid. A [native pre-fix run](https://github.com/jeffglousher/core/actions/runs/34174576579)
-reproduced setup entering SETUP_ERROR and conversation leaking TimeoutError.
-The corrected initial [run](https://github.com/jeffglousher/core/actions/runs/34175174869)
-passes both recoveries and cancellation. An intermediate recovery test used the
-wrong HA lifecycle method; that test was corrected to public async_reload before
-claiming success. This is a verified bot finding, not a maintainer rejection.
+[Native run 34244844613](https://github.com/jeffglousher/core/actions/runs/34244844613)
+tests the exact Core/release pair above using the actual PyPI package.
+The scoped job passes 46 tests, zero failures/errors/skips, and 241/241 statements
+(100%), with zero missing or excluded statements. Every initial module is 100%.
+Ruff, formatting, native MyPy/Pylint, and requirements regeneration pass.
 
-## Verified publication controls and limits
+The installed package has no direct-URL/editable metadata and all six runtime
+files match the release checkout. The checkout is a verification reference,
+not the installed dependency. No local wheelhouse substitutes for PyPI.
 
-Read-only GitHub verification confirms the `pypi` environment requires
-`jeffglousher` approval, allows that sole maintainer to approve their own run,
-disallows administrator bypass, and accepts only `v*` tags. Protected `main`
-requires a PR, resolved conversations, and strict `Python 3.12`, `Python 3.13`,
-and `Python 3.14` checks from GitHub Actions app 15368. Those exact checks were
-observed passing. Administrators are covered; force pushes and deletion are
-forbidden. Required external approvals are zero, so this is not independent
-human review. The [version-tag ruleset](https://github.com/jeffglousher/spacexai-subscription-client/rules/22495983)
-forbids updates/deletion without bypass; it does not make release assets immutable.
+[Generated run 34244846528](https://github.com/jeffglousher/core/actions/runs/34244846528)
+passes the initial layer with genuinely clean hassfest: exit 0, no findings or
+warnings, status `passed`, and no tracked generated-file changes.
+The publication exception is not accepted in PyPI mode. Its separate final
+stack job still fails only the unpublished-version and speech-naming rules;
+that result is not an initial failure or a full-stack approval.
 
-The owner approval is an account permission, not proof that a human rather
-than an agent is using that identity. An agent must not approve publication
-on the owner's behalf. PyPI account security and the pending publisher remain
-unverified: the browser reached sign-in, and no login was attempted.
+The same exact-source native run also passes unchanged script/setup, the
+upstream full-tree general-hook subset, and standard hooks on all 18 contribution
+files, including unskipped hassfest. Its strict generated result is also
+`passed`, with exit 0 and no findings or tracked changes. The wheelhouse build
+is skipped and `UV_FIND_LINKS` is empty in this PyPI-backed run.
+The Windows setup attempt cannot activate the POSIX environment layout, and
+the local all-files hook attempt fails during uv cache initialization. Local
+full hooks are not claimed; the successful native Linux run is the proof.
+
+Coverage measures statements, not branches or every possible behavior.
+OAuth device authorization and the approved identity remain unchanged.
+The initial integration remains conversation-only and the unofficial library
+owns provider communication; no framework layer or new package was introduced.
+
+## Documentation and Brands
+
+The refreshed initial docs page passes local and native remark/textlint with
+unchanged content. [Native run 34245078515](https://github.com/jeffglousher/core/actions/runs/34245078515)
+builds exact initial docs `44526b04` with the prescribed Jekyll task and passes
+the complete Brands validator at `e3ac8da8`: 19,231 images, zero issues.
+All four workflow jobs pass. Its final docs and blueprint jobs retain their
+older exact sources; they are not evidence for the new initial Core candidate.
+
+The older initial docs preview was visually inspected at desktop/mobile widths.
+The new rendered page has identical markup except for one generated doc-data
+script reference; all 79 retained non-HTML preview files are byte-identical.
+The referenced doc-data scripts are absent from both partial preview artifacts,
+so this supports the previous layout baseline, not complete asset equivalence
+or a fresh interactive inspection. Public integration logo delivery remains
+pending the Brands merge.
 
 ## Remaining first-wave gates
 
-1. A human must review, understand, and be able to explain each contribution.
-   Personal template attestations remain unchecked; green checks do not make
-   those attestations.
-2. Review and explicitly approve merging the prepared package into main, and
-   verify PyPI account security and the exact pending Trusted Publisher,
-   including its `pypi` environment binding. The prepared source is not merged.
-3. Publish 0.1.0 only after those human/account gates. Current main still has the
-   legacy release workflow: it uses the protected `pypi` environment, but lacks
-   the prepared exact-main preflight, release-test matrix, and artifact contract.
-   Merge the reviewed prepared workflow before releasing. That workflow requires
-   the exact current-main SHA, matching version tag, nonempty versioned changelog,
-   full exact-SHA three-Python matrix, and artifact checks before owner approval.
-   Verify actual PyPI metadata, provenance, distributions, and clean installation
-   after publication.
-4. Then mark dependency-transparency done in a follow-up Core commit,
-   regenerate, and obtain genuinely clean native hassfest and tests with the
-   released dependency. A development wheelhouse is not PyPI publication.
-5. Verify a fresh initial-only Home Assistant installation and UI OAuth login on
-   an isolated native host with an empty dedicated configuration and human
-   provider authorization. The existing full-stack OAuth entry is not this
-   proof. No suitable isolated native host is presently available here.
-6. Recheck the public integration logo after Brands merges. The initial docs
-   visual check is complete; final-stack visual review is not initial-login
-   proof. Recheck upstream freshness and replace staging links with actual
-   PR/release links when human-reviewed submissions are made.
+1. A human must review, understand, and be able to explain the three HA
+   contributions. Keep personal template attestations unchecked until true.
+2. Complete a fresh initial-only HA installation and browser OAuth login on a
+   separate native instance with an empty dedicated configuration. Verify
+   conversation, explicitly permitted Assist control, disabled Assist control,
+   restart/token persistence, and removal. Existing full-stack credentials are
+   not fresh-login proof. An isolated native host and human authorization are
+   still needed; do not replace the existing full-stack instance.
+3. After creating the companion drafts, replace comparison placeholders with
+   actual PR links. Recheck the public integration logo after Brands merges.
+4. Before upstream submission, recheck upstream freshness, rerun relevant
+   checks if the base changes, and finish the human review gates. Do not open
+   dependent follow-on upstream PRs early.
 
-The [release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/e3269374781fcbe8f0d55713219e089bebb2d08b/RELEASING.md)
-contains the package publication sequence. Keep follow-ons staged until their
-predecessors merge; do not open dependent upstream PRs.
+Use the [three fork-draft instructions](README.md#create-the-three-companion-fork-drafts).
+No further library tag, release, or publication is needed for this wave.
 
-## Follow-ons and runtime are separate gates
+## Original contribution provenance
 
-The [23-layer map](STACK.md) now separates four Core dependency bumps from their
-features. All eleven updated Core/package pairs pass native tests after the
-initial coverage regressions were inherited through the stack. Only the initial
-pair ran full standard contribution hooks in this checkpoint. Speech and
-downstream remain quality-blocked by `has-entity-name: todo`. The written rule
-has no exception for the current functional TTS naming behavior. The plan keeps
-23 prepared contributions plus a conditional HA naming-fix slot beside speech,
-if still needed then. It requires no additional Python package and does not
-enlarge or block this first wave. No Bronze, Gold, or Platinum award is claimed.
+The author closed [Core PR #178765](https://github.com/home-assistant/core/pull/178765)
+unmerged; no written closure explanation or human maintainer rejection was
+found. An original bot-reported OAuth timeout was reproduced and fixed in the
+prepared initial source. [The pre-publication record](https://github.com/jeffglousher/core/blob/6ba2c7d337f0d4d3eb3fe036a66aa507a2fa24e6/spacexai-review/FIRST_WAVE_READINESS.md)
+retains the detailed evidence; this release does not change those findings.
 
-The existing full-stack dogfood remains on client `f58ec77a`, not the new
-`24cfeaed` prepared head. Its bounded conversation,
-AI text, fresh TTS, audio decoding, and STT round-trip checks pass.
-[Runtime evidence](RUNTIME_VERIFICATION.md) records that deployed source and
-limits. Existing-account full-stack success does not prove a fresh initial-only login. [Current validation](STAGED_READINESS.md) records exact
-source pairs and preserves prior evidence as historical.
+## Follow-ons and runtime remain separate
+
+The [23-contribution design stack](STACK.md) is preserved. Only its initial
+submission candidates were refreshed onto the new upstream tips. Versions
+0.2–0.5 are not published; speech/downstream also retain the independent
+`has-entity-name: todo` issue. No Bronze, Gold, or Platinum award is claimed.
+
+The existing dogfood remains `18be3997`, containing old Core `b8be5c4f` and
+client `f58ec77a`. No deployment or live provider call was made in this
+publication-verification pass. [Runtime evidence](RUNTIME_VERIFICATION.md)
+continues to describe that older installation, not these new candidate heads.

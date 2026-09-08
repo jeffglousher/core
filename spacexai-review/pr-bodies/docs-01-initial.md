@@ -17,9 +17,11 @@ Document the new SpaceXAI conversation integration: browser sign-in, eligible su
 
 This fork draft accompanies only the initial conversation platform. Attachments, provider-hosted tools, AI Task, image/video generation, speech, and later account features are not documented here. The parent Core and Brands changes remain separate prepared contributions, not open upstream PRs.
 
-Prepared from official `next` at `16ad324d9cbadf6d03b94f12ef278b00c7b9999f` on branch `codex/spacexai/staged-docs-01-initial`, commit `0a5a5dfb0f779bf027b609781c5117cc78f9d3a7`. The diff contains only the new 96-line integration page. The release is quoted as '2026.10' so YAML preserves October; confirm the target release when preparing upstream submission.
+Prepared from official `next` at `1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a` on branch `codex/spacexai/docs-initial-release-0-1`, commit `44526b046fa26d4ddf0ab037850a54e30ecbf1d0`. The diff contains only the new 96-line integration page, byte-identical to the previously reviewed initial page. The release is quoted as '2026.10' so YAML preserves October; confirm the target release when preparing upstream submission.
 
-Native remark/textlint and the prescribed Jekyll build passed for this exact commit in [fork validation](https://github.com/jeffglousher/core/actions/runs/34168495512). The exact generated page was visually inspected at desktop and mobile widths: content and configuration cards are readable without overlap. Interactive controls were not exercised. Public logo delivery remains pending the separate Brands merge. Refresh and retest against current `next` and replace staging comparisons with actual companion PR links before upstream submission.
+Local and native remark/textlint checks pass for the new candidate. Its exact-source [native Jekyll validation](https://github.com/jeffglousher/core/actions/runs/34245078515) passed with Ruby 3.4.8, Jekyll 4.4.1, and Node.js 20.20.2; the prescribed site build completed in 110.475 seconds and produced the integration page.
+
+The earlier `0a5a5dfb` render from [historical validation](https://github.com/jeffglousher/core/actions/runs/34168495512) was visually inspected at desktop and mobile widths: content and configuration cards were readable without overlap. That is not a visual inspection of the refreshed candidate, even though the page source is unchanged. Interactive controls were not exercised. Public logo delivery remains pending the separate Brands merge. Recheck upstream freshness and replace staging comparisons with actual companion PR links before upstream submission.
 
 ## Type of change
 <!--
@@ -41,7 +43,7 @@ Native remark/textlint and the prescribed Jekyll build passed for this exact com
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: Not opened; [prepared Core layer 01](https://github.com/jeffglousher/core/compare/be2e14f4273335fb5ef02b7f636cd01800e1491a...codex/spacexai/staged-01-initial).
+- Link to parent pull request in the codebase: Not opened; [prepared current-tip initial Core](https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...7a41a0358c01a58700bde227fa0a951d28f5e638) on `codex/spacexai/initial-release-0-1`.
 - Link to parent pull request in the Brands repository: Not opened; [prepared Brands comparison](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
 - This PR fixes or closes issue: Not applicable; this documents a new integration.
 

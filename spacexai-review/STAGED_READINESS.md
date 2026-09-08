@@ -1,6 +1,39 @@
 # Current 23-contribution validation
 
-## Current coverage and fork-draft checkpoint
+## Current published-dependency checkpoint
+
+September 8, 2026. Python 0.1.0 is published from `155d76c5b940108be707bb379c02d476b893b758`
+with verified hashes, source bytes, signed provenance, and six clean installations.
+[Publication evidence](PACKAGE_REPAIR_EVIDENCE.md) records the exact files and scope.
+
+The refreshed initial Core `7a41a0358c01a58700bde227fa0a951d28f5e638` is one commit
+on official dev `38aacedef39eb3f077ce4a112a58bf7286af5e2c`. Its runtime and tests
+are unchanged; the dependency-publication rule is now done.
+[Native run 34244844613](https://github.com/jeffglousher/core/actions/runs/34244844613)
+uses the actual PyPI package, not a local source install: 46 tests, 241/241
+statements, zero missing/excluded statements, failures, errors, or skips.
+All six installed runtime files match the release source and direct-URL
+metadata is absent. Scoped checks and requirement regeneration pass. The same
+exact-source run also passes unchanged script/setup, the upstream full-tree
+general-hook subset, and standard native hooks on all 18 contribution files,
+including unskipped hassfest. Full-hook generated validation is clean too;
+the wheelhouse build is skipped and `UV_FIND_LINKS` is empty.
+
+[Generated run 34244846528](https://github.com/jeffglousher/core/actions/runs/34244846528)
+records the initial pair as genuinely clean: hassfest exit 0, zero findings or
+warnings, status `passed`, and unchanged tracked generated files. Its unchanged
+final pair `c5aa6274`/`24cfeaed` still fails exactly publication and speech naming.
+The overall generated workflow therefore fails; the initial job passes.
+Harness `5229aa8a4be5e9083c9f53f3e25283d47986678a` enforces actual PyPI installation
+and rejects the old publication exception in PyPI mode. Explicit checkout mode
+is retained only for unpublished follow-on versions.
+
+[First-wave readiness](FIRST_WAVE_READINESS.md) records native full-hook and
+companion-build completion, current source refs, and remaining human/live-login
+gates. The older 23-layer design, runtime installation, and receipts below are
+preserved, not relabeled as tested on the refreshed base.
+
+## Historical pre-publication coverage and fork-draft checkpoint
 
 September 8, 2026. The initial Core integration now has exact 100% statement
 coverage: 241/241 statements, zero missing or excluded statements, and 46 tests.
@@ -9,7 +42,7 @@ The initial Python client passes 127 tests with exact 100% on Python 3.12,
 substitute for human review. Only test files changed from the expiry checkpoint;
 no production code, coverage exclusions, or dependency versions changed.
 
-The [four draft write-ups and launch commands](README.md#create-the-four-fork-drafts)
+The [historical four-draft instructions](https://github.com/jeffglousher/core/blob/6ba2c7d337f0d4d3eb3fe036a66aa507a2fa24e6/spacexai-review/README.md#create-the-four-fork-drafts)
 target only jeffglousher's repositories. Three fixed review-base branches give
 clean initial Core/docs/Brands diffs; package review targets its own main.
 No draft was opened, package published, or HA deployment performed.

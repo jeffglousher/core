@@ -1,3 +1,23 @@
+# Published initial package — historical PR record
+
+[PR #1](https://github.com/jeffglousher/spacexai-subscription-client/pull/1)
+has merged, and [0.1.0 is published on PyPI](https://pypi.org/project/spacexai-subscription-client/0.1.0/).
+The [release `v0.1.0`](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0)
+and verified `main` identify `155d76c5b940108be707bb379c02d476b893b758`,
+whose tracked tree matches the prepared `e3269374781fcbe8f0d55713219e089bebb2d08b`.
+[Release workflow 34243434378](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34243434378)
+passed all three Python checks and publication after the recorded `pypi`
+environment approval. Published hashes, source contracts, signed provenance,
+and six isolated PyPI wheel/sdist installs are verified in the
+[package evidence](../PACKAGE_REPAIR_EVIDENCE.md).
+
+Do not create this initial PR or release again. Versions 0.2.0–0.5.0 remain
+unpublished. The original body below is preserved unchanged as historical
+context: its preparation instructions and unpublished status describe the
+state before PR #1 merged, not current actions or new human attestations.
+
+## Original merged PR body — historical
+
 # Prepare spacexai-subscription-client 0.1.0
 
 ## Purpose

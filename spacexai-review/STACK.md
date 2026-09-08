@@ -1,8 +1,30 @@
 # SpaceXAI contribution stack
 
-Canonical staging map, September 8, 2026. This replaces the prior 19-contribution
+Preserved staging map, September 8, 2026. This replaces the prior 19-contribution
 map; old published refs remain historical and were not rewritten or deleted.
 The packet is separate from every upstream-shaped contribution diff.
+
+## Current first-wave submission candidates
+
+Python 0.1.0 is now [published](https://pypi.org/project/spacexai-subscription-client/0.1.0/)
+from release/main `155d76c5b940108be707bb379c02d476b893b758`; its tree exactly
+matches the reviewed initial source below. The package PR is merged.
+
+The current initial Core candidate is `codex/spacexai/initial-release-0-1` at
+`7a41a0358c01a58700bde227fa0a951d28f5e638`, one commit on official dev
+`38aacedef39eb3f077ce4a112a58bf7286af5e2c`. Its only integration change from
+the preserved initial is `dependency-transparency: done`. Runtime and tests
+are unchanged, and generated additions preserve the newer upstream wiring.
+
+Initial docs is `codex/spacexai/docs-initial-release-0-1` at
+`44526b046fa26d4ddf0ab037850a54e30ecbf1d0`, one commit on official next
+`1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a`; the 96-line page is byte-unchanged.
+Brands remains at the source listed below.
+
+Use these candidates for the [three remaining fork drafts](README.md#create-the-three-companion-fork-drafts).
+The old 23-layer design and all its branch histories remain available below;
+they have not all been replayed onto today's upstream. Follow-ons still use
+unpublished package versions and must retain their publication blockers.
 
 ## Scope and order
 
@@ -14,7 +36,7 @@ OAuth-only provider communication belongs in the unofficial Python client.
 Core handles HA adaptation, configuration, lifecycle, and entity/action behavior.
 No API-key fallback or runtime CLI dependency is introduced.
 
-## Canonical Core layers
+## Preserved Core design layers
 
 All are pushed to jeffglousher/core on official dev base
 `be2e14f4273335fb5ef02b7f636cd01800e1491a`. Each comparison uses the immediately preceding
@@ -39,18 +61,21 @@ layers Core02, Core04, Core06, and Core08 respectively. This follows the
 to separate dependency upgrades from feature changes. Submit against official
 dev only after predecessors merge; refresh and retest at that time.
 
-All eleven updated Core/package pairs pass native tests after the initial
-coverage tests were inherited through the stack. Initial Core has 241/241
-statements covered (100%), with no excluded statements. This does not claim
-100% for every follow-on layer or branch coverage.
-[Current proof](STAGED_READINESS.md) preserves exact source/run attribution.
-Initial hassfest is blocked only by dependency publication. Speech and later
-also fail the written entity-naming requirement; test success does not remove it.
+The pre-publication native runs for these eleven preserved Core/package pairs
+pass after the coverage tests were inherited. The preserved initial has
+241/241 statements covered (100%), with no excluded statements. This does not
+claim 100% for every follow-on layer or branch coverage.
+[Validation evidence](STAGED_READINESS.md) preserves exact source/run attribution.
+The refreshed initial candidate above now passes clean hassfest using PyPI;
+the older initial's publication finding is historical. Unpublished follow-on
+versions and the speech entity-naming rule remain separate blockers.
 
 ## Package layers
 
 All five source heads are pushed and pass Python 3.12/3.13/3.14 CI, strict types,
-build/artifact checks, and isolated wheel/sdist imports. None is published.
+build/artifact checks, and isolated wheel/sdist imports. Version 0.1.0 is
+published; 0.2–0.5 remain unpublished. The following are the prepared source
+branch heads; the published initial merge commit is recorded above.
 
 1. [Client 0.1.0](pr-bodies/client-0.1.0.md) — `harden-initial-release` at `e3269374781fcbe8f0d55713219e089bebb2d08b`; 127 tests.
 2. [Client 0.2.0](pr-bodies/client-0.2.0.md) — `spacexai/client-02-conversation` at `c571128196a790526f51ba5b66f8cf0ba9c77edb`; 136 tests.

@@ -19,7 +19,7 @@ The artwork comes from the [official SpaceXAI and Grok asset pack](https://data.
 
 Verified the eight files' PNG format, transparency, dimensions, unique content, domain placement, and source shapes. The source archive has SHA256 `db9129acd4efc4c2202d25afe31b70281a79f8507f75520ab5e6b3356895a7e9`. The four landscape-logo alpha channels match the trimmed, resized source PNGs; icon shape comparisons allow for antialiasing. This establishes artwork provenance, not an endorsement of the community-maintained integration.
 
-The repository's native Bash/ImageMagick validator passed for commit `e3ac8da8bf579ec54210cc211e1eaa0768052679` in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762): 19,231 images checked, zero issues.
+The repository's native Bash/ImageMagick validator passed for commit `e3ac8da8bf579ec54210cc211e1eaa0768052679` in [fork validation](https://github.com/jeffglousher/core/actions/runs/34245078515): 19,231 images checked, zero issues.
 
 ## Type of change
 <!--
@@ -42,8 +42,8 @@ The repository's native Bash/ImageMagick validator passed for commit `e3ac8da8bf
 -->
 
 - This PR fixes or closes issue: Not applicable; these assets accompany a new integration.
-- Link to code base pull request: Not opened; [prepared initial Core](https://github.com/jeffglousher/core/compare/be2e14f4273335fb5ef02b7f636cd01800e1491a...codex/spacexai/staged-01-initial).
-- Link to documentation pull request: Not opened; [prepared initial documentation](https://github.com/jeffglousher/home-assistant.io/compare/16ad324d9cbadf6d03b94f12ef278b00c7b9999f...codex/spacexai/staged-docs-01-initial).
+- Link to code base pull request: Not opened; [prepared current-tip initial Core](https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...7a41a0358c01a58700bde227fa0a951d28f5e638) on `codex/spacexai/initial-release-0-1`.
+- Link to documentation pull request: Not opened; [prepared current-tip initial documentation](https://github.com/jeffglousher/home-assistant.io/compare/1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a...44526b046fa26d4ddf0ab037850a54e30ecbf1d0) on `codex/spacexai/docs-initial-release-0-1`.
 - Link to integration documentation on our website: Not available until the new integration is merged.
 
 ## Checklist

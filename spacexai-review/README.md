@@ -1,133 +1,83 @@
-# SpaceXAI staged contribution review
+# SpaceXAI first-wave review packet
 
-Current packet: September 8, 2026. These are fork-only review drafts, not
-upstream submissions or releases. OAuth device authorization remains the only
-login path; there is no API-key fallback or Grok CLI dependency.
+Current packet: September 8, 2026. Python 0.1.0 is published and verified.
+The remaining contributions are initial Core, Brands, and documentation.
+These are prepared for human review on your forks; no companion PR was opened.
 
-## Review the first four
+OAuth device authorization remains the only login path. There is no API-key
+fallback or runtime Grok CLI dependency.
 
-1. [Python 0.1.0](pr-bodies/client-0.1.0.md): unofficial provider/OAuth client
-   and release preparation.
-2. [Core initial integration](pr-bodies/core-01-initial.md): minimal
-   conversation support and optional Assist tools.
-3. [Brands](pr-bodies/brands-01-initial.md): eight integration assets.
-4. [Documentation](pr-bodies/docs-01-initial.md): initial setup, privacy,
-   limitations, troubleshooting, and removal.
+## Completed: Python 0.1.0
 
-The first four are prepared for human review, not upstream-ready. The
-[readiness checklist](FIRST_WAVE_READINESS.md) records the remaining gates.
+[Package PR #1](https://github.com/jeffglousher/spacexai-subscription-client/pull/1)
+is merged. [Release v0.1.0](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0)
+and [PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/)
+come from `155d76c5b940108be707bb379c02d476b893b758`, whose tree exactly matches
+the reviewed source. Both distribution files passed source-byte and cryptographic
+attestation checks; all six clean wheel/sdist installations passed on Python
+3.12–3.14. [Publication evidence](PACKAGE_REPAIR_EVIDENCE.md) records the scope.
 
-## Create the four fork drafts
+Do not create the library draft again or republish 0.1.0.
 
-Read and understand each write-up before creating its draft. These commands
-target only your repositories; they have not been executed. Run them from a
-checkout of `codex/spacexai-validation`, where `spacexai-review/` is present.
-They supply the title, body, base, head, and draft status explicitly.
+## Create the three companion fork drafts
 
-1. **Prepare spacexai-subscription-client 0.1.0** — [write-up](pr-bodies/client-0.1.0.md), [preview](https://github.com/jeffglousher/spacexai-subscription-client/compare/main...harden-initial-release).
+Read and understand each write-up first. Run these commands from the
+`codex/spacexai-validation` checkout containing `spacexai-review/`.
+They target only your repositories and have not been executed.
 
-   ```shell
-   gh pr create --draft --repo jeffglousher/spacexai-subscription-client --base main --head harden-initial-release --title "Prepare spacexai-subscription-client 0.1.0" --body-file spacexai-review/pr-bodies/client-0.1.0.md
-   ```
-
-2. **Add SpaceXAI conversation integration** — [write-up](pr-bodies/core-01-initial.md), [preview](https://github.com/jeffglousher/core/compare/codex/spacexai/review-base...codex/spacexai/staged-01-initial).
+1. **Add SpaceXAI conversation integration** — [write-up](pr-bodies/core-01-initial.md), [preview](https://github.com/jeffglousher/core/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/initial-release-0-1).
 
    ```shell
-   gh pr create --draft --repo jeffglousher/core --base codex/spacexai/review-base --head codex/spacexai/staged-01-initial --title "Add SpaceXAI conversation integration" --body-file spacexai-review/pr-bodies/core-01-initial.md
+   gh pr create --draft --repo jeffglousher/core --base codex/spacexai/review-base-release-0-1 --head codex/spacexai/initial-release-0-1 --title "Add SpaceXAI conversation integration" --body-file spacexai-review/pr-bodies/core-01-initial.md
    ```
 
-3. **Add SpaceXAI integration branding** — [write-up](pr-bodies/brands-01-initial.md), [preview](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
+2. **Add SpaceXAI integration branding** — [write-up](pr-bodies/brands-01-initial.md), [preview](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
 
    ```shell
    gh pr create --draft --repo jeffglousher/brands --base codex/spacexai/review-base --head spacexai-initial --title "Add SpaceXAI integration branding" --body-file spacexai-review/pr-bodies/brands-01-initial.md
    ```
 
-4. **Document the SpaceXAI conversation integration** — [write-up](pr-bodies/docs-01-initial.md), [preview](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/review-base...codex/spacexai/staged-docs-01-initial).
+3. **Document the SpaceXAI conversation integration** — [write-up](pr-bodies/docs-01-initial.md), [preview](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/docs-initial-release-0-1).
 
    ```shell
-   gh pr create --draft --repo jeffglousher/home-assistant.io --base codex/spacexai/review-base --head codex/spacexai/staged-docs-01-initial --title "Document the SpaceXAI conversation integration" --body-file spacexai-review/pr-bodies/docs-01-initial.md
+   gh pr create --draft --repo jeffglousher/home-assistant.io --base codex/spacexai/review-base-release-0-1 --head codex/spacexai/docs-initial-release-0-1 --title "Document the SpaceXAI conversation integration" --body-file spacexai-review/pr-bodies/docs-01-initial.md
    ```
 
-The three review bases are pinned to the recorded upstream Core, docs, and
-Brands commits, respectively: `be2e14f4`, `16ad324d`, and `27519892`.
-GitHub comparisons contain exactly 18 Core files, one docs page, and eight
-Brands assets. Existing fork `dev`, `current`, and `master` are not the clean
-review bases. Do not merge into or move these review-base branches during
-staging; prepare refreshed upstream submission branches later.
+The fresh Core and docs candidates each contain one commit on the checked
+official upstream tips: `38aacedef39eb3f077ce4a112a58bf7286af5e2c` and
+`1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a`. Their new fixed review-base branches
+produce exactly 18 Core files and one docs page. Brands retains its existing
+fixed base `2751989265f1e13fa596dbdec9363b7bed0f0f48` and eight assets.
 
-After creating the drafts, replace the companion comparison links with their
-actual draft PR links. Personal understanding, live-install testing, publication,
-and upstream-readiness attestations remain unchecked where unfulfilled; do not
-check them merely because this packet is complete. Package publication still
-requires a separate human-reviewed main merge and approval. An upstream Core
-PR remains on hold; these fork drafts do not claim that all release gates pass.
+All old staging branches and review bases are preserved. Do not use the fork
+default branches or move these fixed review bases. Replace companion comparison
+links with actual draft PR links after you create them.
 
-## Current stack and proof
+## Readiness and boundaries
 
-The [canonical map](STACK.md) has **23 prepared contributions**: 11 Core layers,
-five package layers, six docs layers, and one Brands change. Four separate Core
-dependency upgrades now precede the features that need them. Follow-ons remain
-staged until their prerequisites merge or release.
+[First-wave readiness](FIRST_WAVE_READINESS.md) records the current checks and
+remaining gates. Core's published-dependency marker is now `done`; its runtime
+and tests are unchanged from the prepared initial contribution. Validation now
+installs the actual PyPI package, verifies its installed bytes against the
+release source, and requires clean hassfest without a publication exception.
 
-Recorded Core and docs bases are behind the freshly checked upstream tips;
-refresh and retest before human-reviewed upstream submission.
+Fresh initial-only Home Assistant UI/OAuth acceptance and your review of the
+three HA contributions still remain. Automated checks do not complete personal
+attestations. An upstream Core submission stays on hold until those gates pass;
+the public Brands logo also needs checking after its merge.
 
-[Current validation and gates](STAGED_READINESS.md) identifies exact source pairs
-and native run links. The initial Core/client pair passes 46 native tests
-and standard hooks, with 241/241 statements covered. The initial Python client
-passes 127 tests and has 100% statement coverage on all three supported Pythons.
-Neither measurement excludes statements or claims branch coverage. All five
-package heads pass their three-Python matrices (127/136/164/196/225 tests), and
-all eleven updated Core/package pairs pass native tests. The inherited coverage
-tests do not change production code. This is not a clean final
-quality verdict: speech and every later Core layer remain blocked by
-`has-entity-name: todo`, in addition to unpublished dependencies.
+[The 23-contribution design stack](STACK.md) remains preserved. The new initial
+submission candidates do not claim that all later layers were replayed onto
+today's upstream. Package versions 0.2–0.5 remain unpublished; speech and later
+Core layers retain the separate `has-entity-name: todo` blocker. No Bronze,
+Gold, or Platinum award is claimed.
 
-The earlier Core, generated-wiring, docs, and runtime evidence files are retained
-with explicit historical labels. Their older successful runs are not evidence
-for the rebuilt heads. [Package evidence](PACKAGE_REPAIR_EVIDENCE.md) now begins
-with the coverage checkpoint and all fifteen current Python CI results.
-HA runtime code, docs, and Brands did not change in this coverage pass.
-
-## Human and publication boundaries
-
-No package version is published, and the prepared package is not merged to main.
-Verified GitHub controls now require owner approval in the `pypi` environment,
-limit it to `v*` tags, and disallow administrator bypass. Protected main requires
-a PR and the three strict Python CI checks; version tags cannot be changed or
-deleted. These controls do not prove independent human review or distinguish
-an agent using the owner's identity from the owner. An agent must not approve
-publication. Tag protection is not release-asset immutability.
-
-Current main still has the legacy release workflow. It uses the protected
-`pypi` environment, but the stronger exact-main preflight, full release matrix,
-and artifact contract are only on the prepared branch until its reviewed merge.
-PyPI account security and the exact pending publisher remain unverified; the
-browser reached sign-in without a login attempt. See the [first-wave checklist](FIRST_WAVE_READINESS.md)
-for these distinct publication gates.
+[Current native evidence](STAGED_READINESS.md) distinguishes the release-backed
+first wave from historical source-checkout runs. [Runtime verification](RUNTIME_VERIFICATION.md)
+still describes the earlier full-stack deployment: dogfood `18be3997`,
+Core `b8be5c4f`, and client `f58ec77a`. This work did not redeploy or replace it.
 
 Under [Home Assistant's AI policy](https://developers.home-assistant.io/docs/ai_policy),
 a human must review, understand, and be able to explain every submitted change.
-Personal attestations remain unchecked. The earliest and only publicly found
-`jeffglousher` Core contribution is [#178765](https://github.com/home-assistant/core/pull/178765).
-The author account closed it unmerged on August 18, 2026, without a written
-closure explanation. Its reviews were automated, not a human maintainer
-rejection. The [provenance summary](FIRST_WAVE_READINESS.md#original-contribution-provenance)
-separates that record from our conclusions about the rewritten code.
-
-The plan remains 23 prepared contributions, with a conditional HA naming-fix
-slot beside the later speech wave if still needed. This is not a new Python
-package and does not enlarge or block the initial conversation contribution.
-No Bronze, Gold, or Platinum award is claimed. The exact initial docs preview
-was visually checked at desktop and mobile widths: readable, with no overlap.
-Its missing public integration logo is expected until Brands merges; a missing
-footer image is a preview-artifact limitation. The exact final docs also pass
-desktop visual inspection. Interactive controls and separate previews of all
-six docs layers were not exercised. A fresh initial-only Home Assistant OAuth
-login still needs
-an isolated native host and human authorization. Full-stack runtime status is
-recorded separately in [runtime verification](RUNTIME_VERIFICATION.md); the
-running dogfood still uses the previous `f58ec77a` client, not this expiry fix.
-
-Private credentials, host inventory, raw deployment logs, media samples, and
-backups are excluded from this public packet.
+Private credentials, host inventory, raw deployment logs, and media samples
+are excluded from this public packet.
