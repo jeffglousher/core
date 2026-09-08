@@ -272,7 +272,7 @@ async def test_setup_token_refresh_timeout_and_retry(
         },
     )
 
-    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    assert await hass.config_entries.async_reload(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
     assert mock_config_entry.state is ConfigEntryState.LOADED
