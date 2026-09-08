@@ -124,7 +124,7 @@ class SpaceXAIAITaskEntity(ai_task.AITaskEntity):
                 translation_domain=DOMAIN,
                 translation_key="invalid_auth",
             ) from err
-        except OAuth2TokenRequestError as err:
+        except (OAuth2TokenRequestError, TimeoutError) as err:
             raise HomeAssistantError(
                 translation_domain=DOMAIN,
                 translation_key="api_error",
