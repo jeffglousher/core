@@ -14,6 +14,7 @@ from spacexai_subscription_client import (
     PermissionDeniedError,
     SpaceXAISubscriptionError,
 )
+from spacexai_subscription_client.const import TOKEN_URL
 
 from homeassistant.components.media_source import PlayMedia
 from homeassistant.components.spacexai.const import DOMAIN
@@ -47,6 +48,41 @@ VIDEO = GeneratedVideo(
 def local_media_dir(hass: HomeAssistant, tmp_path: Path) -> None:
     """Use an isolated local media directory."""
     hass.config.media_dirs = {"local": str(tmp_path)}
+
+
+async def test_generate_video_with_token_refresh_timeout(
+    aioclient_mock: AiohttpClientMocker,
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Do not generate media or discard credentials when token refresh times out."""
+    await setup_integration(hass, mock_config_entry)
+    expired_token = {**mock_config_entry.data["token"], "expires_at": 0}
+    hass.config_entries.async_update_entry(
+        mock_config_entry, data={**mock_config_entry.data, "token": expired_token}
+    )
+    aioclient_mock.post(TOKEN_URL, exc=TimeoutError)
+
+    with pytest.raises(HomeAssistantError) as err:
+        await hass.services.async_call(
+            DOMAIN,
+            "generate_video",
+            {
+                "config_entry": mock_config_entry.entry_id,
+                "prompt": "A calm lake at sunrise",
+            },
+            blocking=True,
+            return_response=True,
+        )
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "api_error"
+    assert mock_config_entry.data["token"] == expired_token
+    mock_spacexai_subscription_client.async_generate_video.assert_not_awaited()
+    assert list(Path(hass.config.media_dirs["local"]).iterdir()) == []
+    await hass.async_block_till_done()
+    assert hass.config_entries.flow.async_progress() == []
 
 
 async def test_generate_video_persists_authenticated_media(

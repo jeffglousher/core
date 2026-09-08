@@ -42,6 +42,47 @@ ENTITY_ID = "ai_task.grok_ai_task"
         pytest.param(ai_task.async_generate_image, id="image"),
     ],
 )
+async def test_generate_with_token_refresh_timeout(
+    aioclient_mock: AiohttpClientMocker,
+    generate: Callable[..., Awaitable[object]],
+    hass: HomeAssistant,
+    mock_config_entry_with_ai_task: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Treat token endpoint timeouts as transient without sending AI requests."""
+    await setup_integration(hass, mock_config_entry_with_ai_task)
+    expired_token = {**mock_config_entry_with_ai_task.data["token"], "expires_at": 0}
+    hass.config_entries.async_update_entry(
+        mock_config_entry_with_ai_task,
+        data={**mock_config_entry_with_ai_task.data, "token": expired_token},
+    )
+    aioclient_mock.post(TOKEN_URL, exc=TimeoutError)
+
+    with pytest.raises(HomeAssistantError) as err:
+        await generate(
+            hass,
+            task_name="Expired Credentials",
+            entity_id=ENTITY_ID,
+            instructions="Describe a smart home",
+        )
+
+    assert err.value.translation_domain == DOMAIN
+    assert err.value.translation_key == "api_error"
+    assert mock_config_entry_with_ai_task.data["token"] == expired_token
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
+    mock_spacexai_subscription_client.async_generate_image.assert_not_awaited()
+    mock_spacexai_subscription_client.async_edit_image.assert_not_awaited()
+    await hass.async_block_till_done()
+    assert hass.config_entries.flow.async_progress() == []
+
+
+@pytest.mark.parametrize(
+    "generate",
+    [
+        pytest.param(ai_task.async_generate_data, id="data"),
+        pytest.param(ai_task.async_generate_image, id="image"),
+    ],
+)
 @pytest.mark.parametrize(
     ("status", "translation_key", "reauth_flow_count"),
     [

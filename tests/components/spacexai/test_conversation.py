@@ -1,5 +1,6 @@
 """Tests for SpaceXAI conversation."""
 
+import asyncio
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -17,6 +18,7 @@ from spacexai_subscription_client import (
     ToolCall,
     ToolResult,
 )
+from spacexai_subscription_client.const import TOKEN_URL
 
 from homeassistant.components import conversation
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
@@ -32,6 +34,7 @@ from . import setup_integration
 
 from tests.common import MockConfigEntry, async_mock_service
 from tests.components.conversation import MockChatLog, mock_chat_log  # noqa: F401
+from tests.test_util.aiohttp import AiohttpClientMocker
 
 
 def _text_response(text: str) -> Completion:
@@ -180,6 +183,81 @@ async def test_conversation_without_assist_does_not_offer_tools(
         ]
         == []
     )
+
+
+async def test_token_refresh_timeout_and_retry(
+    aioclient_mock: AiohttpClientMocker,
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Report token endpoint timeouts and recover without discarding credentials."""
+    await setup_integration(hass, mock_config_entry)
+    expired_token = {**mock_config_entry.data["token"], "expires_at": 0}
+    hass.config_entries.async_update_entry(
+        mock_config_entry, data={**mock_config_entry.data, "token": expired_token}
+    )
+    aioclient_mock.post(TOKEN_URL, exc=TimeoutError)
+
+    result = await conversation.async_converse(
+        hass, "Hello", None, Context(), agent_id="conversation.grok"
+    )
+
+    assert result.response.response_type is intent.IntentResponseType.ERROR
+    assert result.response.speech["plain"]["speech"] == (
+        "SpaceXAI returned an error while generating a response"
+    )
+    assert mock_config_entry.data["token"] == expired_token
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
+
+    aioclient_mock.clear_requests()
+    aioclient_mock.post(
+        TOKEN_URL,
+        json={
+            "access_token": "new-access-token",
+            "refresh_token": "new-refresh-token",
+            "expires_in": 3600,
+            "token_type": "Bearer",
+        },
+    )
+    mock_spacexai_subscription_client.async_create_response.return_value = (
+        _text_response("Hello again")
+    )
+
+    result = await conversation.async_converse(
+        hass, "Hello again", None, Context(), agent_id="conversation.grok"
+    )
+
+    assert result.response.response_type is intent.IntentResponseType.ACTION_DONE
+    assert result.response.speech["plain"]["speech"] == "Hello again"
+    assert mock_config_entry.data["token"]["refresh_token"] == "new-refresh-token"
+    assert mock_spacexai_subscription_client.async_create_response.await_count == 1
+    assert mock_spacexai_subscription_client.async_create_response.call_args.args == (
+        "new-access-token",
+    )
+
+
+async def test_token_refresh_cancellation(
+    aioclient_mock: AiohttpClientMocker,
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Propagate cancellation during refresh without sending a provider request."""
+    await setup_integration(hass, mock_config_entry)
+    expired_token = {**mock_config_entry.data["token"], "expires_at": 0}
+    hass.config_entries.async_update_entry(
+        mock_config_entry, data={**mock_config_entry.data, "token": expired_token}
+    )
+    aioclient_mock.post(TOKEN_URL, exc=asyncio.CancelledError)
+
+    with pytest.raises(asyncio.CancelledError):
+        await conversation.async_converse(
+            hass, "Hello", None, Context(), agent_id="conversation.grok"
+        )
+
+    assert mock_config_entry.data["token"] == expired_token
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
 
 
 async def test_empty_response(
