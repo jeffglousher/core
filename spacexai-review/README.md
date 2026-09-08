@@ -52,8 +52,8 @@ Keep these separate for later, one-at-a-time review and creation:
 - **Add SpaceXAI integration branding** — [write-up](pr-bodies/brands-01-initial.md), [preview](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
 - **Document the SpaceXAI conversation integration** — [write-up](pr-bodies/docs-01-initial.md), [preview](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/docs-initial-release-0-1).
 
-The Core candidate contains two commits, preserving the initial commit and its
-focused shutdown fix; docs contains one commit. Their checked official upstream
+The Core candidate contains three commits: the initial integration, its focused
+shutdown fix, and three Assist-choice setup tests. Docs contains one commit. Their checked official upstream
 bases are `38aacedef39eb3f077ce4a112a58bf7286af5e2c` and
 `1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a`. Their new fixed review-base branches
 produce exactly 18 Core files and one docs page. Brands retains its existing
@@ -66,8 +66,14 @@ links with actual draft PR links after you create them.
 ## Readiness and boundaries
 
 [First-wave readiness](FIRST_WAVE_READINESS.md) records the current checks and
-remaining gates. Current Core `25e04203dad36c741b56ff7a789b85f6a76b7f7e` adds
-shutdown-owned device polling and a public regression test. Its
+remaining gates. Current Core `cd495263eed9794a02a19efb797206e4ff67ef8f` passes
+50 related tests locally on the user's Linux HA host, with zero failures,
+errors, or skips and 241/241 statements covered (100%, zero exclusions).
+The three new tests verify default, enabled, and disabled Assist settings saved
+through the real configuration flow. Production files are unchanged from `25e04203`.
+[Fresh native CI](https://github.com/jeffglousher/core/actions/runs/34260917145)
+passes both jobs for this exact revision, including all 50 tests, scoped checks,
+unchanged setup, native hooks, and generated-file validation. The previous
 [native integration job](https://github.com/jeffglousher/core/actions/runs/34251664631)
 passes 47 tests with 241/241 statements covered (100%, zero exclusions).
 The new test fails against the previous production code and passes with the fix.

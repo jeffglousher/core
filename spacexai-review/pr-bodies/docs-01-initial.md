@@ -39,7 +39,7 @@ This is one new integration page, based on `next`. The documentation checks and 
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: Not opened yet; [prepared Core changes](https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...25e04203dad36c741b56ff7a789b85f6a76b7f7e) on `codex/spacexai/initial-release-0-1`.
+- Link to parent pull request in the codebase: Not opened yet; [prepared Core changes](https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...cd495263eed9794a02a19efb797206e4ff67ef8f) on `codex/spacexai/initial-release-0-1`.
 - Link to parent pull request in the Brands repository: Not opened yet; [prepared Brands changes](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
 - This PR fixes or closes issue: Not applicable; this documents a new integration.
 

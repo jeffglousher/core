@@ -27,7 +27,7 @@ Setup uses browser-based OAuth device authorization, validates the account and a
 
 The published, unofficial `spacexai-subscription-client` library handles provider communication and OAuth. The integration handles Home Assistant configuration, shared sessions, conversations, tool calls, and token persistence. It targets Bronze, not the full quality scale in this first PR.
 
-The native integration suite passes all 47 tests with 100% statement coverage, including login cancellation, shutdown, token refresh, provider failures, and Assist exposure controls. Formatting, typing, lint, hassfest, and generated-file checks also pass. Fresh initial-only sign-in and functional acceptance still need to be completed before this fork draft is ready for upstream submission.
+The integration suite passes all 50 tests locally in a separate Linux environment on my HA host and in native CI, with 100% statement coverage. This includes login cancellation, shutdown, token refresh, provider failures, Assist exposure controls, and saving the default, enabled, or disabled Assist choice during setup. Formatting, typing, lint, hassfest, and generated-file checks pass too. Fresh initial-only sign-in and functional acceptance still need to be completed before this fork draft is ready for upstream submission.
 
 ## Type of change
 <!--
@@ -58,7 +58,7 @@ The native integration suite passes all 47 tests with 100% statement coverage, i
 - Link to frontend pull request: Not applicable.
 - Brands pull request: Not created yet; [prepared branding](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
 - New dependency: [PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/), [source](https://github.com/jeffglousher/spacexai-subscription-client/tree/v0.1.0), and [release notes](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.0/CHANGELOG.md). This is a new dependency, so there is no previous version to compare.
-- Validation: [Native Linux checks](https://github.com/jeffglousher/core/actions/runs/34251664631) for Core `25e04203` with the published client. These are CI results, not a claim that Windows local tests passed.
+- Validation: 50 local Linux tests pass for Core `cd495263` with the published client, with no failures, errors, or skips. [Native CI](https://github.com/jeffglousher/core/actions/runs/34260917145) passes the same suite, formatting, typing, lint, unchanged development setup, native hooks, hassfest, and generated-file validation for that exact revision. No Windows test result is claimed.
 - Live testing: I'm using the integration on my real Home Assistant system, where conversation works in the full-stack build. The separate initial-only version starts, reaches Grok's authorization step, cancels sign-in cleanly, and shuts down/restarts correctly. Fresh authorization, conversation, Assist control, credential persistence, and removal still need verification on that exact initial-only version.
 - Detailed evidence and remaining gates: [first-wave review packet](https://github.com/jeffglousher/core/blob/codex/spacexai-validation/spacexai-review/FIRST_WAVE_READINESS.md).
 
@@ -76,7 +76,7 @@ The native integration suite passes all 47 tests with 100% statement coverage, i
 
 - [x] I understand the code I am submitting and can explain how it works.
 - [x] The code change is tested and works locally.
-- [ ] Local tests pass. **Your PR cannot be merged unless tests pass**
+- [x] Local tests pass. **Your PR cannot be merged unless tests pass**
 - [x] There is no commented out code in this PR.
 - [x] I have followed the [development checklist][dev-checklist]
 - [ ] I have followed the [perfect PR recommendations][perfect-pr]
@@ -96,7 +96,7 @@ If the code communicates with devices, web services, or third-party tools:
       Updated by running `python3 -m script.gen_requirements_all`.
 - [ ] For the updated dependencies a diff between library versions and ideally a link to the changelog/release notes is added to the PR description.
 
-The dependency-update checkbox does not apply to this new integration; the first release and its notes are linked above. The local-testing checkbox records the manual checks described above. It does not claim that the local automated suite or every fresh initial-only acceptance check has passed.
+The dependency-update checkbox does not apply to this new integration; the first release and its notes are linked above. The manual-testing and local automated-test checkboxes record the separate results above. They do not claim that the remaining fresh initial-only acceptance checks have passed. Review of two other PRs has not been confirmed.
 
 <!--
   This project is very active and we have a high turnover of pull requests.

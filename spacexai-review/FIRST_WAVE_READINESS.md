@@ -9,11 +9,11 @@ initial-only UI/OAuth acceptance and final submission checks still remain.
 ## Exact first-wave source
 
 - Python 0.1.0: [release v0.1.0](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0), `155d76c5b940108be707bb379c02d476b893b758`.
-- Core: `codex/spacexai/initial-release-0-1`, `25e04203dad36c741b56ff7a789b85f6a76b7f7e`.
+- Core: `codex/spacexai/initial-release-0-1`, `cd495263eed9794a02a19efb797206e4ff67ef8f`.
 - Brands: `spacexai-initial`, `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
 - Docs: `codex/spacexai/docs-initial-release-0-1`, `44526b046fa26d4ddf0ab037850a54e30ecbf1d0`.
 
-Core has two commits and exactly 18 changed files on the checked official dev
+Core has three commits and exactly 18 changed files on the checked official dev
 `38aacedef39eb3f077ce4a112a58bf7286af5e2c`. Docs has one commit and one 96-line
 page on official next `1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a`.
 Both candidates and their fixed fork review bases are pushed. The prior staged
@@ -26,6 +26,12 @@ one public shutdown regression was added. No provider behavior, package version,
 or initial scope changed. Generated additions preserve the recorded upstream files.
 No initial API migration was identified. The docs page is byte-identical to
 `0a5a5dfb`. Recheck upstream freshness at actual submission time.
+
+The third commit, `cd495263`, adds only three parameterized public-flow tests:
+omitted Assist selection defaults to enabled, explicit enabled selection is
+saved, and explicit disabled selection stays disabled. An independent review
+found no issues with these tests. All production files remain byte-identical
+to `25e04203`; no runtime deployment or package release is needed for this addition.
 
 ## Published dependency verification
 
@@ -54,6 +60,25 @@ non-editable installation, and exact runtime bytes.
 This does not re-attest private account security or human license review.
 
 ## Current Core verification
+
+The related suite now passes locally on the user's Linux HA host in a separate
+development virtual environment: 50 tests, zero failures/errors/skips,
+241/241 statements (100%), zero exclusions, and all four modules at 100%.
+The source is the exact `25e04203` archive with the sole changed test file from
+`cd495263`. The run uses HA's native fixtures and unchanged socket/task safeguards,
+single-process `uv run --no-sync pytest`, and the published client 0.1.0.
+Dependency consistency checks pass. Neither running HA environment was modified.
+This is genuine local automated-test evidence, not a CI run renamed as local.
+
+[Fresh native CI 34260917145](https://github.com/jeffglousher/core/actions/runs/34260917145)
+passes both jobs for the full `cd495263` commit identifier: all 50 integration
+tests, 100% statement coverage, scoped lint/formatting/MyPy/Pylint, unchanged
+development setup, full-tree general hooks, standard contribution hooks, and
+clean generated-file/publication validation. The first invocation,
+34260599438, supplied an abbreviated ID that checkout treated as a branch/tag
+pattern; it failed before tests or setup ran. That invocation is not a code failure.
+
+### Previous production revision verification
 
 [Native run 34251664631](https://github.com/jeffglousher/core/actions/runs/34251664631)
 passes the integration job for exact Core `25e04203` with actual PyPI 0.1.0,
@@ -131,7 +156,7 @@ retained; their source templates still match the official repositories.
 The Core development-checklist and manifest boxes are checked from the published
 dependency, enabled issue tracker, generated wiring, and native validation.
 The docs branch box is checked from its verified `next` base. All five Brands
-asset checks are verified. Companion references now point to Core `25e04203`.
+asset checks are verified. Companion references now point to Core `cd495263`.
 
 Unchecked alternatives are intentional, not missing prose. The dependency-upgrade
 comparison does not apply to adding the first version of a library. Actual
@@ -142,12 +167,11 @@ changes. Both Core review attestations are checked. The manual locally-tested
 box is also checked: real-host initial lifecycle checks and successful full-stack
 conversation/speech tests are recorded, with their versions and limits explicit.
 This general manual-testing checkbox is not the separate fresh initial-only
-acceptance gate. The local automated-test box remains unchecked; native GitHub
-tests are not relabeled as local test runs. Review of two other PRs has not been
-confirmed.
+acceptance gate. The local automated-test box is now checked from the actual
+50-test run on the user's Linux host. Review of two other PRs has not been confirmed.
 
 The Core review base remains `38aacedef`. A fresh read of upstream `dev` returned
-`3cc583c60419fc1fc9f61b131dee8b9ecf25c3e3`; the candidate was not rebased during
+`15f231017997bef66540416ef82b2011cbd4cb5f`; the candidate was not rebased during
 this writing pass. Refresh and revalidate it before upstream submission, rather
 than checking perfect-PR compliance while that and live acceptance remain open.
 
@@ -167,8 +191,11 @@ than checking perfect-PR compliance while that and live acceptance remain open.
    late-device-task warning; restart returns to running. The first-party
    provider sign-in page awaits human approval. This is not completed login or
    HA UI setup. Verify
-   conversation, explicitly permitted Assist control, disabled Assist control,
-   restart/token persistence, and removal. Existing full-stack credentials are
+   conversation/history, control of the exposed synthetic helper with the
+   unexposed helper unchanged, restart/token persistence, and removal.
+   Disabled Assist and forced forbidden-tool requests are already covered by
+   deterministic tests; no repeated live outage or forced credential expiry is
+   required. Existing full-stack credentials are
    not fresh-login proof. Human OAuth approval is still needed; do not replace
    the existing full-stack instance.
 3. After creating the companion drafts, replace comparison placeholders with

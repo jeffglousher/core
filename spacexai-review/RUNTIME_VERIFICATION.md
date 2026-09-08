@@ -24,6 +24,26 @@ The contributor confirmed using the real system; the earlier successful live
 conversation and speech results below remain valid evidence for that full-stack
 version, not a completed fresh-login test of the initial-only candidate.
 
+The next readiness check found that pending login had reached `device_timeout`,
+with zero SpaceXAI entries. Retrying through the normal flow opened a fresh
+provider approval page. The isolated instance remains running with confirmed
+loopback HTTP settings. This is a specific missing successful-login test, not
+evidence that an account was already configured. The main management API again
+reported healthy and its SpaceXAI entry remained loaded with four subentries.
+
+Separately, all 50 automated integration tests now pass directly on the user's
+Linux HA host in a new development environment, not in either running HA venv.
+The tested source matches `cd495263eed9794a02a19efb797206e4ff67ef8f`: the exact
+`25e04203` archive plus its sole changed test file. Three new cases verify the
+saved default/enabled/disabled Assist choice. There are zero failures/errors/skips,
+241/241 statements covered, zero exclusions, and all four modules at 100%.
+Native test guards and dependency pins remain unchanged; dependency checks pass.
+Production source is byte-identical to the running initial-only build, so this
+test-only addition requires no deployment or new Python release.
+The same candidate also passes [both native CI jobs](https://github.com/jeffglousher/core/actions/runs/34260917145),
+including all 50 tests, scoped checks, unchanged setup, native hooks, and clean
+generated-file/publication validation.
+
 Verified against the updated initial candidate:
 
 - HA's native configuration check succeeds and the runtime reaches `RUNNING`.
@@ -48,9 +68,13 @@ earlier cancellation, not a measured long shutdown delay.
 Fresh provider approval is now awaiting the user on the provider's sign-in page.
 The current device endpoint is [SpaceXAI Accounts](https://accounts.x.ai/oauth2/device);
 the private device code is not included here. This is not completed HA frontend
-or fresh-login acceptance. Conversation, enabled/disabled Assist control,
-credential persistence across restart, and account removal still need this
-fresh initial-only account. No quality-tier award is claimed.
+or fresh-login acceptance. The finite remaining live sequence is conversation
+and history, control of the exposed synthetic helper while the unexposed helper
+stays unchanged, restart followed by conversation, and account removal.
+Disabled Assist and forced forbidden-tool requests already have deterministic
+coverage; reproducing every provider failure live is not required.
+These remaining successful-account checks need fresh provider approval.
+No quality-tier award is claimed.
 
 ## Unchanged full-stack deployment — September 7, 2026
 

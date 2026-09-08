@@ -6,10 +6,25 @@ September 8, 2026. Python 0.1.0 is published from `155d76c5b940108be707bb379c02d
 with verified hashes, source bytes, signed provenance, and six clean installations.
 [Publication evidence](PACKAGE_REPAIR_EVIDENCE.md) records the exact files and scope.
 
-Current initial Core `25e04203dad36c741b56ff7a789b85f6a76b7f7e` contains two commits
+Current initial Core `cd495263eed9794a02a19efb797206e4ff67ef8f` contains three commits
 on official dev `38aacedef39eb3f077ce4a112a58bf7286af5e2c`, still exactly 18 files.
 The second commit gives device polling HA background-task shutdown ownership
-and adds one public shutdown regression; the PyPI dependency is unchanged.
+and adds one public shutdown regression. The third adds three public-flow tests
+for default/enabled/disabled Assist choices. The PyPI dependency and production
+files are unchanged from `25e04203`.
+
+The full 50-case related suite passes locally on the user's Linux HA host in a
+separate development environment: zero failures/errors/skips, 241/241 statements,
+zero exclusions, and all four modules at 100%. Native socket/task safeguards
+remain unchanged and dependency checks pass. Neither running HA environment
+was modified. [Fresh native CI](https://github.com/jeffglousher/core/actions/runs/34260917145)
+passes all 50 tests, scoped checks, unchanged setup, native hooks, and clean
+generated-file/publication validation for the full new commit ID. Both jobs are
+successful. The earlier invocation
+34260599438 failed before testing because an abbreviated ID was interpreted
+as a branch/tag pattern by checkout; this was corrected in the new invocation.
+
+The prior production-revision
 [Native run 34251664631](https://github.com/jeffglousher/core/actions/runs/34251664631)
 passes the integration job with actual PyPI 0.1.0/release `155d76c5`: 47 tests,
 241/241 statements (100%), all four modules at 100%, zero exclusions, failures,
@@ -20,7 +35,7 @@ before the full 47-test pass. This proves late cancellation, not shutdown durati
 
 Both jobs in that run pass, including unchanged script/setup, the full-tree
 general-hook subset, standard native contribution hooks, and generated wiring
-and publication validation. Current harness:
+and publication validation. Its harness:
 `15adcb71e31a2ade8db05463da95498082537634`. The isolated `25e04203` instance
 matches all seven source blobs, with all 118 dependencies and PyPI client 0.1.0
 unchanged; import/dependency checks and configuration validation pass. It is

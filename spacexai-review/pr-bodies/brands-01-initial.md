@@ -38,7 +38,7 @@ The complete Brands validator passes with zero issues. The [review record](https
 -->
 
 - This PR fixes or closes issue: Not applicable; these assets accompany a new integration.
-- Link to code base pull request: Not opened yet; [prepared Core changes](https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...25e04203dad36c741b56ff7a789b85f6a76b7f7e) on `codex/spacexai/initial-release-0-1`.
+- Link to code base pull request: Not opened yet; [prepared Core changes](https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...cd495263eed9794a02a19efb797206e4ff67ef8f) on `codex/spacexai/initial-release-0-1`.
 - Link to documentation pull request: Not opened yet; [prepared documentation](https://github.com/jeffglousher/home-assistant.io/compare/1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a...44526b046fa26d4ddf0ab037850a54e30ecbf1d0) on `codex/spacexai/docs-initial-release-0-1`.
 - Link to integration documentation on our website: Not available until the new integration is merged.
 
