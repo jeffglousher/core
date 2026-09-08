@@ -8,9 +8,11 @@ Tests cover pending and completed jobs, moderation, invalid job payloads, the ov
 
 ## Verification
 
+- Two named public OAuth regressions cover oversized JSON integer expiry values in device authorization and token polling. Timestamp arithmetic now shares the existing `InvalidResponseError` normalization; no new abstraction or HA runtime change was needed.
+
 - Inherits the initial client's malformed-response and OAuth normalization repairs. Real-SDK transport regressions preserve provider-hosted outputs and mixed hosted/custom calls while rejecting local function calls that were not offered.
-- 216 tests pass locally on Python 3.14.5 with 98.19% statement coverage.
-- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34174992203) passes at `f58ec77aebff01fe6bf4b72e97a2370b023647a2` on Python 3.12, 3.13, and 3.14.
+- 218 tests pass locally on Python 3.14.5 with 98.20% statement coverage.
+- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229951412) passes at `376fe0c9caa197d82c26e6b84bde31586f85d830` on Python 3.12, 3.13, and 3.14.
 - Ruff lint/format, strict MyPy, wheel and source builds, and strict Twine validation pass. CI independently installs and imports each artifact.
 
 - All three Python jobs validate the wheel member set, required wheel/sdist source bytes, release identity, typing marker, license, and isolated imports. The count includes 36 release-contract tests. Extra or duplicate wheel members are rejected; the sdist check is not a universal archive-security audit.
@@ -23,5 +25,5 @@ The shared GitHub publishing controls are configured, but current `main` still h
 This layer follows 0.4.0. Publish it after that release and human review of this change. Version 0.5.0 has not been published; the matching Home Assistant layer must wait for publication and clean installation from PyPI.
 
 - [Incremental source diff](https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-04-speech...spacexai/client-05-video).
-- [Changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/f58ec77aebff01fe6bf4b72e97a2370b023647a2/CHANGELOG.md).
-- [Publishing checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/f58ec77aebff01fe6bf4b72e97a2370b023647a2/RELEASING.md). Follow the same verified workflow with version/tag `v0.5.0`.
+- [Changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/376fe0c9caa197d82c26e6b84bde31586f85d830/CHANGELOG.md).
+- [Publishing checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/376fe0c9caa197d82c26e6b84bde31586f85d830/RELEASING.md). Follow the same verified workflow with version/tag `v0.5.0`.

@@ -1,5 +1,39 @@
 # Current 23-contribution validation
 
+## September 8 expiry correction
+
+The current [package heads](PACKAGE_REPAIR_EVIDENCE.md) pass all fifteen public
+Python jobs. They contain only the two timestamp-normalization changes and
+two added public regression cases, propagated through existing parent merges.
+No Core, integration docs, Brands, or live deployment source changed.
+
+[Native initial run 34229775265](https://github.com/jeffglousher/core/actions/runs/34229775265)
+verifies Core `cbe618c9800419de39601496779da68e5dd8ed23` with client
+`410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3` on recorded base
+`be2e14f4273335fb5ef02b7f636cd01800e1491a`: 44 tests, no failures/errors/skips,
+239/241 statements (99.1701%), standard socket guard, unchanged setup,
+full-tree general-hook subset, and standard contribution hooks all pass.
+Generated wiring remains unchanged. Strict hassfest still reports exactly
+`dependency-transparency: todo`, no other errors or warnings: this is an
+explicit publication-blocked staging result, not clean hassfest.
+
+Harness `f6ca2b875d214d12173306eb8a80fc1e880976ee` now defaults to the new client
+heads. Its [default initial smoke run](https://github.com/jeffglousher/core/actions/runs/34230277910)
+passes scoped checks; full hooks are proven by the separate run above.
+[Generated run 34230277869](https://github.com/jeffglousher/core/actions/runs/34230277869)
+records the same initial publication blocker. Its final pair, Core `b8be5c4f`
+with client `376fe0c9`, fails exactly publication and `has-entity-name: todo`,
+with no other errors/warnings. The overall generated workflow fails; later
+speech naming is not an initial-layer blocker.
+
+The remaining ten Core/package pairs below have not been rerun with the new
+package heads. Their receipts remain historical evidence. Runtime remains on
+the previous `f58ec77a` client. Upstream inspection identified no initial API
+migration, but no current-tip replay or fresh initial-only OAuth login is
+claimed. [First-wave readiness](FIRST_WAVE_READINESS.md) retains those gates.
+
+## Historical timeout and wheel-contract checkpoint
+
 September 7, 2026 (America/Chicago; CI receipts extend into September 8 UTC).
 These exact-source results cover the OAuth-timeout and publication-contract
 repairs, propagated additively through [the stack](STACK.md).

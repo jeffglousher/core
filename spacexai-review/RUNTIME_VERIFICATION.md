@@ -2,7 +2,8 @@
 
 The timeout-corrected full stack is deployed and running. This is an
 existing-account dogfood deployment, not proof of a fresh initial-only
-OAuth installation.
+OAuth installation. This deployment still uses client `f58ec77a` below;
+the September 8 package expiry-arithmetic fix at `376fe0c9` has not been deployed.
 
 ## Exact source and deployment
 

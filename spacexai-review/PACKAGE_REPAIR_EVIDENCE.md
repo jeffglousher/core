@@ -1,4 +1,32 @@
-# Current package boundary and release evidence — September 7, 2026
+# Current package boundary and release evidence — September 8, 2026
+
+## Expiry arithmetic correction
+
+The current [five source heads](STACK.md#package-layers) contain a two-file
+correction: compute both OAuth expiry timestamps inside the existing response
+normalization and add two named public-method regressions. Both cases failed
+before the correction and pass afterward. No additional adapter or HA change
+was needed. Independent review found no further issue in this correction.
+
+- 0.1.0: `410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3`; 120 tests, 96.62% coverage; [CI 34229759065](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229759065).
+- 0.2.0: `c5cedbf1d920d2bb8a633f286a52ee33ad0b6ca0`; 129 tests, 97.01%; [CI 34229936376](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229936376).
+- 0.3.0: `a17a58735bc197e77490ae164b83acdd03509368`; 157 tests, 97.97%; [CI 34229940652](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229940652).
+- 0.4.0: `697a1e9860310a77253a88bad18e49ade88caa6e`; 189 tests, 98.50%; [CI 34229945640](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229945640).
+- 0.5.0: `376fe0c9caa197d82c26e6b84bde31586f85d830`; 218 tests, 98.20%; [CI 34229951412](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229951412).
+
+All fifteen Python 3.12/3.13/3.14 jobs and every step pass, including builds,
+strict Twine, artifact contracts, and isolated wheel/sdist imports. Coverage
+above is local Python 3.14.5 statement coverage. Local isolated imports also
+verified installed client bytes against the tested source. The committed
+parent-merge blobs match those tested, all five worktrees are clean, and all
+five heads are pushed. Package metadata, versions, lockfiles, and release
+workflows are unchanged. Main is not merged and no release was published.
+
+## Historical wheel-contract checkpoint — September 7, 2026
+
+The remainder of this record describes its earlier exact source/run pairs,
+not the current expiry-corrected heads. Current publication gates and the
+release checklist are in [first-wave readiness](FIRST_WAVE_READINESS.md).
 
 The following exact prepared heads supersede the package SHAs/counts in the
 historical record below. All are pushed; main is not merged and no version

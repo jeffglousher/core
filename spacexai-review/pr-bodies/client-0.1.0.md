@@ -20,9 +20,11 @@ The package owns provider communication so the Home Assistant integration remain
 
 ## Verification
 
+- Two named public OAuth regressions cover oversized JSON integer expiry values in device authorization and token polling. Timestamp arithmetic now shares the existing `InvalidResponseError` normalization; no new abstraction or HA runtime change was needed.
+
 - Real-SDK HTTP transport regressions cover malformed provider fields, unoffered function calls, valid text, and valid offered calls. These synthetic robustness cases do not imply an observed provider outage; the approved OAuth identity and login flow are unchanged.
-- 118 tests pass on Python 3.14 locally with 96.59% statement coverage.
-- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34174829112) passes at `b5513112b12a14baa43c295cf82cec8be3604ba7` on Python 3.12, 3.13, and 3.14.
+- 120 tests pass on Python 3.14 locally with 96.62% statement coverage.
+- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229759065) passes at `410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3` on Python 3.12, 3.13, and 3.14.
 - Ruff lint and format checks pass.
 - Strict MyPy checks pass.
 - The wheel and source distribution build successfully and pass `twine check --strict`.
@@ -43,9 +45,9 @@ The package is unpublished and the prepared code has not been merged to `main`. 
 
 Current `main` remains `40e8a3bd46653eecbb6269eb7e59cc9ecf91f75c` with the legacy release workflow; the prepared exact-source and artifact safeguards are not active there until the reviewed source is merged. PyPI account security and pending-publisher binding remain unverified—the account page currently requires sign-in. No release or environment approval has been performed.
 
-Release notes: https://github.com/jeffglousher/spacexai-subscription-client/blob/b5513112b12a14baa43c295cf82cec8be3604ba7/CHANGELOG.md
+Release notes: https://github.com/jeffglousher/spacexai-subscription-client/blob/410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3/CHANGELOG.md
 
-Publication checklist: https://github.com/jeffglousher/spacexai-subscription-client/blob/b5513112b12a14baa43c295cf82cec8be3604ba7/RELEASING.md
+Publication checklist: https://github.com/jeffglousher/spacexai-subscription-client/blob/410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3/RELEASING.md
 
 ## Out of scope
 

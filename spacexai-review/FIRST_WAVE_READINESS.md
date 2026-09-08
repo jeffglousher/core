@@ -1,6 +1,6 @@
 # SpaceXAI first-wave readiness
 
-Verified September 7, 2026. The four initial contributions are implemented
+Verified September 8, 2026. The four initial contributions are implemented
 and prepared for human review. They are not upstream-ready: publication,
 human review, and fresh initial-login proof remain. The exact initial docs
 have now been visually inspected. No upstream PR or package release was
@@ -8,7 +8,7 @@ opened by this work.
 
 ## Exact first-wave source
 
-- Python 0.1.0: `harden-initial-release`, `b5513112b12a14baa43c295cf82cec8be3604ba7`.
+- Python 0.1.0: `harden-initial-release`, `410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3`.
 - Core: `codex/spacexai/staged-01-initial`, `cbe618c9800419de39601496779da68e5dd8ed23`.
 - Brands: `spacexai-initial`, `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
 - Docs: `codex/spacexai/staged-docs-01-initial`, `0a5a5dfb0f779bf027b609781c5117cc78f9d3a7`.
@@ -21,24 +21,28 @@ wiring. Docs adds one 96-line page on official next
 old published history remains available without force pushes.
 
 These recorded bases are not the current upstream tips. A fresh check found
-Core dev `384c153186de3f095d62188bb2d6e88a03dc7dd6` 30 commits ahead and docs
-next `4ea450877c77e70f9aa364012134b8a662ecb8c2` four commits ahead. Refresh and
-retest the submission branches before human-reviewed upstream submission.
+Core dev `1f889c45a3952af07513e05c51043de86f02c499` 73 commits ahead and docs
+next `5b1b0ec30067dcd4840a9446bd054e728612ece7` 12 commits ahead. The docs
+changes do not alter the initial page; the shared configuration plugin only
+adds an allowed type. Core's used OAuth, Conversation, Assist, and LLM APIs are
+unchanged; only generated metadata and aggregate requirements overlap our diff.
+No source migration was identified. This static inspection is not a current-tip build.
+Refresh and retest before human-reviewed upstream submission.
 
 ## Verified checks
 
-- Python: [exact-head CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34174829112)
-  passes all Python 3.12/3.13/3.14 jobs. There are 118 tests and 96.59% statement
+- Python: [exact-head CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229759065)
+  passes all Python 3.12/3.13/3.14 jobs. There are 120 tests and 96.62% statement
   coverage, including 36 release-contract tests. Ruff, strict MyPy, builds,
   strict Twine checks, exact wheel members/required source bytes, and isolated wheel/sdist
   imports pass.
-- Initial Core: [exact-pair native run](https://github.com/jeffglousher/core/actions/runs/34175174869)
+- Initial Core with client `410730d2`: [exact-pair native run](https://github.com/jeffglousher/core/actions/runs/34229775265)
   passes 44 tests without failures, errors, or skips; 239/241 statements
   (99.1701%), with every module above 95%. Unchanged script/setup, the upstream
   full-tree general-hook subset, and standard contribution-file hooks pass,
   including native MyPy/Pylint, requirements, and typing generation. Tests
   keep the standard socket guard; no Windows compatibility shim is used.
-- The same [exact initial native run](https://github.com/jeffglousher/core/actions/runs/34175174869)
+- The same [exact initial native run](https://github.com/jeffglousher/core/actions/runs/34229775265)
   leaves tracked generated files unchanged. Initial Core has exactly the acknowledged
   `dependency-transparency: todo` blocker and no other errors/warnings.
   This is a staging-gate pass, not clean hassfest. Later speech naming remains
@@ -62,7 +66,11 @@ identity is unchanged. The unofficial package owns protocol handling, absolute
 device-code expiry, polling backoff, and distinct permission/authentication
 errors. This pass also rejects malformed response fields, unoffered function
 calls, unsupported explicit token types, and invalid numeric token metadata.
-Real SDK wire tests exercise these boundaries. Core remains the HA adapter:
+Real SDK wire tests exercise these boundaries. The latest repair moves two
+expiry timestamp computations into existing normalization and adds two named
+public OAuth regressions for oversized JSON integers. This is a malformed-response
+contract fix, not an observed provider outage; HA runtime code is unchanged.
+Core remains the HA adapter:
 this pass additionally maps OAuth refresh timeouts to normal retry/API errors.
 Public endpoint regressions verify retained tokens, successful retry, and
 cancellation. Existing shared-session and real Assist exposure tests still pass. Docs clarifies subscription eligibility,
@@ -133,22 +141,25 @@ unverified: the browser reached sign-in, and no login was attempted.
    proof. Recheck upstream freshness and replace staging links with actual
    PR/release links when human-reviewed submissions are made.
 
-The [release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/b5513112b12a14baa43c295cf82cec8be3604ba7/RELEASING.md)
+The [release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3/RELEASING.md)
 contains the package publication sequence. Keep follow-ons staged until their
 predecessors merge; do not open dependent upstream PRs.
 
 ## Follow-ons and runtime are separate gates
 
 The [23-layer map](STACK.md) now separates four Core dependency bumps from their
-features. All eleven Core layers pass native integration tests, but speech and
+features. All eleven Core layers passed native tests with the explicitly recorded
+previous package pairs; the initial pair is now retested with the expiry fix.
+The remaining ten pairs have not been rerun with the new package heads. Speech and
 downstream remain quality-blocked by `has-entity-name: todo`. The written rule
 has no exception for the current functional TTS naming behavior. The plan keeps
 23 prepared contributions plus a conditional HA naming-fix slot beside speech,
 if still needed then. It requires no additional Python package and does not
 enlarge or block this first wave. No Bronze, Gold, or Platinum award is claimed.
 
-The exact new full-stack dogfood is deployed and running; bounded conversation,
+The existing full-stack dogfood remains on client `f58ec77a`, not the new
+`376fe0c9` expiry-fix head. Its bounded conversation,
 AI text, fresh TTS, audio decoding, and STT round-trip checks pass.
-[Runtime evidence](RUNTIME_VERIFICATION.md) records the exact new source and
+[Runtime evidence](RUNTIME_VERIFICATION.md) records that deployed source and
 limits. Existing-account full-stack success does not prove a fresh initial-only login. [Current validation](STAGED_READINESS.md) records exact
 source pairs and preserves prior evidence as historical.

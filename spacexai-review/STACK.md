@@ -1,6 +1,6 @@
 # SpaceXAI contribution stack
 
-Canonical staging map, September 7, 2026. This replaces the prior 19-contribution
+Canonical staging map, September 8, 2026. This replaces the prior 19-contribution
 map; old published refs remain historical and were not rewritten or deleted.
 The packet is separate from every upstream-shaped contribution diff.
 
@@ -39,7 +39,9 @@ layers Core02, Core04, Core06, and Core08 respectively. This follows the
 to separate dependency upgrades from feature changes. Submit against official
 dev only after predecessors merge; refresh and retest at that time.
 
-Native test counts are 44, 44, 58, 58, 92, 92, 113, 113, 144, 154, and 157.
+Recorded native test counts are 44, 44, 58, 58, 92, 92, 113, 113, 144, 154, and 157.
+Only the initial pair has been rerun with the September 8 package expiry fix;
+the ten other pairs remain historical proof with their recorded package SHAs.
 The last includes three snapshots. Every module exceeds 95% statement coverage.
 [Current proof](STAGED_READINESS.md) preserves exact source/run attribution.
 Initial hassfest is blocked only by dependency publication. Speech and later
@@ -50,11 +52,11 @@ also fail the written entity-naming requirement; test success does not remove it
 All five source heads are pushed and pass Python 3.12/3.13/3.14 CI, strict types,
 build/artifact checks, and isolated wheel/sdist imports. None is published.
 
-1. [Client 0.1.0](pr-bodies/client-0.1.0.md) — `harden-initial-release` at `b5513112b12a14baa43c295cf82cec8be3604ba7`; 118 tests.
-2. [Client 0.2.0](pr-bodies/client-0.2.0.md) — `spacexai/client-02-conversation` at `fc13749a2d9befa62b9581ccd4e3a60a9ef3c54e`; 127 tests.
-3. [Client 0.3.0](pr-bodies/client-0.3.0.md) — `spacexai/client-03-image` at `44e84f8b4962dfd52098f5520655bdddc3def88b`; 155 tests.
-4. [Client 0.4.0](pr-bodies/client-0.4.0.md) — `spacexai/client-04-speech` at `b6b1d7d301b66bd29e24d2c0c309fa3e775f9881`; 187 tests.
-5. [Client 0.5.0](pr-bodies/client-0.5.0.md) — `spacexai/client-05-video` at `f58ec77aebff01fe6bf4b72e97a2370b023647a2`; 216 tests.
+1. [Client 0.1.0](pr-bodies/client-0.1.0.md) — `harden-initial-release` at `410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3`; 120 tests.
+2. [Client 0.2.0](pr-bodies/client-0.2.0.md) — `spacexai/client-02-conversation` at `c5cedbf1d920d2bb8a633f286a52ee33ad0b6ca0`; 129 tests.
+3. [Client 0.3.0](pr-bodies/client-0.3.0.md) — `spacexai/client-03-image` at `a17a58735bc197e77490ae164b83acdd03509368`; 157 tests.
+4. [Client 0.4.0](pr-bodies/client-0.4.0.md) — `spacexai/client-04-speech` at `697a1e9860310a77253a88bad18e49ade88caa6e`; 189 tests.
+5. [Client 0.5.0](pr-bodies/client-0.5.0.md) — `spacexai/client-05-video` at `376fe0c9caa197d82c26e6b84bde31586f85d830`; 218 tests.
 
 The initial package owns release-source, matrix, changelog, and distribution
 contract checks; additive parent merges carry them through later releases.
@@ -89,7 +91,7 @@ Core quality approval.
 
 ## Deployment and submission boundaries
 
-The new full stack is deployed and verified: dogfood `18be39973b1361ebe23605dc4a605ae0d69cff43` on `codex/spacexai/dogfood-staged-20260907`, version `0.9.0.dev20260907`, contains Core11 and client 0.5.0 above. Source hashes, configuration check, restart, loaded existing OAuth entry, all four platform subentry types, and the single-overlay condition pass. Bounded live conversation, AI text, and a fresh TTS-to-STT round trip pass. See [runtime verification](RUNTIME_VERIFICATION.md) for exact scope and limits.
+The existing full stack is deployed and verified: dogfood `18be39973b1361ebe23605dc4a605ae0d69cff43` on `codex/spacexai/dogfood-staged-20260907`, version `0.9.0.dev20260907`, contains Core11 and client 0.5.0 at `f58ec77aebff01fe6bf4b72e97a2370b023647a2`, not the new expiry-corrected head above. Source hashes, configuration check, restart, loaded existing OAuth entry, all four platform subentry types, and the single-overlay condition pass. Bounded live conversation, AI text, and a fresh TTS-to-STT round trip pass. See [runtime verification](RUNTIME_VERIFICATION.md) for exact scope and limits.
 
 Dogfood is never an upstream PR head. Keep the 23 prepared contributions and a
 conditional HA naming-fix slot beside the later speech wave, only if still
