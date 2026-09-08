@@ -23,7 +23,7 @@ None. This adds a new integration.
 
 Add a community-maintained SpaceXAI integration so users can use Grok in Assist with their xAI subscription.
 
-This is a draft in `jeffglousher/core` for the initial contribution, not an upstream submission. The dependency is now published and the candidate is validated on the checked upstream tip. Human review and a fresh initial-only OAuth login still remain before upstream submission.
+This write-up is prepared for a draft in `jeffglousher/core`, not an upstream submission; no companion PR has been opened. The dependency is published and scoped checks plus full native setup/hooks pass on the checked upstream base. Human review and fresh initial-only UI/OAuth acceptance still remain before upstream submission.
 
 Browser-based OAuth device authorization creates one conversation agent per account. Setup validates account identity and available models; duplicate accounts are rejected. Assist access is selected by default, can be disabled during setup, and is limited to exposed entities. There is no API-key mode.
 
@@ -33,7 +33,7 @@ This initial contribution targets Bronze and only the conversation platform. Att
 
 Tests cover completed login retries, cancellation, account validation, token rotation across reload, conversation responses, real Assist exposure controls, and provider failures. Permission denial is distinguished from invalid credentials. Token-endpoint timeout regressions verify normal setup retry, a translated conversation error, retained credentials, successful recovery, and cancellation.
 
-Public tests include language discovery and stored-subentry isolation. Coverage measures statements, not branches, without excluded statements.
+Public tests include language discovery, stored-subentry isolation, and cancellation of pending device authorization during HA's stop stage. Polling uses HA's background-task ownership while the flow retains normal cancellation ownership. Coverage measures statements, not branches, without excluded statements.
 
 ## Type of change
 <!--
@@ -66,10 +66,10 @@ Public tests include language discovery and stored-subentry isolation. Coverage 
 - Client release: [PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/) and [tagged GitHub release](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0), with [release notes](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.0/CHANGELOG.md). Both distributions passed hash, source-byte, signed-provenance, and clean-install verification.
 - Brands pull request staging diff: https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial
 - Prepared Core diff: https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...codex/spacexai/initial-release-0-1
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/7a41a0358c01a58700bde227fa0a951d28f5e638
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34244844613) tests Core `7a41a0358c01a58700bde227fa0a951d28f5e638` with PyPI 0.1.0, verified against release `155d76c5b940108be707bb379c02d476b893b758`: 46 tests, 241/241 statements (100%), zero excluded statements, and zero failures/errors/skips. Native lint, formatting, typing, unchanged script/setup, full-tree general hooks, and standard hooks on all 18 contribution files pass. Hassfest passes without a publication exception; generated files are unchanged. The installed package is index-sourced and its runtime bytes match the release; no local client wheelhouse is used. The candidate is one commit on checked upstream `38aacedef39eb3f077ce4a112a58bf7286af5e2c`; recheck freshness at submission.
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/25e04203dad36c741b56ff7a789b85f6a76b7f7e
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34251664631) passes both jobs for Core `25e04203dad36c741b56ff7a789b85f6a76b7f7e` with actual PyPI 0.1.0, verified against release `155d76c5b940108be707bb379c02d476b893b758`: 47 tests, 241/241 statements (100%), zero excluded statements, and zero failures/errors/skips. All four modules are at 100%; native lint, formatting, MyPy, and Pylint pass. The new shutdown test fails once against old `7a41a035` production (late cancellation), then passes with the fixed source restored. Unchanged script/setup, the full-tree general-hook subset, standard native contribution hooks, and generated wiring/publication validation also pass. The candidate preserves two commits and 18 changed files on checked upstream `38aacedef39eb3f077ce4a112a58bf7286af5e2c`; recheck freshness at submission.
 
-- First-install validation: Fresh initial-only Home Assistant UI/OAuth login still needs an isolated native host and human authorization; the existing full-stack test system is not that evidence.
+- First-install validation: The isolated native instance at exact `25e04203` passes source/dependency, configuration, and startup checks on loopback-only HTTP. Real OAuth start reaches device progress; cancel verifies the flow is removed without an entry. A second pending authorization shuts down without the reported late-device-task warning, then HA restarts normally. No account entry exists; the provider sign-in page awaits human approval. Completed login, HA UI setup, conversation, Assist-control, persistence, and removal acceptance remain pending. The existing full-stack test system is not fresh-login evidence.
 
 ## Checklist
 <!--

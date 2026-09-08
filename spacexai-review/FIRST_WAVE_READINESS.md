@@ -8,19 +8,21 @@ and human review still remain.
 ## Exact first-wave source
 
 - Python 0.1.0: [release v0.1.0](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0), `155d76c5b940108be707bb379c02d476b893b758`.
-- Core: `codex/spacexai/initial-release-0-1`, `7a41a0358c01a58700bde227fa0a951d28f5e638`.
+- Core: `codex/spacexai/initial-release-0-1`, `25e04203dad36c741b56ff7a789b85f6a76b7f7e`.
 - Brands: `spacexai-initial`, `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
 - Docs: `codex/spacexai/docs-initial-release-0-1`, `44526b046fa26d4ddf0ab037850a54e30ecbf1d0`.
 
-Core has one commit and exactly 18 changed files on the checked official dev
+Core has two commits and exactly 18 changed files on the checked official dev
 `38aacedef39eb3f077ce4a112a58bf7286af5e2c`. Docs has one commit and one 96-line
 page on official next `1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a`.
 Both candidates and their fixed fork review bases are pushed. The prior staged
 branches and review bases were preserved, not rewritten or deleted.
 
-Core runtime and tests are byte-identical to the prepared initial `5d623e0a`;
-only `dependency-transparency` changes from `todo` to `done`. The manifest
-already pinned 0.1.0. Generated additions preserve the current upstream files.
+The initial replay `7a41a035` preserved the prepared runtime/tests and marked
+`dependency-transparency` done. The additive `25e04203` fix uses HA's background
+task ownership for device polling so shutdown cancels it at the stop stage;
+one public shutdown regression was added. No provider behavior, package version,
+or initial scope changed. Generated additions preserve the recorded upstream files.
 No initial API migration was identified. The docs page is byte-identical to
 `0a5a5dfb`. Recheck upstream freshness at actual submission time.
 
@@ -52,8 +54,26 @@ This does not re-attest private account security or human license review.
 
 ## Current Core verification
 
+[Native run 34251664631](https://github.com/jeffglousher/core/actions/runs/34251664631)
+passes the integration job for exact Core `25e04203` with actual PyPI 0.1.0,
+verified against release `155d76c5`: 47 tests, zero failures/errors/skips,
+241/241 statements (100%), zero exclusions, and all four modules at 100%.
+Scoped lint, formatting, MyPy, and Pylint pass. Its negative control runs the
+new shutdown test against old `7a41a035` production and produces exactly one
+expected failure: cancellation occurs at `not_running`, not `stopping`.
+The fixed source is restored before all 47 tests pass. This demonstrates late
+cancellation, not a measured long shutdown delay.
+
+The same run also passes unchanged script/setup, the full-tree general-hook
+subset, standard native hooks on all contribution files, and generated wiring
+and publication validation. Both jobs are successful for the new head.
+Harness `15adcb71e31a2ade8db05463da95498082537634` records this verification.
+The prior results below remain historical rather than being relabeled.
+
+### Historical release-backed replay verification
+
 [Native run 34244844613](https://github.com/jeffglousher/core/actions/runs/34244844613)
-tests the exact Core/release pair above using the actual PyPI package.
+tests Core `7a41a035` with release `155d76c5` using the actual PyPI package.
 The scoped job passes 46 tests, zero failures/errors/skips, and 241/241 statements
 (100%), with zero missing or excluded statements. Every initial module is 100%.
 Ruff, formatting, native MyPy/Pylint, and requirements regeneration pass.
@@ -104,19 +124,27 @@ pending the Brands merge.
 
 1. A human must review, understand, and be able to explain the three HA
    contributions. Keep personal template attestations unchecked until true.
-2. Complete a fresh initial-only HA installation and browser OAuth login on a
-   separate native instance with an empty dedicated configuration. Verify
+2. Complete fresh initial-only browser OAuth login on the separate native
+   instance. Exact `25e04203` matches all seven source blobs; 118 dependencies
+   and PyPI client 0.1.0 are unchanged, and import/dependency checks pass.
+   Configuration validation exits 0, HA is running on loopback-only HTTP,
+   and there are no SpaceXAI entries. Real OAuth start reaches device progress;
+   cancel yields verified 404 and no entry. Stopping during a second pending
+   authorization exits with the process absent, port closed, and no reported
+   late-device-task warning; restart returns to running. The first-party
+   provider sign-in page awaits human approval. This is not completed login or
+   HA UI setup. Verify
    conversation, explicitly permitted Assist control, disabled Assist control,
    restart/token persistence, and removal. Existing full-stack credentials are
-   not fresh-login proof. An isolated native host and human authorization are
-   still needed; do not replace the existing full-stack instance.
+   not fresh-login proof. Human OAuth approval is still needed; do not replace
+   the existing full-stack instance.
 3. After creating the companion drafts, replace comparison placeholders with
    actual PR links. Recheck the public integration logo after Brands merges.
 4. Before upstream submission, recheck upstream freshness, rerun relevant
    checks if the base changes, and finish the human review gates. Do not open
    dependent follow-on upstream PRs early.
 
-Use the [three fork-draft instructions](README.md#create-the-three-companion-fork-drafts).
+Use the [one-at-a-time fork-draft instructions](README.md#create-the-three-companion-fork-drafts).
 No further library tag, release, or publication is needed for this wave.
 
 ## Original contribution provenance
@@ -130,11 +158,12 @@ retains the detailed evidence; this release does not change those findings.
 ## Follow-ons and runtime remain separate
 
 The [23-contribution design stack](STACK.md) is preserved. Only its initial
-submission candidates were refreshed onto the new upstream tips. Versions
+submission candidates were refreshed onto the new upstream tips. Later Core
+layers have not inherited or retested the new shutdown fix. Package versions
 0.2–0.5 are not published; speech/downstream also retain the independent
 `has-entity-name: todo` issue. No Bronze, Gold, or Platinum award is claimed.
 
 The existing dogfood remains `18be3997`, containing old Core `b8be5c4f` and
-client `f58ec77a`. No deployment or live provider call was made in this
-publication-verification pass. [Runtime evidence](RUNTIME_VERIFICATION.md)
-continues to describe that older installation, not these new candidate heads.
+client `f58ec77a`; it was not replaced by the isolated initial test instance.
+[Runtime evidence](RUNTIME_VERIFICATION.md) distinguishes the older full-stack
+installation from the separate initial acceptance work.

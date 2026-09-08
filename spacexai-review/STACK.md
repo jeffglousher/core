@@ -11,10 +11,21 @@ from release/main `155d76c5b940108be707bb379c02d476b893b758`; its tree exactly
 matches the reviewed initial source below. The package PR is merged.
 
 The current initial Core candidate is `codex/spacexai/initial-release-0-1` at
-`7a41a0358c01a58700bde227fa0a951d28f5e638`, one commit on official dev
-`38aacedef39eb3f077ce4a112a58bf7286af5e2c`. Its only integration change from
-the preserved initial is `dependency-transparency: done`. Runtime and tests
-are unchanged, and generated additions preserve the newer upstream wiring.
+`25e04203dad36c741b56ff7a789b85f6a76b7f7e`, two commits on official dev
+`38aacedef39eb3f077ce4a112a58bf7286af5e2c`, with exactly 18 changed files.
+The replay marked `dependency-transparency: done`; the additive repair uses
+HA background-task ownership for device polling and adds a public shutdown
+regression. The original pushed commit is preserved. Native integration checks
+pass 47 tests and 241/241 statements (100%); unchanged native setup, full-tree
+general hooks, standard contribution hooks, and generated/publication validation
+also pass on this head. [Current evidence](STAGED_READINESS.md) retains the exact
+run and limits.
+
+The separate initial-only instance at this head passes configuration/startup,
+real OAuth start/cancel, and clean shutdown/restart with authorization pending.
+No account entry was created; the provider sign-in page awaits human approval.
+Completed login, UI setup, conversation, Assist control, persistence, and removal
+remain pending. This does not update the older full-stack deployment below.
 
 Initial docs is `codex/spacexai/docs-initial-release-0-1` at
 `44526b046fa26d4ddf0ab037850a54e30ecbf1d0`, one commit on official next
@@ -25,6 +36,8 @@ Use these candidates for the [three remaining fork drafts](README.md#create-the-
 The old 23-layer design and all its branch histories remain available below;
 they have not all been replayed onto today's upstream. Follow-ons still use
 unpublished package versions and must retain their publication blockers.
+The shutdown fix has not yet been carried into or retested through these later
+layers; previous green receipts do not certify an updated complete stack.
 
 ## Scope and order
 
@@ -66,8 +79,8 @@ pass after the coverage tests were inherited. The preserved initial has
 241/241 statements covered (100%), with no excluded statements. This does not
 claim 100% for every follow-on layer or branch coverage.
 [Validation evidence](STAGED_READINESS.md) preserves exact source/run attribution.
-The refreshed initial candidate above now passes clean hassfest using PyPI;
-the older initial's publication finding is historical. Unpublished follow-on
+Current `25e04203` passes full native hooks and generated/publication validation
+using PyPI. The older initial's publication finding is historical. Unpublished follow-on
 versions and the speech entity-naming rule remain separate blockers.
 
 ## Package layers

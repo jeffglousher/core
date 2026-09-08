@@ -1,4 +1,51 @@
-# Current verified runtime — September 7, 2026
+# Current runtime evidence — September 8, 2026
+
+## Isolated initial-layer acceptance work
+
+A separate native instance on the user's HA host now runs initial Core
+`25e04203dad36c741b56ff7a789b85f6a76b7f7e`, with the published PyPI client
+0.1.0. All seven installed integration source files match Git. The client wheel
+hash is `2d7e8d92087afc3e72ec5839e93631284c378acd4e21121cbc60dc473c767b32`;
+its source bytes were verified. All 118 previously resolved dependency versions
+remained unchanged during the Core-only update; dependency checks and all four
+integration module imports pass. Generated English data uses HA's own tooling.
+
+The isolated configuration has two synthetic helpers, no copied production
+credentials, and no real home devices. Normal HA API onboarding also creates
+its stock default integrations; this is not a claim that only SpaceXAI loads.
+The instance listens only on loopback and receives no Supervisor credentials.
+The main full-stack installation below was not changed, restarted, or replaced;
+its management API remained healthy after these tests.
+
+Verified against the updated initial candidate:
+
+- HA's native configuration check succeeds and the runtime reaches `RUNNING`.
+- HTTP settings are stable, loopback-only, with no pending reversion timer.
+- A real OAuth device flow reaches the approval step. Cancelling it removes
+  the flow (subsequent lookup returns 404), with no SpaceXAI account created.
+- Stopping HA with another pending device flow terminates the process and
+  closes its listener, with zero late device-poll shutdown warnings in that run.
+- Restart succeeds and the empty SpaceXAI configuration remains empty.
+
+The first setup trial exposed HA's HTTP configuration safety rollback: an
+unconfirmed configuration reverts and requests restart after five minutes.
+That stopped trial was preserved. The subsequent configuration was confirmed
+through HA's supported HTTP configuration API, without editing stored state.
+Its shutdown also exposed a separate SpaceXAI task-ownership defect, corrected
+in `25e04203`. [Native run 34251664631](https://github.com/jeffglousher/core/actions/runs/34251664631)
+passes all 47 tests with 100% statement coverage, scoped checks, native setup,
+standard hooks, and generated/publication validation. The new public regression
+fails against the old production code and passes with the fix. This proves
+earlier cancellation, not a measured long shutdown delay.
+
+Fresh provider approval is now awaiting the user on the provider's sign-in page.
+The current device endpoint is [SpaceXAI Accounts](https://accounts.x.ai/oauth2/device);
+the private device code is not included here. This is not completed HA frontend
+or fresh-login acceptance. Conversation, enabled/disabled Assist control,
+credential persistence across restart, and account removal still need this
+fresh initial-only account. No quality-tier award is claimed.
+
+## Unchanged full-stack deployment — September 7, 2026
 
 The timeout-corrected full stack is deployed and running. This is an
 existing-account dogfood deployment, not proof of a fresh initial-only
@@ -54,9 +101,10 @@ or forced credential expiry was induced on the running test system; timeout
 failure/recovery is covered by the native public-interface regressions.
 
 Speech entity naming remains quality-blocked despite functional TTS/STT
-success. A fresh initial-only setup and human OAuth login still need an
-isolated native host. No tokens, entry identifiers, host addresses, signed
-URLs, raw logs, or private audio are included here.
+success. Initial-only acceptance is now being tested separately as recorded
+above; the fresh human OAuth approval remains pending. No tokens, entry
+identifiers, host addresses, signed URLs, raw logs, or private audio are
+included here.
 
 [The previous September 7 runtime record](https://github.com/jeffglousher/core/blob/40e9dc4893fb663b38649145e47e0f7c9bfec019/spacexai-review/RUNTIME_VERIFICATION.md)
 retains its own source identities and measurements for dogfood `85ac0fd099cd`.

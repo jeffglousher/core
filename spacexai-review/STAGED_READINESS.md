@@ -6,7 +6,36 @@ September 8, 2026. Python 0.1.0 is published from `155d76c5b940108be707bb379c02d
 with verified hashes, source bytes, signed provenance, and six clean installations.
 [Publication evidence](PACKAGE_REPAIR_EVIDENCE.md) records the exact files and scope.
 
-The refreshed initial Core `7a41a0358c01a58700bde227fa0a951d28f5e638` is one commit
+Current initial Core `25e04203dad36c741b56ff7a789b85f6a76b7f7e` contains two commits
+on official dev `38aacedef39eb3f077ce4a112a58bf7286af5e2c`, still exactly 18 files.
+The second commit gives device polling HA background-task shutdown ownership
+and adds one public shutdown regression; the PyPI dependency is unchanged.
+[Native run 34251664631](https://github.com/jeffglousher/core/actions/runs/34251664631)
+passes the integration job with actual PyPI 0.1.0/release `155d76c5`: 47 tests,
+241/241 statements (100%), all four modules at 100%, zero exclusions, failures,
+errors, or skips. Scoped lint, formatting, MyPy, and Pylint pass. Its negative
+control gives exactly one expected failure against old `7a41a035` production
+(cancellation at `not_running` instead of `stopping`), then restores fixed source
+before the full 47-test pass. This proves late cancellation, not shutdown duration.
+
+Both jobs in that run pass, including unchanged script/setup, the full-tree
+general-hook subset, standard native contribution hooks, and generated wiring
+and publication validation. Current harness:
+`15adcb71e31a2ade8db05463da95498082537634`. The isolated `25e04203` instance
+matches all seven source blobs, with all 118 dependencies and PyPI client 0.1.0
+unchanged; import/dependency checks and configuration validation pass. It is
+running on loopback-only HTTP with no SpaceXAI entries. Real OAuth start reaches
+device progress; cancel produces verified 404 without an entry. A second pending
+authorization is cancelled by shutdown: the process exits, its port closes, and
+the reported late-device-task warning is absent. Restart returns to running.
+The first-party provider sign-in page awaits human approval; completed login,
+HA UI setup, and functional acceptance remain pending.
+[Runtime evidence](RUNTIME_VERIFICATION.md) records live scope.
+Later layers have not inherited/retested this fix; the old full stack is unchanged.
+
+### Historical release-backed replay
+
+The refreshed initial Core `7a41a0358c01a58700bde227fa0a951d28f5e638` was one commit
 on official dev `38aacedef39eb3f077ce4a112a58bf7286af5e2c`. Its runtime and tests
 are unchanged; the dependency-publication rule is now done.
 [Native run 34244844613](https://github.com/jeffglousher/core/actions/runs/34244844613)
@@ -28,8 +57,8 @@ Harness `5229aa8a4be5e9083c9f53f3e25283d47986678a` enforces actual PyPI installa
 and rejects the old publication exception in PyPI mode. Explicit checkout mode
 is retained only for unpublished follow-on versions.
 
-[First-wave readiness](FIRST_WAVE_READINESS.md) records native full-hook and
-companion-build completion, current source refs, and remaining human/live-login
+[First-wave readiness](FIRST_WAVE_READINESS.md) records completed current native
+checks and companion builds, source refs, and remaining human/live-login
 gates. The older 23-layer design, runtime installation, and receipts below are
 preserved, not relabeled as tested on the refreshed base.
 
