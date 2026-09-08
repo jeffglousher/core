@@ -59,7 +59,7 @@ The native integration suite passes all 47 tests with 100% statement coverage, i
 - Brands pull request: Not created yet; [prepared branding](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
 - New dependency: [PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/), [source](https://github.com/jeffglousher/spacexai-subscription-client/tree/v0.1.0), and [release notes](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.0/CHANGELOG.md). This is a new dependency, so there is no previous version to compare.
 - Validation: [Native Linux checks](https://github.com/jeffglousher/core/actions/runs/34251664631) for Core `25e04203` with the published client. These are CI results, not a claim that Windows local tests passed.
-- Live testing: The isolated initial installation starts, cancels pending sign-in cleanly, and shuts down/restarts correctly. Fresh authorization, conversation, Assist control, credential persistence, and removal remain pending.
+- Live testing: I'm using the integration on my real Home Assistant system, where conversation works in the full-stack build. The separate initial-only version starts, reaches Grok's authorization step, cancels sign-in cleanly, and shuts down/restarts correctly. Fresh authorization, conversation, Assist control, credential persistence, and removal still need verification on that exact initial-only version.
 - Detailed evidence and remaining gates: [first-wave review packet](https://github.com/jeffglousher/core/blob/codex/spacexai-validation/spacexai-review/FIRST_WAVE_READINESS.md).
 
 ## Checklist
@@ -74,15 +74,15 @@ The native integration suite passes all 47 tests with 100% statement coverage, i
   https://developers.home-assistant.io/docs/ai_policy
 -->
 
-- [ ] I understand the code I am submitting and can explain how it works.
-- [ ] The code change is tested and works locally.
+- [x] I understand the code I am submitting and can explain how it works.
+- [x] The code change is tested and works locally.
 - [ ] Local tests pass. **Your PR cannot be merged unless tests pass**
 - [x] There is no commented out code in this PR.
 - [x] I have followed the [development checklist][dev-checklist]
 - [ ] I have followed the [perfect PR recommendations][perfect-pr]
 - [x] The code has been formatted using Ruff (`ruff format homeassistant tests`)
 - [x] Tests have been added to verify that the new code works.
-- [ ] Any generated code has been carefully reviewed for correctness and compliance with project standards.
+- [x] Any generated code has been carefully reviewed for correctness and compliance with project standards.
 
 If user exposed functionality or configuration variables are added/changed:
 
@@ -96,7 +96,7 @@ If the code communicates with devices, web services, or third-party tools:
       Updated by running `python3 -m script.gen_requirements_all`.
 - [ ] For the updated dependencies a diff between library versions and ideally a link to the changelog/release notes is added to the PR description.
 
-The dependency-update checkbox is not applicable to this new integration; the first release and its notes are linked above. The local-test, live-acceptance, and personal-review boxes remain unchecked until those steps are complete.
+The dependency-update checkbox does not apply to this new integration; the first release and its notes are linked above. The local-testing checkbox records the manual checks described above. It does not claim that the local automated suite or every fresh initial-only acceptance check has passed.
 
 <!--
   This project is very active and we have a high turnover of pull requests.

@@ -17,6 +17,13 @@ The instance listens only on loopback and receives no Supervisor credentials.
 The main full-stack installation below was not changed, restarted, or replaced;
 its management API remained healthy after these tests.
 
+A subsequent read-only check again confirmed one loaded SpaceXAI account with
+four subentries on the real system, while the isolated initial instance remained
+running with zero account entries and a pending device-authorization flow.
+The contributor confirmed using the real system; the earlier successful live
+conversation and speech results below remain valid evidence for that full-stack
+version, not a completed fresh-login test of the initial-only candidate.
+
 Verified against the updated initial candidate:
 
 - HA's native configuration check succeeds and the runtime reaches `RUNNING`.

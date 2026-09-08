@@ -37,8 +37,10 @@ gh pr create --draft --repo jeffglousher/core --base codex/spacexai/review-base-
 ```
 
 Share the resulting Core draft URL before proceeding to the next contribution.
-Creating this fork draft does not complete your personal attestations or the
-fresh initial-only UI/OAuth acceptance gate, and it is not upstream submission.
+Your Core code-understanding and generated-code-review confirmations are now
+recorded, along with the real-system manual testing. Creating this fork draft
+does not complete the separate fresh initial-only acceptance gate, and it is
+not upstream submission.
 The [checkbox notes](FIRST_WAVE_READINESS.md#draft-descriptions-and-checkboxes)
 explain which items are verified, which do not apply, and which still need
 actual testing, PR creation, or your personal confirmation.
@@ -79,9 +81,9 @@ SpaceXAI entries. Real OAuth flow start/cancel passes; stopping with a second
 authorization pending exits cleanly without the reported late-task warning,
 then restarts normally. The provider sign-in page is open awaiting human approval.
 This is not a completed login, UI setup, or functional acceptance test.
-Fresh initial-only UI/OAuth acceptance and your review of the three HA
-contributions still remain. Automated checks do not complete personal
-attestations. An upstream Core submission stays on hold until those gates pass;
+Your current Core code-review confirmation is recorded. Fresh initial-only
+UI/OAuth acceptance and final review of the descriptions and companions still
+remain. An upstream Core submission stays on hold until those gates pass;
 the public Brands logo also needs checking after its merge.
 
 [The 23-contribution design stack](STACK.md) remains preserved. The new initial

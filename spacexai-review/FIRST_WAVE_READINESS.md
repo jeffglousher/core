@@ -2,8 +2,9 @@
 
 Verified September 8, 2026. The initial Python package is published and its
 post-publication checks pass. Three HA companion contributions remain prepared
-for human review, not submitted upstream. Fresh initial-only UI/OAuth acceptance
-and human review still remain.
+for review, not submitted upstream. The contributor has confirmed reading and
+understanding the initial Core code, including the generated changes. Fresh
+initial-only UI/OAuth acceptance and final submission checks still remain.
 
 ## Exact first-wave source
 
@@ -135,9 +136,15 @@ asset checks are verified. Companion references now point to Core `25e04203`.
 Unchecked alternatives are intentional, not missing prose. The dependency-upgrade
 comparison does not apply to adding the first version of a library. Actual
 companion PR links and the docs Brands-PR checkbox must wait until those PRs exist.
-Personal code/generated-code review and review of two other PRs require the
-contributor's confirmation. Native GitHub tests are not relabeled as local tests,
-and partial live startup checks are not complete functional acceptance.
+The contributor has now confirmed reading and understanding the current Core
+code in response to the question that included the shutdown fix and generated
+changes. Both Core review attestations are checked. The manual locally-tested
+box is also checked: real-host initial lifecycle checks and successful full-stack
+conversation/speech tests are recorded, with their versions and limits explicit.
+This general manual-testing checkbox is not the separate fresh initial-only
+acceptance gate. The local automated-test box remains unchecked; native GitHub
+tests are not relabeled as local test runs. Review of two other PRs has not been
+confirmed.
 
 The Core review base remains `38aacedef`. A fresh read of upstream `dev` returned
 `3cc583c60419fc1fc9f61b131dee8b9ecf25c3e3`; the candidate was not rebased during
@@ -146,8 +153,10 @@ than checking perfect-PR compliance while that and live acceptance remain open.
 
 ### Steps before upstream submission
 
-1. A human must review, understand, and be able to explain the three HA
-   contributions. Keep personal template attestations unchecked until true.
+1. The contributor has confirmed understanding and reviewing the current Core
+   code and generated changes. Review the final descriptions and companion
+   contributions before submission; renew that review if code changes afterward.
+   Do not infer completion of the separate two-other-PRs checklist item.
 2. Complete fresh initial-only browser OAuth login on the separate native
    instance. Exact `25e04203` matches all seven source blobs; 118 dependencies
    and PyPI client 0.1.0 are unchanged, and import/dependency checks pass.
