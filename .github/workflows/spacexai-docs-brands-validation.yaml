@@ -24,7 +24,7 @@ jobs:
       matrix:
         include:
           - layer: initial
-            revision: 0a5a5dfb0f779bf027b609781c5117cc78f9d3a7
+            revision: 44526b046fa26d4ddf0ab037850a54e30ecbf1d0
           - layer: final
             revision: 69221dc8a853972e4b4fcbf78d4fbba8047b393d
     defaults:
