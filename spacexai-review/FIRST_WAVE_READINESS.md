@@ -122,6 +122,30 @@ pending the Brands merge.
 
 ## Remaining first-wave gates
 
+### Draft descriptions and checkboxes
+
+The three initial descriptions now contain concise purpose, scope, and testing
+summaries. Every original template comment, heading, field, and checkbox is
+retained; their source templates still match the official repositories.
+The Core development-checklist and manifest boxes are checked from the published
+dependency, enabled issue tracker, generated wiring, and native validation.
+The docs branch box is checked from its verified `next` base. All five Brands
+asset checks are verified. Companion references now point to Core `25e04203`.
+
+Unchecked alternatives are intentional, not missing prose. The dependency-upgrade
+comparison does not apply to adding the first version of a library. Actual
+companion PR links and the docs Brands-PR checkbox must wait until those PRs exist.
+Personal code/generated-code review and review of two other PRs require the
+contributor's confirmation. Native GitHub tests are not relabeled as local tests,
+and partial live startup checks are not complete functional acceptance.
+
+The Core review base remains `38aacedef`. A fresh read of upstream `dev` returned
+`3cc583c60419fc1fc9f61b131dee8b9ecf25c3e3`; the candidate was not rebased during
+this writing pass. Refresh and revalidate it before upstream submission, rather
+than checking perfect-PR compliance while that and live acceptance remain open.
+
+### Steps before upstream submission
+
 1. A human must review, understand, and be able to explain the three HA
    contributions. Keep personal template attestations unchecked until true.
 2. Complete fresh initial-only browser OAuth login on the separate native

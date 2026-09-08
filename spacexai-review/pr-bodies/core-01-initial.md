@@ -21,19 +21,13 @@ None. This adds a new integration.
   additional information section.
 -->
 
-Add a community-maintained SpaceXAI integration so users can use Grok in Assist with their xAI subscription.
+I'm adding a community-maintained SpaceXAI integration so people can use Grok as an Assist agent with their xAI subscription. I've kept this first contribution limited to conversation; AI Task, media, and speech are left for later.
 
-This write-up is prepared for a draft in `jeffglousher/core`, not an upstream submission; no companion PR has been opened. The dependency is published and scoped checks plus full native setup/hooks pass on the checked upstream base. Human review and fresh initial-only UI/OAuth acceptance still remain before upstream submission.
+Setup uses browser-based OAuth device authorization, validates the account and available models, and creates one conversation agent per account. Assist control is selected by default, can be disabled during setup, and respects Home Assistant's exposed entities. There is no API-key fallback or runtime CLI dependency.
 
-Browser-based OAuth device authorization creates one conversation agent per account. Setup validates account identity and available models; duplicate accounts are rejected. Assist access is selected by default, can be disabled during setup, and is limited to exposed entities. There is no API-key mode.
+The published, unofficial `spacexai-subscription-client` library handles provider communication and OAuth. The integration handles Home Assistant configuration, shared sessions, conversations, tool calls, and token persistence. It targets Bronze, not the full quality scale in this first PR.
 
-The unofficial `spacexai-subscription-client` library owns provider communication and OAuth protocol handling. Core supplies shared HTTP sessions and handles configuration, conversation tools, token persistence, and unloading.
-
-This initial contribution targets Bronze and only the conversation platform. Attachments, provider-hosted tools, AI Task, media generation, speech, diagnostics, reauthentication, and reconfiguration are excluded.
-
-Tests cover completed login retries, cancellation, account validation, token rotation across reload, conversation responses, real Assist exposure controls, and provider failures. Permission denial is distinguished from invalid credentials. Token-endpoint timeout regressions verify normal setup retry, a translated conversation error, retained credentials, successful recovery, and cancellation.
-
-Public tests include language discovery, stored-subentry isolation, and cancellation of pending device authorization during HA's stop stage. Polling uses HA's background-task ownership while the flow retains normal cancellation ownership. Coverage measures statements, not branches, without excluded statements.
+The native integration suite passes all 47 tests with 100% statement coverage, including login cancellation, shutdown, token refresh, provider failures, and Assist exposure controls. Formatting, typing, lint, hassfest, and generated-file checks also pass. Fresh initial-only sign-in and functional acceptance still need to be completed before this fork draft is ready for upstream submission.
 
 ## Type of change
 <!--
@@ -58,18 +52,15 @@ Public tests include language discovery, stored-subentry isolation, and cancella
 -->
 
 - This PR fixes or closes issue: Not applicable; this is a new integration.
-- This PR is related to issue: Replaces the closed [previous contribution #178765](https://github.com/home-assistant/core/pull/178765) with a smaller, conversation-only integration and a separate provider client.
-- Link to documentation pull request: Not opened; [prepared incremental documentation](https://github.com/jeffglousher/home-assistant.io/compare/1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a...codex/spacexai/docs-initial-release-0-1).
+- This PR is related to issue: Replaces my closed [PR #178765](https://github.com/home-assistant/core/pull/178765) with a smaller contribution and a separate provider library.
+- Link to documentation pull request: Not created yet; [prepared documentation](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/docs-initial-release-0-1).
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
-- Published client source: https://github.com/jeffglousher/spacexai-subscription-client/tree/v0.1.0
-- Client release: [PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/) and [tagged GitHub release](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0), with [release notes](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.0/CHANGELOG.md). Both distributions passed hash, source-byte, signed-provenance, and clean-install verification.
-- Brands pull request staging diff: https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...codex/spacexai/initial-release-0-1
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/25e04203dad36c741b56ff7a789b85f6a76b7f7e
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34251664631) passes both jobs for Core `25e04203dad36c741b56ff7a789b85f6a76b7f7e` with actual PyPI 0.1.0, verified against release `155d76c5b940108be707bb379c02d476b893b758`: 47 tests, 241/241 statements (100%), zero excluded statements, and zero failures/errors/skips. All four modules are at 100%; native lint, formatting, MyPy, and Pylint pass. The new shutdown test fails once against old `7a41a035` production (late cancellation), then passes with the fixed source restored. Unchanged script/setup, the full-tree general-hook subset, standard native contribution hooks, and generated wiring/publication validation also pass. The candidate preserves two commits and 18 changed files on checked upstream `38aacedef39eb3f077ce4a112a58bf7286af5e2c`; recheck freshness at submission.
-
-- First-install validation: The isolated native instance at exact `25e04203` passes source/dependency, configuration, and startup checks on loopback-only HTTP. Real OAuth start reaches device progress; cancel verifies the flow is removed without an entry. A second pending authorization shuts down without the reported late-device-task warning, then HA restarts normally. No account entry exists; the provider sign-in page awaits human approval. Completed login, HA UI setup, conversation, Assist-control, persistence, and removal acceptance remain pending. The existing full-stack test system is not fresh-login evidence.
+- Brands pull request: Not created yet; [prepared branding](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
+- New dependency: [PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/), [source](https://github.com/jeffglousher/spacexai-subscription-client/tree/v0.1.0), and [release notes](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.0/CHANGELOG.md). This is a new dependency, so there is no previous version to compare.
+- Validation: [Native Linux checks](https://github.com/jeffglousher/core/actions/runs/34251664631) for Core `25e04203` with the published client. These are CI results, not a claim that Windows local tests passed.
+- Live testing: The isolated initial installation starts, cancels pending sign-in cleanly, and shuts down/restarts correctly. Fresh authorization, conversation, Assist control, credential persistence, and removal remain pending.
+- Detailed evidence and remaining gates: [first-wave review packet](https://github.com/jeffglousher/core/blob/codex/spacexai-validation/spacexai-review/FIRST_WAVE_READINESS.md).
 
 ## Checklist
 <!--
@@ -87,7 +78,7 @@ Public tests include language discovery, stored-subentry isolation, and cancella
 - [ ] The code change is tested and works locally.
 - [ ] Local tests pass. **Your PR cannot be merged unless tests pass**
 - [x] There is no commented out code in this PR.
-- [ ] I have followed the [development checklist][dev-checklist]
+- [x] I have followed the [development checklist][dev-checklist]
 - [ ] I have followed the [perfect PR recommendations][perfect-pr]
 - [x] The code has been formatted using Ruff (`ruff format homeassistant tests`)
 - [x] Tests have been added to verify that the new code works.
@@ -99,11 +90,13 @@ If user exposed functionality or configuration variables are added/changed:
 
 If the code communicates with devices, web services, or third-party tools:
 
-- [ ] The [manifest file][manifest-docs] has all fields filled out correctly.  
+- [x] The [manifest file][manifest-docs] has all fields filled out correctly.  
       Updated and included derived files by running: `python3 -m script.hassfest`.
 - [x] New or updated dependencies have been added to `requirements_all.txt`.  
       Updated by running `python3 -m script.gen_requirements_all`.
 - [ ] For the updated dependencies a diff between library versions and ideally a link to the changelog/release notes is added to the PR description.
+
+The dependency-update checkbox is not applicable to this new integration; the first release and its notes are linked above. The local-test, live-acceptance, and personal-review boxes remain unchecked until those steps are complete.
 
 <!--
   This project is very active and we have a high turnover of pull requests.

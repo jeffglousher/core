@@ -39,6 +39,9 @@ gh pr create --draft --repo jeffglousher/core --base codex/spacexai/review-base-
 Share the resulting Core draft URL before proceeding to the next contribution.
 Creating this fork draft does not complete your personal attestations or the
 fresh initial-only UI/OAuth acceptance gate, and it is not upstream submission.
+The [checkbox notes](FIRST_WAVE_READINESS.md#draft-descriptions-and-checkboxes)
+explain which items are verified, which do not apply, and which still need
+actual testing, PR creation, or your personal confirmation.
 
 ## Queued companions
 

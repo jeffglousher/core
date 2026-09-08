@@ -11,15 +11,11 @@
   maintainers why we should accept this pull request.
 -->
 
-Add light- and dark-theme icons and logos for the new SpaceXAI Core integration, with standard and high-density PNG variants.
+Add the icons and logos for the new SpaceXAI conversation integration. This change contains only the eight PNG assets under `core_integrations/spacexai`: light and dark variants at standard and high-density resolutions.
 
-This fork draft prepares eight files under `core_integrations/spacexai` for the proposed Core integration. It is not a request to register a custom component. The companion Core and documentation PRs have not been opened; the comparisons below show their prepared scope.
+The artwork comes from the [official SpaceXAI and Grok asset pack](https://data.x.ai/logos/SpaceXAI_Grok_Assets.zip). The square symbols are centered on transparent icon canvases; the landscape symbols are trimmed and resized proportionally for the logos. The integration itself is community-maintained, not an official xAI product.
 
-The artwork comes from the [official SpaceXAI and Grok asset pack](https://data.x.ai/logos/SpaceXAI_Grok_Assets.zip), also identified in [the earlier brands submission](https://github.com/home-assistant/brands/pull/10947). The icons use the black and white square SpaceXAI symbol compositions with the opaque backgrounds removed, resized and centered on transparent square canvases. The landscape logos use the black and white transparent SpaceXAI symbols, trimmed to their artwork and proportionally resized. The source symbols have slightly different bounds, so the light and dark logo widths differ by one pixel at standard resolution.
-
-Verified the eight files' PNG format, transparency, dimensions, unique content, domain placement, and source shapes. The source archive has SHA256 `db9129acd4efc4c2202d25afe31b70281a79f8507f75520ab5e6b3356895a7e9`. The four landscape-logo alpha channels match the trimmed, resized source PNGs; icon shape comparisons allow for antialiasing. This establishes artwork provenance, not an endorsement of the community-maintained integration.
-
-The repository's native Bash/ImageMagick validator passed for commit `e3ac8da8bf579ec54210cc211e1eaa0768052679` in [fork validation](https://github.com/jeffglousher/core/actions/runs/34245078515): 19,231 images checked, zero issues.
+The complete Brands validator passes with zero issues. The [review record](https://github.com/jeffglousher/core/blob/codex/spacexai-validation/spacexai-review/FIRST_WAVE_READINESS.md#documentation-and-brands) contains the validation results and links to the separate Core and documentation contributions.
 
 ## Type of change
 <!--
@@ -42,8 +38,8 @@ The repository's native Bash/ImageMagick validator passed for commit `e3ac8da8bf
 -->
 
 - This PR fixes or closes issue: Not applicable; these assets accompany a new integration.
-- Link to code base pull request: Not opened; [prepared current-tip initial Core](https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...7a41a0358c01a58700bde227fa0a951d28f5e638) on `codex/spacexai/initial-release-0-1`.
-- Link to documentation pull request: Not opened; [prepared current-tip initial documentation](https://github.com/jeffglousher/home-assistant.io/compare/1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a...44526b046fa26d4ddf0ab037850a54e30ecbf1d0) on `codex/spacexai/docs-initial-release-0-1`.
+- Link to code base pull request: Not opened yet; [prepared Core changes](https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...25e04203dad36c741b56ff7a789b85f6a76b7f7e) on `codex/spacexai/initial-release-0-1`.
+- Link to documentation pull request: Not opened yet; [prepared documentation](https://github.com/jeffglousher/home-assistant.io/compare/1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a...44526b046fa26d4ddf0ab037850a54e30ecbf1d0) on `codex/spacexai/docs-initial-release-0-1`.
 - Link to integration documentation on our website: Not available until the new integration is merged.
 
 ## Checklist
