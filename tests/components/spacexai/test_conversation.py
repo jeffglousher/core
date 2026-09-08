@@ -21,8 +21,10 @@ from spacexai_subscription_client.const import TOKEN_URL
 from homeassistant.components import conversation
 from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.components.spacexai.const import MAX_TOOL_ITERATIONS
+from homeassistant.config_entries import ConfigEntryState, ConfigSubentry
+from homeassistant.const import CONF_MODEL
 from homeassistant.core import Context, HomeAssistant
-from homeassistant.helpers import intent
+from homeassistant.helpers import entity_registry as er, intent
 from homeassistant.setup import async_setup_component
 
 from . import setup_integration
@@ -40,6 +42,52 @@ def _text_response(text: str) -> Completion:
 def _tool_response() -> Completion:
     """Return a client response containing a Home Assistant tool call."""
     return Completion("", (ToolCall("call-1", "test_tool", {"param1": "call1"}),))
+
+
+async def test_conversation_languages(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Advertise all conversation languages without generating a response."""
+    await setup_integration(hass, mock_config_entry)
+
+    assert (
+        conversation.async_get_conversation_languages(hass, "conversation.grok") == "*"
+    )
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
+
+
+async def test_setup_ignores_non_conversation_subentries(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    mock_config_entry: MockConfigEntry,
+    mock_spacexai_subscription_client: MagicMock,
+) -> None:
+    """Only register conversation agents when an entry contains another subentry type."""
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_add_subentry(
+        mock_config_entry,
+        ConfigSubentry(
+            data={CONF_MODEL: "other-model"},
+            subentry_type="other",
+            title="Other",
+            unique_id=None,
+        ),
+    )
+
+    assert await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert mock_config_entry.state is ConfigEntryState.LOADED
+    assert [
+        (entry.entity_id, entry.config_subentry_id)
+        for entry in er.async_entries_for_config_entry(
+            entity_registry, mock_config_entry.entry_id
+        )
+    ] == [("conversation.grok", "conversation-subentry")]
+    assert conversation.async_get_agent(hass, "conversation.grok") is not None
+    mock_spacexai_subscription_client.async_create_response.assert_not_awaited()
 
 
 async def test_conversation_response(
