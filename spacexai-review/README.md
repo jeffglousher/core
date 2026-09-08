@@ -17,6 +17,51 @@ login path; there is no API-key fallback or Grok CLI dependency.
 The first four are prepared for human review, not upstream-ready. The
 [readiness checklist](FIRST_WAVE_READINESS.md) records the remaining gates.
 
+## Create the four fork drafts
+
+Read and understand each write-up before creating its draft. These commands
+target only your repositories; they have not been executed. Run them from a
+checkout of `codex/spacexai-validation`, where `spacexai-review/` is present.
+They supply the title, body, base, head, and draft status explicitly.
+
+1. **Prepare spacexai-subscription-client 0.1.0** — [write-up](pr-bodies/client-0.1.0.md), [preview](https://github.com/jeffglousher/spacexai-subscription-client/compare/main...harden-initial-release).
+
+   ```shell
+   gh pr create --draft --repo jeffglousher/spacexai-subscription-client --base main --head harden-initial-release --title "Prepare spacexai-subscription-client 0.1.0" --body-file spacexai-review/pr-bodies/client-0.1.0.md
+   ```
+
+2. **Add SpaceXAI conversation integration** — [write-up](pr-bodies/core-01-initial.md), [preview](https://github.com/jeffglousher/core/compare/codex/spacexai/review-base...codex/spacexai/staged-01-initial).
+
+   ```shell
+   gh pr create --draft --repo jeffglousher/core --base codex/spacexai/review-base --head codex/spacexai/staged-01-initial --title "Add SpaceXAI conversation integration" --body-file spacexai-review/pr-bodies/core-01-initial.md
+   ```
+
+3. **Add SpaceXAI integration branding** — [write-up](pr-bodies/brands-01-initial.md), [preview](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
+
+   ```shell
+   gh pr create --draft --repo jeffglousher/brands --base codex/spacexai/review-base --head spacexai-initial --title "Add SpaceXAI integration branding" --body-file spacexai-review/pr-bodies/brands-01-initial.md
+   ```
+
+4. **Document the SpaceXAI conversation integration** — [write-up](pr-bodies/docs-01-initial.md), [preview](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/review-base...codex/spacexai/staged-docs-01-initial).
+
+   ```shell
+   gh pr create --draft --repo jeffglousher/home-assistant.io --base codex/spacexai/review-base --head codex/spacexai/staged-docs-01-initial --title "Document the SpaceXAI conversation integration" --body-file spacexai-review/pr-bodies/docs-01-initial.md
+   ```
+
+The three review bases are pinned to the recorded upstream Core, docs, and
+Brands commits, respectively: `be2e14f4`, `16ad324d`, and `27519892`.
+GitHub comparisons contain exactly 18 Core files, one docs page, and eight
+Brands assets. Existing fork `dev`, `current`, and `master` are not the clean
+review bases. Do not merge into or move these review-base branches during
+staging; prepare refreshed upstream submission branches later.
+
+After creating the drafts, replace the companion comparison links with their
+actual draft PR links. Personal understanding, live-install testing, publication,
+and upstream-readiness attestations remain unchecked where unfulfilled; do not
+check them merely because this packet is complete. Package publication still
+requires a separate human-reviewed main merge and approval. An upstream Core
+PR remains on hold; these fork drafts do not claim that all release gates pass.
+
 ## Current stack and proof
 
 The [canonical map](STACK.md) has **23 prepared contributions**: 11 Core layers,
@@ -28,20 +73,21 @@ Recorded Core and docs bases are behind the freshly checked upstream tips;
 refresh and retest before human-reviewed upstream submission.
 
 [Current validation and gates](STAGED_READINESS.md) identifies exact source pairs
-and native run links. The new initial Core/client pair passes 44 native tests
-and standard hooks. All five expiry-corrected package heads pass their three-Python
-matrices (120/129/157/189/218 tests). The older eleven Core/client pairs remain
-explicit historical proof; the other ten pairs have not been rerun with these
-new package heads. The historical final pair has 157 tests and three snapshots.
-This is not a clean final
+and native run links. The initial Core/client pair passes 46 native tests
+and standard hooks, with 241/241 statements covered. The initial Python client
+passes 127 tests and has 100% statement coverage on all three supported Pythons.
+Neither measurement excludes statements or claims branch coverage. All five
+package heads pass their three-Python matrices (127/136/164/196/225 tests), and
+all eleven updated Core/package pairs pass native tests. The inherited coverage
+tests do not change production code. This is not a clean final
 quality verdict: speech and every later Core layer remain blocked by
 `has-entity-name: todo`, in addition to unpublished dependencies.
 
 The earlier Core, generated-wiring, docs, and runtime evidence files are retained
 with explicit historical labels. Their older successful runs are not evidence
 for the rebuilt heads. [Package evidence](PACKAGE_REPAIR_EVIDENCE.md) now begins
-with the narrow expiry-arithmetic correction and all fifteen current Python CI
-results. HA runtime code, docs, and Brands did not change in this repair.
+with the coverage checkpoint and all fifteen current Python CI results.
+HA runtime code, docs, and Brands did not change in this coverage pass.
 
 ## Human and publication boundaries
 

@@ -21,17 +21,17 @@ All are pushed to jeffglousher/core on official dev base
 Core layer, not the preceding feature alone. Initial Core compares to that
 recorded upstream base. Additive fixes and parent merges preserve published history.
 
-1. [Initial OAuth conversation](pr-bodies/core-01-initial.md) — `codex/spacexai/staged-01-initial` at `cbe618c9800419de39601496779da68e5dd8ed23`; client 0.1.0.
-2. [Dependency upgrade only](pr-bodies/core-dependency-02-0.2.0.md) — `codex/spacexai/staged-02-client-0-2` at `bfb6bf9ccb55d1e42267175201affdd9d642c052`; client 0.2.0.
-3. [Conversation agents, attachments, and provider tools](pr-bodies/core-02-conversation.md) — `codex/spacexai/staged-03-conversation` at `a3adf7f56bb35d70b8b4db5acb1a59709574245e`; client 0.2.0.
-4. [Dependency upgrade only](pr-bodies/core-dependency-04-0.3.0.md) — `codex/spacexai/staged-04-client-0-3` at `7057018ab57429d82dbbf43123f530bb5323ece2`; client 0.3.0.
-5. [AI data tasks and image generation/editing](pr-bodies/core-03-ai-task.md) — `codex/spacexai/staged-05-ai-task` at `cc5abf2719d35d7b1cf5380e0052380ab46c39be`; client 0.3.0.
-6. [Dependency upgrade only](pr-bodies/core-dependency-06-0.4.0.md) — `codex/spacexai/staged-06-client-0-4` at `4034c56fefbef6b9aa346adb63fcb4fe752a3475`; client 0.4.0.
-7. [Batch speech recognition and speech generation](pr-bodies/core-04-speech.md) — `codex/spacexai/staged-07-speech` at `5494fee60b2b4f4720ee93463bf25b9375040d36`; client 0.4.0. Quality-blocked by the speech naming rule.
-8. [Dependency upgrade only](pr-bodies/core-dependency-08-0.5.0.md) — `codex/spacexai/staged-08-client-0-5` at `a7a0e4b5f6fbad3cc36bec34d4199bb766614735`; client 0.5.0. Quality-blocked by the speech naming rule.
-9. [Video generation and administrator-only media actions](pr-bodies/core-05-video.md) — `codex/spacexai/staged-09-video` at `22180c78bea231061810d1427a4a3acd36014dde`; client 0.5.0. Quality-blocked by the speech naming rule.
-10. [Same-account reauthentication and reconfiguration](pr-bodies/core-06-account.md) — `codex/spacexai/staged-10-account` at `fc87cca838e64db775d94842d5d21830a81a797c`; client 0.5.0. Quality-blocked by the speech naming rule.
-11. [Privacy-safe diagnostics](pr-bodies/core-07-diagnostics.md) — `codex/spacexai/staged-11-diagnostics` at `b8be5c4f783900a8e50db8cb577756d4f8901136`; client 0.5.0. Quality-blocked by the speech naming rule.
+1. [Initial OAuth conversation](pr-bodies/core-01-initial.md) — `codex/spacexai/staged-01-initial` at `5d623e0a730ded8c3b4d4fa41af064d9955ad623`; client 0.1.0.
+2. [Dependency upgrade only](pr-bodies/core-dependency-02-0.2.0.md) — `codex/spacexai/staged-02-client-0-2` at `7bc75c5d6779818a06a6911d42142577f47cdf49`; client 0.2.0.
+3. [Conversation agents, attachments, and provider tools](pr-bodies/core-02-conversation.md) — `codex/spacexai/staged-03-conversation` at `ff27b13f102d7831c006edb9c9a40e9b96c629c9`; client 0.2.0.
+4. [Dependency upgrade only](pr-bodies/core-dependency-04-0.3.0.md) — `codex/spacexai/staged-04-client-0-3` at `c3a9240e8fa0e9d8c3f76258b705152aa50eb1e8`; client 0.3.0.
+5. [AI data tasks and image generation/editing](pr-bodies/core-03-ai-task.md) — `codex/spacexai/staged-05-ai-task` at `0534071acb44c328bf625fe93507eb9c24e6ec5a`; client 0.3.0.
+6. [Dependency upgrade only](pr-bodies/core-dependency-06-0.4.0.md) — `codex/spacexai/staged-06-client-0-4` at `c29dcae8be97f50aeb27aa31f17ede7cf857d732`; client 0.4.0.
+7. [Batch speech recognition and speech generation](pr-bodies/core-04-speech.md) — `codex/spacexai/staged-07-speech` at `3c918d49d191b51e11f632eb0d9ab52d85c586cd`; client 0.4.0. Quality-blocked by the speech naming rule.
+8. [Dependency upgrade only](pr-bodies/core-dependency-08-0.5.0.md) — `codex/spacexai/staged-08-client-0-5` at `c8ad97e2ea9a649b5e87d45fec2a2fa6d9fc2bda`; client 0.5.0. Quality-blocked by the speech naming rule.
+9. [Video generation and administrator-only media actions](pr-bodies/core-05-video.md) — `codex/spacexai/staged-09-video` at `36b7b3f9261992cffef227eab5c3824d259fe6fc`; client 0.5.0. Quality-blocked by the speech naming rule.
+10. [Same-account reauthentication and reconfiguration](pr-bodies/core-06-account.md) — `codex/spacexai/staged-10-account` at `13dfb2f8f8b4012e13e9a2a9b83c0f8cce29a974`; client 0.5.0. Quality-blocked by the speech naming rule.
+11. [Privacy-safe diagnostics](pr-bodies/core-07-diagnostics.md) — `codex/spacexai/staged-11-diagnostics` at `c5aa62747eb9e0701ce01c5a7e08c90a7161ef0e`; client 0.5.0. Quality-blocked by the speech naming rule.
 
 Core03, Core05, Core07, and Core09 are feature-only comparisons against dependency
 layers Core02, Core04, Core06, and Core08 respectively. This follows the
@@ -39,10 +39,10 @@ layers Core02, Core04, Core06, and Core08 respectively. This follows the
 to separate dependency upgrades from feature changes. Submit against official
 dev only after predecessors merge; refresh and retest at that time.
 
-Recorded native test counts are 44, 44, 58, 58, 92, 92, 113, 113, 144, 154, and 157.
-Only the initial pair has been rerun with the September 8 package expiry fix;
-the ten other pairs remain historical proof with their recorded package SHAs.
-The last includes three snapshots. Every module exceeds 95% statement coverage.
+All eleven updated Core/package pairs pass native tests after the initial
+coverage tests were inherited through the stack. Initial Core has 241/241
+statements covered (100%), with no excluded statements. This does not claim
+100% for every follow-on layer or branch coverage.
 [Current proof](STAGED_READINESS.md) preserves exact source/run attribution.
 Initial hassfest is blocked only by dependency publication. Speech and later
 also fail the written entity-naming requirement; test success does not remove it.
@@ -52,11 +52,11 @@ also fail the written entity-naming requirement; test success does not remove it
 All five source heads are pushed and pass Python 3.12/3.13/3.14 CI, strict types,
 build/artifact checks, and isolated wheel/sdist imports. None is published.
 
-1. [Client 0.1.0](pr-bodies/client-0.1.0.md) — `harden-initial-release` at `410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3`; 120 tests.
-2. [Client 0.2.0](pr-bodies/client-0.2.0.md) — `spacexai/client-02-conversation` at `c5cedbf1d920d2bb8a633f286a52ee33ad0b6ca0`; 129 tests.
-3. [Client 0.3.0](pr-bodies/client-0.3.0.md) — `spacexai/client-03-image` at `a17a58735bc197e77490ae164b83acdd03509368`; 157 tests.
-4. [Client 0.4.0](pr-bodies/client-0.4.0.md) — `spacexai/client-04-speech` at `697a1e9860310a77253a88bad18e49ade88caa6e`; 189 tests.
-5. [Client 0.5.0](pr-bodies/client-0.5.0.md) — `spacexai/client-05-video` at `376fe0c9caa197d82c26e6b84bde31586f85d830`; 218 tests.
+1. [Client 0.1.0](pr-bodies/client-0.1.0.md) — `harden-initial-release` at `e3269374781fcbe8f0d55713219e089bebb2d08b`; 127 tests.
+2. [Client 0.2.0](pr-bodies/client-0.2.0.md) — `spacexai/client-02-conversation` at `c571128196a790526f51ba5b66f8cf0ba9c77edb`; 136 tests.
+3. [Client 0.3.0](pr-bodies/client-0.3.0.md) — `spacexai/client-03-image` at `74c7e22805c2b25651f307d8f9256bbfd8dfa520`; 164 tests.
+4. [Client 0.4.0](pr-bodies/client-0.4.0.md) — `spacexai/client-04-speech` at `0fafe1f2a2966987ba6041e8d318cd3cd9f61627`; 196 tests.
+5. [Client 0.5.0](pr-bodies/client-0.5.0.md) — `spacexai/client-05-video` at `24cfeaed9266550d23859739c685c78f7ad1faa7`; 225 tests.
 
 The initial package owns release-source, matrix, changelog, and distribution
 contract checks; additive parent merges carry them through later releases.
@@ -91,7 +91,7 @@ Core quality approval.
 
 ## Deployment and submission boundaries
 
-The existing full stack is deployed and verified: dogfood `18be39973b1361ebe23605dc4a605ae0d69cff43` on `codex/spacexai/dogfood-staged-20260907`, version `0.9.0.dev20260907`, contains Core11 and client 0.5.0 at `f58ec77aebff01fe6bf4b72e97a2370b023647a2`, not the new expiry-corrected head above. Source hashes, configuration check, restart, loaded existing OAuth entry, all four platform subentry types, and the single-overlay condition pass. Bounded live conversation, AI text, and a fresh TTS-to-STT round trip pass. See [runtime verification](RUNTIME_VERIFICATION.md) for exact scope and limits.
+The previously verified full stack is deployed: dogfood `18be39973b1361ebe23605dc4a605ae0d69cff43` on `codex/spacexai/dogfood-staged-20260907`, version `0.9.0.dev20260907`, contains the earlier Core11 `b8be5c4f783900a8e50db8cb577756d4f8901136` and client 0.5.0 at `f58ec77aebff01fe6bf4b72e97a2370b023647a2`, not the current prepared heads above. Source hashes, configuration check, restart, loaded existing OAuth entry, all four platform subentry types, and the single-overlay condition pass. Bounded live conversation, AI text, and a fresh TTS-to-STT round trip pass. See [runtime verification](RUNTIME_VERIFICATION.md) for exact scope and limits.
 
 Dogfood is never an upstream PR head. Keep the 23 prepared contributions and a
 conditional HA naming-fix slot beside the later speech wave, only if still

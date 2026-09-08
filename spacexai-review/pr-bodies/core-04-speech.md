@@ -55,13 +55,13 @@ The speech entities use shared account and token handling. Tests cover speech co
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/4034c56fefbef6b9aa346adb63fcb4fe752a3475...5494fee60b2b4f4720ee93463bf25b9375040d36
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/5494fee60b2b4f4720ee93463bf25b9375040d36
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/c29dcae8be97f50aeb27aa31f17ede7cf857d732...3c918d49d191b51e11f632eb0d9ab52d85c586cd
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/3c918d49d191b51e11f632eb0d9ab52d85c586cd
 - Prerequisite: Submit against Home Assistant `dev` only after Core layer 06 merges. The preceding dependency-only layer owns the package version bump; this feature diff does not bundle it. No new upstream PR has been opened.
-- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/44e84f8b4962dfd52098f5520655bdddc3def88b...b6b1d7d301b66bd29e24d2c0c309fa3e775f9881
-- Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/b6b1d7d301b66bd29e24d2c0c309fa3e775f9881/CHANGELOG.md
+- Client source comparison (the version bump is a separate Core layer): https://github.com/jeffglousher/spacexai-subscription-client/compare/74c7e22805c2b25651f307d8f9256bbfd8dfa520...0fafe1f2a2966987ba6041e8d318cd3cd9f61627
+- Dependency changelog: https://github.com/jeffglousher/spacexai-subscription-client/blob/0fafe1f2a2966987ba6041e8d318cd3cd9f61627/CHANGELOG.md
 - Dependency release: Version 0.4.0 is not published. Add verified release/PyPI links and installation evidence before submission.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34175311223) tests Core `5494fee60b2b4f4720ee93463bf25b9375040d36` with client `b6b1d7d301b66bd29e24d2c0c309fa3e775f9881`: 113 tests, 99.6830% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review, dependency publication, and refreshing/retesting against current upstream remain required.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34235285057) tests Core `3c918d49d191b51e11f632eb0d9ab52d85c586cd` with client `0fafe1f2a2966987ba6041e8d318cd3cd9f61627`: 115 tests, 630/631 covered statements (99.8415% statement coverage), 1 missing and 0 excluded statements, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Full native development setup and standard hooks were not rerun for this follow-on; [initial-only full-hooks evidence](https://github.com/jeffglousher/core/actions/runs/34234130097) is separate. Human review, dependency publication, and refreshing/retesting against current upstream remain required.
 
 - Quality gate: The current `has-entity-name: todo` remains unresolved, so clean quality-scale validation is not established. Address it at the speech wave using existing accepted TTS precedent and, only if necessary, a separate minimal HA naming fix. It does not enlarge or block the initial conversation contribution.
 

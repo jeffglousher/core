@@ -11,8 +11,9 @@ Tests verify transcription and synthesis requests, supported output formats, res
 - Two named public OAuth regressions cover oversized JSON integer expiry values in device authorization and token polling. Timestamp arithmetic now shares the existing `InvalidResponseError` normalization; no new abstraction or HA runtime change was needed.
 
 - Inherits the initial client's malformed-response and OAuth normalization repairs. Real-SDK transport regressions preserve provider-hosted outputs and mixed hosted/custom calls while rejecting local function calls that were not offered.
-- 189 tests pass locally on Python 3.14.5 with 98.50% statement coverage.
-- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229945640) passes at `697a1e9860310a77253a88bad18e49ade88caa6e` on Python 3.12, 3.13, and 3.14.
+- The latest parent merge adds seven initial public-behavior cases without changing runtime source, versions, or coverage settings.
+- 196 tests pass locally on Python 3.14.5 with 99.79% statement coverage.
+- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34234508580) passes at `0fafe1f2a2966987ba6041e8d318cd3cd9f61627` on Python 3.12, 3.13, and 3.14.
 - Ruff lint/format, strict MyPy, wheel and source builds, and strict Twine validation pass. CI independently installs and imports each artifact.
 
 - All three Python jobs validate the wheel member set, required wheel/sdist source bytes, release identity, typing marker, license, and isolated imports. The count includes 36 release-contract tests. Extra or duplicate wheel members are rejected; the sdist check is not a universal archive-security audit.
@@ -25,5 +26,5 @@ The shared GitHub publishing controls are configured, but current `main` still h
 This layer follows 0.3.0. Publish it after that release and human review of this change. Version 0.4.0 has not been published; the matching Home Assistant layer must wait for publication and clean installation from PyPI.
 
 - [Incremental source diff](https://github.com/jeffglousher/spacexai-subscription-client/compare/spacexai/client-03-image...spacexai/client-04-speech).
-- [Changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/697a1e9860310a77253a88bad18e49ade88caa6e/CHANGELOG.md).
-- [Publishing checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/697a1e9860310a77253a88bad18e49ade88caa6e/RELEASING.md). Follow the same verified workflow with version/tag `v0.4.0`.
+- [Changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/0fafe1f2a2966987ba6041e8d318cd3cd9f61627/CHANGELOG.md).
+- [Publishing checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/0fafe1f2a2966987ba6041e8d318cd3cd9f61627/RELEASING.md). Follow the same verified workflow with version/tag `v0.4.0`.

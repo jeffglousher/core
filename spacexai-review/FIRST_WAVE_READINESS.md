@@ -8,8 +8,8 @@ opened by this work.
 
 ## Exact first-wave source
 
-- Python 0.1.0: `harden-initial-release`, `410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3`.
-- Core: `codex/spacexai/staged-01-initial`, `cbe618c9800419de39601496779da68e5dd8ed23`.
+- Python 0.1.0: `harden-initial-release`, `e3269374781fcbe8f0d55713219e089bebb2d08b`.
+- Core: `codex/spacexai/staged-01-initial`, `5d623e0a730ded8c3b4d4fa41af064d9955ad623`.
 - Brands: `spacexai-initial`, `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
 - Docs: `codex/spacexai/staged-docs-01-initial`, `0a5a5dfb0f779bf027b609781c5117cc78f9d3a7`.
 
@@ -31,18 +31,20 @@ Refresh and retest before human-reviewed upstream submission.
 
 ## Verified checks
 
-- Python: [exact-head CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229759065)
-  passes all Python 3.12/3.13/3.14 jobs. There are 120 tests and 96.62% statement
-  coverage, including 36 release-contract tests. Ruff, strict MyPy, builds,
+- Python: [exact-head CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34234111085)
+  passes all Python 3.12/3.13/3.14 jobs. There are 127 tests and 100% statement
+  coverage: 288/288 statements on Python 3.12/3.13 and 266/266 on Python 3.14,
+  with zero missing or excluded statements. This includes 36 release-contract
+  tests. Ruff, strict MyPy, builds,
   strict Twine checks, exact wheel members/required source bytes, and isolated wheel/sdist
   imports pass.
-- Initial Core with client `410730d2`: [exact-pair native run](https://github.com/jeffglousher/core/actions/runs/34229775265)
-  passes 44 tests without failures, errors, or skips; 239/241 statements
-  (99.1701%), with every module above 95%. Unchanged script/setup, the upstream
+- Initial Core with client `e3269374`: [exact-pair native run](https://github.com/jeffglousher/core/actions/runs/34234130097)
+  passes 46 tests without failures, errors, or skips; 241/241 statements
+  (100%), with zero excluded statements. Unchanged script/setup, the upstream
   full-tree general-hook subset, and standard contribution-file hooks pass,
   including native MyPy/Pylint, requirements, and typing generation. Tests
   keep the standard socket guard; no Windows compatibility shim is used.
-- The same [exact initial native run](https://github.com/jeffglousher/core/actions/runs/34229775265)
+- The same [exact initial native run](https://github.com/jeffglousher/core/actions/runs/34234130097)
   leaves tracked generated files unchanged. Initial Core has exactly the acknowledged
   `dependency-transparency: todo` blocker and no other errors/warnings.
   This is a staging-gate pass, not clean hassfest. Later speech naming remains
@@ -60,6 +62,11 @@ Refresh and retest before human-reviewed upstream submission.
   headings, tables, cards, privacy, and troubleshooting, without overlap.
   This checks those two rendered pages, not interactive controls or separate
   previews of all six docs layers.
+
+The final coverage pass adds tests only, including public language discovery and
+handling a stored non-conversation subentry. Production code and coverage
+exclusions are unchanged. The percentages above measure statements, not branches;
+100% coverage does not replace human review or fresh-login verification.
 
 OAuth device authorization remains the only login path and the approved provider
 identity is unchanged. The unofficial package owns protocol handling, absolute
@@ -141,16 +148,16 @@ unverified: the browser reached sign-in, and no login was attempted.
    proof. Recheck upstream freshness and replace staging links with actual
    PR/release links when human-reviewed submissions are made.
 
-The [release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3/RELEASING.md)
+The [release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/e3269374781fcbe8f0d55713219e089bebb2d08b/RELEASING.md)
 contains the package publication sequence. Keep follow-ons staged until their
 predecessors merge; do not open dependent upstream PRs.
 
 ## Follow-ons and runtime are separate gates
 
 The [23-layer map](STACK.md) now separates four Core dependency bumps from their
-features. All eleven Core layers passed native tests with the explicitly recorded
-previous package pairs; the initial pair is now retested with the expiry fix.
-The remaining ten pairs have not been rerun with the new package heads. Speech and
+features. All eleven updated Core/package pairs pass native tests after the
+initial coverage regressions were inherited through the stack. Only the initial
+pair ran full standard contribution hooks in this checkpoint. Speech and
 downstream remain quality-blocked by `has-entity-name: todo`. The written rule
 has no exception for the current functional TTS naming behavior. The plan keeps
 23 prepared contributions plus a conditional HA naming-fix slot beside speech,
@@ -158,7 +165,7 @@ if still needed then. It requires no additional Python package and does not
 enlarge or block this first wave. No Bronze, Gold, or Platinum award is claimed.
 
 The existing full-stack dogfood remains on client `f58ec77a`, not the new
-`376fe0c9` expiry-fix head. Its bounded conversation,
+`24cfeaed` prepared head. Its bounded conversation,
 AI text, fresh TTS, audio decoding, and STT round-trip checks pass.
 [Runtime evidence](RUNTIME_VERIFICATION.md) records that deployed source and
 limits. Existing-account full-stack success does not prove a fresh initial-only login. [Current validation](STAGED_READINESS.md) records exact

@@ -1,8 +1,62 @@
 # Current 23-contribution validation
 
-## September 8 expiry correction
+## Current coverage and fork-draft checkpoint
 
-The current [package heads](PACKAGE_REPAIR_EVIDENCE.md) pass all fifteen public
+September 8, 2026. The initial Core integration now has exact 100% statement
+coverage: 241/241 statements, zero missing or excluded statements, and 46 tests.
+The initial Python client passes 127 tests with exact 100% on Python 3.12,
+3.13, and 3.14. These are statement measurements, not branch coverage or a
+substitute for human review. Only test files changed from the expiry checkpoint;
+no production code, coverage exclusions, or dependency versions changed.
+
+The [four draft write-ups and launch commands](README.md#create-the-four-fork-drafts)
+target only jeffglousher's repositories. Three fixed review-base branches give
+clean initial Core/docs/Brands diffs; package review targets its own main.
+No draft was opened, package published, or HA deployment performed.
+
+All eleven current Core/package pairs pass native Linux/Python 3.14.5 tests,
+with zero failures, errors, skips, or excluded statements. Their exact artifact
+source pins and JUnit/coverage receipts were checked. Scoped lint, format,
+types, and dependency regeneration pass; tracked generated files are unchanged.
+Every module exceeds 95% statement coverage, but follow-ons are not all 100%.
+
+- Core 01: `5d623e0a730ded8c3b4d4fa41af064d9955ad623` + client `e3269374781fcbe8f0d55713219e089bebb2d08b`; [run 34234130097](https://github.com/jeffglousher/core/actions/runs/34234130097); 46 tests, 241/241 statements (100%).
+- Core 02: `7bc75c5d6779818a06a6911d42142577f47cdf49` + client `c571128196a790526f51ba5b66f8cf0ba9c77edb`; [run 34234988875](https://github.com/jeffglousher/core/actions/runs/34234988875); 46 tests, 241/241 statements (100%).
+- Core 03: `ff27b13f102d7831c006edb9c9a40e9b96c629c9` + client `c571128196a790526f51ba5b66f8cf0ba9c77edb`; [run 34234992204](https://github.com/jeffglousher/core/actions/runs/34234992204); 60 tests, 332/333 statements (99.6997%).
+- Core 04: `c3a9240e8fa0e9d8c3f76258b705152aa50eb1e8` + client `74c7e22805c2b25651f307d8f9256bbfd8dfa520`; [run 34234995677](https://github.com/jeffglousher/core/actions/runs/34234995677); 60 tests, 332/333 statements (99.6997%).
+- Core 05: `0534071acb44c328bf625fe93507eb9c24e6ec5a` + client `74c7e22805c2b25651f307d8f9256bbfd8dfa520`; [run 34234998984](https://github.com/jeffglousher/core/actions/runs/34234998984); 94 tests, 457/458 statements (99.7817%).
+- Core 06: `c29dcae8be97f50aeb27aa31f17ede7cf857d732` + client `0fafe1f2a2966987ba6041e8d318cd3cd9f61627`; [run 34235282105](https://github.com/jeffglousher/core/actions/runs/34235282105); 94 tests, 457/458 statements (99.7817%).
+- Core 07: `3c918d49d191b51e11f632eb0d9ab52d85c586cd` + client `0fafe1f2a2966987ba6041e8d318cd3cd9f61627`; [run 34235285057](https://github.com/jeffglousher/core/actions/runs/34235285057); 115 tests, 630/631 statements (99.8415%).
+- Core 08: `c8ad97e2ea9a649b5e87d45fec2a2fa6d9fc2bda` + client `24cfeaed9266550d23859739c685c78f7ad1faa7`; [run 34235287824](https://github.com/jeffglousher/core/actions/runs/34235287824); 115 tests, 630/631 statements (99.8415%).
+- Core 09: `36b7b3f9261992cffef227eab5c3824d259fe6fc` + client `24cfeaed9266550d23859739c685c78f7ad1faa7`; [run 34235290922](https://github.com/jeffglousher/core/actions/runs/34235290922); 146 tests, 806/810 statements (99.5062%).
+- Core 10: `13dfb2f8f8b4012e13e9a2a9b83c0f8cce29a974` + client `24cfeaed9266550d23859739c685c78f7ad1faa7`; [run 34235294166](https://github.com/jeffglousher/core/actions/runs/34235294166); 156 tests, 832/836 statements (99.5215%).
+- Core 11: `c5aa62747eb9e0701ce01c5a7e08c90a7161ef0e` + client `24cfeaed9266550d23859739c685c78f7ad1faa7`; [run 34235297253](https://github.com/jeffglousher/core/actions/runs/34235297253); 159 tests, 841/845 statements (99.5266%), with three snapshots.
+
+Only the initial run in this checkpoint executes unchanged script/setup,
+the upstream full-tree general-hook subset, and standard contribution-file
+hooks. All pass. The ten follow-on runs explicitly skip the full-hooks job;
+their scoped checks are not relabeled as full-hook execution. Ordered parent
+merges preserve the tests. Four dependency-only diffs remain one replacement
+each in manifest.json and requirements_all.txt, with no feature code.
+
+Harness `52f78bbee9a5a25dae0d3715cdb37884ebf9cf60` pins the current initial
+and final pairs. Its [default initial smoke run](https://github.com/jeffglousher/core/actions/runs/34235390253)
+passes. [Generated run 34235390337](https://github.com/jeffglousher/core/actions/runs/34235390337)
+reports exactly `dependency-transparency: todo` for initial Core. Final Core
+reports that publication blocker plus `has-entity-name: todo`; neither pair
+has other errors or warnings. Generated tracked files are unchanged. The
+overall generated workflow fails: the initial staging exception is not clean
+hassfest, and speech/downstream naming remains a separate unresolved gate.
+
+[Package evidence](PACKAGE_REPAIR_EVIDENCE.md) records all fifteen successful
+Python jobs for the five current heads. Runtime remains on the earlier
+`f58ec77a` client. Publication, fresh initial-only OAuth acceptance, human review,
+and replay/retest against current upstream remain
+[first-wave gates](FIRST_WAVE_READINESS.md).
+
+## Historical September 8 expiry correction
+
+The package heads recorded at this historical checkpoint pass all fifteen public
 Python jobs. They contain only the two timestamp-normalization changes and
 two added public regression cases, propagated through existing parent merges.
 No Core, integration docs, Brands, or live deployment source changed.

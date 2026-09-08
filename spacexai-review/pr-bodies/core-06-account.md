@@ -55,11 +55,11 @@ Authentication failures from conversation, AI Task, speech, and video start the 
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 
-- Prepared Core diff: https://github.com/jeffglousher/core/compare/22180c78bea231061810d1427a4a3acd36014dde...fc87cca838e64db775d94842d5d21830a81a797c
-- Prepared Core commit: https://github.com/jeffglousher/core/commit/fc87cca838e64db775d94842d5d21830a81a797c
+- Prepared Core diff: https://github.com/jeffglousher/core/compare/36b7b3f9261992cffef227eab5c3824d259fe6fc...13dfb2f8f8b4012e13e9a2a9b83c0f8cce29a974
+- Prepared Core commit: https://github.com/jeffglousher/core/commit/13dfb2f8f8b4012e13e9a2a9b83c0f8cce29a974
 - Prerequisite: Submit against Home Assistant `dev` only after Core layer 09 merges. No new upstream PR has been opened.
 - Dependency: spacexai-subscription-client remains at 0.5.0; there is no dependency upgrade in this layer.
-- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34175316461) tests Core `fc87cca838e64db775d94842d5d21830a81a797c` with client `f58ec77aebff01fe6bf4b72e97a2370b023647a2`: 154 tests, 99.4019% statement coverage, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Human review, dependency publication, and refreshing/retesting against current upstream remain required.
+- Validation: [Native Linux run](https://github.com/jeffglousher/core/actions/runs/34235294166) tests Core `13dfb2f8f8b4012e13e9a2a9b83c0f8cce29a974` with client `24cfeaed9266550d23859739c685c78f7ad1faa7`: 156 tests, 832/836 covered statements (99.5215% statement coverage), 4 missing and 0 excluded statements, every integration module above 95%, and zero failures/errors/skips. Native lint, formatting, typing, and dependency regeneration pass; tracked generated files are unchanged. Full native development setup and standard hooks were not rerun for this follow-on; [initial-only full-hooks evidence](https://github.com/jeffglousher/core/actions/runs/34234130097) is separate. Human review, dependency publication, and refreshing/retesting against current upstream remain required.
 
 - Quality gate: The current `has-entity-name: todo` remains unresolved, so clean quality-scale validation is not established. Address it at the speech wave using existing accepted TTS precedent and, only if necessary, a separate minimal HA naming fix. It does not enlarge or block the initial conversation contribution.
 

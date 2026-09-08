@@ -4,13 +4,15 @@
 
 Prepare the first public release of `spacexai-subscription-client`, an explicitly unofficial, small asynchronous Python client for the OAuth-authenticated Grok subscription surface used by the Home Assistant SpaceXAI integration.
 
+This draft prepares the package for human review before merging `harden-initial-release` into this repository's `main`. It does not publish a package, authorize a release, or claim that Home Assistant's dependency-publication requirement is satisfied.
+
 The package owns provider communication so the Home Assistant integration remains a thin adapter. It implements OAuth device authorization, token polling, account identity, entitled model discovery, Responses API messages, and local function-tool calls. Authentication is OAuth-only: the public API does not accept an API key and has no API-key fallback.
 
 ## Design
 
 - Accept caller-owned `aiohttp` and `httpx` sessions instead of creating hidden long-lived sessions.
 - Keep the public Grok CLI OAuth identity and provider endpoints in one constants module so a future xAI identity decision does not change the public API.
-- Normalize provider payloads into immutable typed response models; retain device authorization expiry and polling backoff in its reusable authorization handle.
+- Expose typed response models and a reusable authorization handle that retains device-code expiry and polling backoff.
 - Translate authentication failures, permission failures, authorization denial, device-code expiry, rate limits, timeouts, connection failures, and malformed responses into stable package exceptions.
 - Bound provider requests with explicit timeouts and disable SDK retries so callers own retry policy.
 - Create request-scoped SDK clients so refreshed OAuth credentials cannot race through shared mutable state.
@@ -22,9 +24,10 @@ The package owns provider communication so the Home Assistant integration remain
 
 - Two named public OAuth regressions cover oversized JSON integer expiry values in device authorization and token polling. Timestamp arithmetic now shares the existing `InvalidResponseError` normalization; no new abstraction or HA runtime change was needed.
 
-- Real-SDK HTTP transport regressions cover malformed provider fields, unoffered function calls, valid text, and valid offered calls. These synthetic robustness cases do not imply an observed provider outage; the approved OAuth identity and login flow are unchanged.
-- 120 tests pass on Python 3.14 locally with 96.62% statement coverage.
-- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34229759065) passes at `410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3` on Python 3.12, 3.13, and 3.14.
+- Real-SDK HTTP transport regressions cover malformed provider fields, unoffered function calls, valid text, and valid offered calls. These synthetic robustness cases do not imply an observed provider outage; the OAuth identity and login flow are unchanged.
+- 127 tests pass with 100% statement coverage: 288/288 statements on Python 3.12/3.13 and 266/266 on Python 3.14, with zero missing or excluded statements. This is not branch coverage.
+- The final coverage pass adds seven test cases for existing client behavior; production code and coverage exclusions are unchanged.
+- [Public CI at the prepared commit](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34234111085) passes at `e3269374781fcbe8f0d55713219e089bebb2d08b` on Python 3.12, 3.13, and 3.14.
 - Ruff lint and format checks pass.
 - Strict MyPy checks pass.
 - The wheel and source distribution build successfully and pass `twine check --strict`.
@@ -45,9 +48,11 @@ The package is unpublished and the prepared code has not been merged to `main`. 
 
 Current `main` remains `40e8a3bd46653eecbb6269eb7e59cc9ecf91f75c` with the legacy release workflow; the prepared exact-source and artifact safeguards are not active there until the reviewed source is merged. PyPI account security and pending-publisher binding remain unverified—the account page currently requires sign-in. No release or environment approval has been performed.
 
-Release notes: https://github.com/jeffglousher/spacexai-subscription-client/blob/410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3/CHANGELOG.md
+Release notes: https://github.com/jeffglousher/spacexai-subscription-client/blob/e3269374781fcbe8f0d55713219e089bebb2d08b/CHANGELOG.md
 
-Publication checklist: https://github.com/jeffglousher/spacexai-subscription-client/blob/410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3/RELEASING.md
+Publication checklist: https://github.com/jeffglousher/spacexai-subscription-client/blob/e3269374781fcbe8f0d55713219e089bebb2d08b/RELEASING.md
+
+- [Prepared initial Home Assistant adapter](https://github.com/jeffglousher/core/compare/be2e14f4273335fb5ef02b7f636cd01800e1491a...codex/spacexai/staged-01-initial). This comparison is a separate fork-staging contribution, not a submitted upstream PR.
 
 ## Out of scope
 

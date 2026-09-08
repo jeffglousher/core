@@ -1,8 +1,32 @@
 # Current package boundary and release evidence — September 8, 2026
 
-## Expiry arithmetic correction
+## Current public-contract coverage checkpoint
 
-The current [five source heads](STACK.md#package-layers) contain a two-file
+Seven additional public-behavior cases cover malformed provider data, HTTP 408,
+interim polling delays, and independent token copies. Only
+`tests/test_client.py` changed from the expiry checkpoint below; ordered parent
+merges preserve every initial test. Runtime source, versions, configuration,
+and coverage exclusions are unchanged.
+
+- 0.1.0: `e3269374781fcbe8f0d55713219e089bebb2d08b`; 127 tests, exact 100% statement coverage on all three Python versions; [CI 34234111085](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34234111085).
+- 0.2.0: `c571128196a790526f51ba5b66f8cf0ba9c77edb`; 136 tests, 100% on all three versions; [CI 34234507921](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34234507921).
+- 0.3.0: `74c7e22805c2b25651f307d8f9256bbfd8dfa520`; 164 tests, 99.75% on Python 3.14 and 99.77% on 3.12/3.13; [CI 34234507540](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34234507540).
+- 0.4.0: `0fafe1f2a2966987ba6041e8d318cd3cd9f61627`; 196 tests, 99.79% on Python 3.14 and 99.80% on 3.12/3.13; [CI 34234508580](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34234508580).
+- 0.5.0: `24cfeaed9266550d23859739c685c78f7ad1faa7`; 225 tests, 99.28% on Python 3.14 and 99.32% on 3.12/3.13; [CI 34234508053](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34234508053).
+
+All fifteen public Python jobs and every step were read back as successful,
+including artifact contracts and isolated wheel/sdist imports. Initial local
+coverage JSON confirms 288/288 statements on Python 3.12/3.13 and 266/266 on
+3.14, with zero missing or excluded statements. This is statement coverage,
+not branch coverage or a claim that every later feature has 100% coverage.
+All five heads are pushed and clean; no release or main merge occurred.
+[Current release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/e3269374781fcbe8f0d55713219e089bebb2d08b/RELEASING.md)
+and [first-wave readiness](FIRST_WAVE_READINESS.md) retain the publication and
+human-review gates.
+
+## Historical expiry arithmetic correction
+
+The five historical source heads listed below contain a two-file
 correction: compute both OAuth expiry timestamps inside the existing response
 normalization and add two named public-method regressions. Both cases failed
 before the correction and pass afterward. No additional adapter or HA change
@@ -25,7 +49,7 @@ workflows are unchanged. Main is not merged and no release was published.
 ## Historical wheel-contract checkpoint — September 7, 2026
 
 The remainder of this record describes its earlier exact source/run pairs,
-not the current expiry-corrected heads. Current publication gates and the
+not the current coverage-checkpoint heads. Current publication gates and the
 release checklist are in [first-wave readiness](FIRST_WAVE_READINESS.md).
 
 The following exact prepared heads supersede the package SHAs/counts in the
@@ -144,7 +168,7 @@ and clean-install verification afterward. Private PyPI account state remains
 unverified: the available account page requires sign-in. The publisher has not
 been exercised by a release.
 
-[Current release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/b5513112b12a14baa43c295cf82cec8be3604ba7/RELEASING.md)
+[Historical release checklist](https://github.com/jeffglousher/spacexai-subscription-client/blob/b5513112b12a14baa43c295cf82cec8be3604ba7/RELEASING.md)
 and [current stack proof](STAGED_READINESS.md) distinguish these gates from
 completed automated checks. Follow-on releases inherit the same safeguards.
 

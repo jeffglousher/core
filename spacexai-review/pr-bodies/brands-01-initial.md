@@ -13,9 +13,11 @@
 
 Add light- and dark-theme icons and logos for the new SpaceXAI Core integration, with standard and high-density PNG variants.
 
+This fork draft prepares eight files under `core_integrations/spacexai` for the proposed Core integration. It is not a request to register a custom component. The companion Core and documentation PRs have not been opened; the comparisons below show their prepared scope.
+
 The artwork comes from the [official SpaceXAI and Grok asset pack](https://data.x.ai/logos/SpaceXAI_Grok_Assets.zip), also identified in [the earlier brands submission](https://github.com/home-assistant/brands/pull/10947). The icons use the black and white square SpaceXAI symbol compositions with the opaque backgrounds removed, resized and centered on transparent square canvases. The landscape logos use the black and white transparent SpaceXAI symbols, trimmed to their artwork and proportionally resized. The source symbols have slightly different bounds, so the light and dark logo widths differ by one pixel at standard resolution.
 
-Verified the eight files' PNG format, transparency, dimensions, unique content, domain placement, and source shapes. The downloaded source archive has SHA256 `db9129acd4efc4c2202d25afe31b70281a79f8507f75520ab5e6b3356895a7e9`; both retained downloads record the official URL in their download metadata. The four landscape-logo alpha channels exactly match the trimmed, resized source PNGs; icon shape comparisons allow for antialiasing.
+Verified the eight files' PNG format, transparency, dimensions, unique content, domain placement, and source shapes. The source archive has SHA256 `db9129acd4efc4c2202d25afe31b70281a79f8507f75520ab5e6b3356895a7e9`. The four landscape-logo alpha channels match the trimmed, resized source PNGs; icon shape comparisons allow for antialiasing. This establishes artwork provenance, not an endorsement of the community-maintained integration.
 
 The repository's native Bash/ImageMagick validator passed for commit `e3ac8da8bf579ec54210cc211e1eaa0768052679` in [fork validation](https://github.com/jeffglousher/core/actions/runs/34124125762): 19,231 images checked, zero issues.
 
