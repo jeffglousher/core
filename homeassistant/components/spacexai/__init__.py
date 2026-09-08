@@ -85,7 +85,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SpaceXAIConfigEntry) -> 
             translation_domain=DOMAIN,
             translation_key="not_entitled",
         ) from err
-    except (SpaceXAISubscriptionError, OAuth2TokenRequestError) as err:
+    except (SpaceXAISubscriptionError, OAuth2TokenRequestError, TimeoutError) as err:
         raise ConfigEntryNotReady from err
 
     entry.runtime_data = SpaceXAIData(oauth_session, client)
