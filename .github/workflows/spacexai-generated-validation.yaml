@@ -28,15 +28,20 @@ jobs:
       matrix:
         include:
           - layer: initial
-            core-ref: 5d623e0a730ded8c3b4d4fa41af064d9955ad623
-            client-ref: e3269374781fcbe8f0d55713219e089bebb2d08b
+            core-ref: 7a41a0358c01a58700bde227fa0a951d28f5e638
+            client-ref: 155d76c5b940108be707bb379c02d476b893b758
+            client-source: pypi
           - layer: final
             core-ref: c5aa62747eb9e0701ce01c5a7e08c90a7161ef0e
             client-ref: 24cfeaed9266550d23859739c685c78f7ad1faa7
+            client-source: checkout
     defaults:
       run:
         working-directory: core
         shell: bash
+    env:
+      CLIENT_SOURCE: ${{ matrix.client-source }}
+      UV_DEFAULT_INDEX: https://pypi.org/simple
     steps:
       - name: Check out validation harness
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -64,13 +69,42 @@ jobs:
         run: |
           uv venv .venv --python "$(cat .python-version)"
           source .venv/bin/activate
-          uv pip install -r requirements.txt -r requirements_test.txt -e . ../client --config-settings editable_mode=compat
+          uv pip install -r requirements.txt -r requirements_test.txt -e . --config-settings editable_mode=compat
+          if [[ "$CLIENT_SOURCE" == pypi ]]; then
+            client_requirement="$(python3 -c 'import json; from pathlib import Path; print(json.loads(Path("homeassistant/components/spacexai/manifest.json").read_text())["requirements"][0])')"
+            uv pip install --default-index https://pypi.org/simple "$client_requirement"
+          else
+            uv pip install ../client
+          fi
+      - name: Verify PyPI runtime against the exact release source
+        if: env.CLIENT_SOURCE == 'pypi'
+        run: |
+          source .venv/bin/activate
+          python3 -I - <<'PY'
+          from importlib.metadata import distribution
+          import json
+          from pathlib import Path
+          import tomllib
+
+          installed = distribution("spacexai-subscription-client")
+          assert installed.read_text("direct_url.json") is None, "Expected an index-installed package"
+          requirement = json.loads(Path("homeassistant/components/spacexai/manifest.json").read_text())["requirements"][0]
+          assert requirement == f"spacexai-subscription-client=={installed.version}"
+          assert installed.version == tomllib.loads(Path("../client/pyproject.toml").read_text())["project"]["version"]
+          source = Path("../client/src/spacexai_subscription_client")
+          runtime = Path(installed.locate_file("spacexai_subscription_client"))
+          expected = {path.relative_to(source): path.read_bytes() for path in source.rglob("*") if path.is_file() and "__pycache__" not in path.parts}
+          actual = {path.relative_to(runtime): path.read_bytes() for path in runtime.rglob("*") if path.is_file() and "__pycache__" not in path.parts}
+          assert expected and actual == expected, "Installed PyPI runtime differs from the release source"
+          print(f"PyPI {installed.version}: all {len(expected)} runtime files match the exact release source")
+          PY
       - name: Record exact sources
         run: |
           source .venv/bin/activate
           {
             git rev-parse HEAD
             git -C ../client rev-parse HEAD
+            printf 'Client source: %s\n' "$CLIENT_SOURCE"
             python3 --version
           } | tee generated-sources.txt
       - name: Validate generated files and integration metadata
@@ -78,6 +112,9 @@ jobs:
           source .venv/bin/activate
           set -o pipefail
           python3 ../validation/script/spacexai_validate_generated.py 2>&1 | tee generated-validation.txt
+          if [[ "$CLIENT_SOURCE" == pypi ]]; then
+            python3 -c 'import json; from pathlib import Path; assert json.loads(Path("generated-validation.json").read_text())["status"] == "passed", "Released dependency validation must pass without publication exceptions"'
+          fi
       - name: Upload generated validation evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -13,20 +13,27 @@ on:
       core-ref:
         description: Exact Core commit to validate
         required: true
-        default: 5d623e0a730ded8c3b4d4fa41af064d9955ad623
+        default: 7a41a0358c01a58700bde227fa0a951d28f5e638
         type: string
       client-ref:
-        description: Exact subscription client commit to install
+        description: Exact client source commit to install or verify against PyPI
         required: true
-        default: e3269374781fcbe8f0d55713219e089bebb2d08b
+        default: 155d76c5b940108be707bb379c02d476b893b758
         type: string
+      client-source:
+        description: Install the released PyPI package or an unpublished checkout
+        default: pypi
+        type: choice
+        options:
+          - pypi
+          - checkout
       standard-hooks:
         description: Also build the full development environment and run native hooks
         default: false
         type: boolean
       base-ref:
         description: Exact upstream base for contribution-scoped native hooks
-        default: be2e14f4273335fb5ef02b7f636cd01800e1491a
+        default: 38aacedef39eb3f077ce4a112a58bf7286af5e2c
         type: string
 
 permissions:
@@ -47,8 +54,10 @@ jobs:
         working-directory: core
         shell: bash
     env:
+      CLIENT_SOURCE: ${{ inputs.client-source || 'pypi' }}
       PYTHONASYNCIODEBUG: 1
       HASS_CI: 1
+      UV_DEFAULT_INDEX: https://pypi.org/simple
     steps:
       - name: Check out validation tools
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,14 +68,14 @@ jobs:
       - name: Check out Core under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.core-ref || '5d623e0a730ded8c3b4d4fa41af064d9955ad623' }}
+          ref: ${{ inputs.core-ref || '7a41a0358c01a58700bde227fa0a951d28f5e638' }}
           path: core
           persist-credentials: false
       - name: Check out subscription client under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jeffglousher/spacexai-subscription-client
-          ref: ${{ inputs.client-ref || 'e3269374781fcbe8f0d55713219e089bebb2d08b' }}
+          ref: ${{ inputs.client-ref || '155d76c5b940108be707bb379c02d476b893b758' }}
           path: client
           persist-credentials: false
       - name: Install system dependencies
@@ -81,8 +90,36 @@ jobs:
         run: |
           uv venv .venv --python "$(cat .python-version)"
           source .venv/bin/activate
-          uv pip install -r requirements.txt -r requirements_test.txt -e . ../client --config-settings editable_mode=compat
+          uv pip install -r requirements.txt -r requirements_test.txt -e . --config-settings editable_mode=compat
+          if [[ "$CLIENT_SOURCE" == pypi ]]; then
+            client_requirement="$(python3 -c 'import json; from pathlib import Path; print(json.loads(Path("homeassistant/components/spacexai/manifest.json").read_text())["requirements"][0])')"
+            uv pip install --default-index https://pypi.org/simple "$client_requirement"
+          else
+            uv pip install ../client
+          fi
           python3 -m script.install_integration_requirements conversation assist_pipeline intent mqtt hassio ai_task stt tts
+      - name: Verify PyPI runtime against the exact release source
+        if: env.CLIENT_SOURCE == 'pypi'
+        run: |
+          source .venv/bin/activate
+          python3 -I - <<'PY'
+          from importlib.metadata import distribution
+          import json
+          from pathlib import Path
+          import tomllib
+
+          installed = distribution("spacexai-subscription-client")
+          assert installed.read_text("direct_url.json") is None, "Expected an index-installed package"
+          requirement = json.loads(Path("homeassistant/components/spacexai/manifest.json").read_text())["requirements"][0]
+          assert requirement == f"spacexai-subscription-client=={installed.version}"
+          assert installed.version == tomllib.loads(Path("../client/pyproject.toml").read_text())["project"]["version"]
+          source = Path("../client/src/spacexai_subscription_client")
+          runtime = Path(installed.locate_file("spacexai_subscription_client"))
+          expected = {path.relative_to(source): path.read_bytes() for path in source.rglob("*") if path.is_file() and "__pycache__" not in path.parts}
+          actual = {path.relative_to(runtime): path.read_bytes() for path in runtime.rglob("*") if path.is_file() and "__pycache__" not in path.parts}
+          assert expected and actual == expected, "Installed PyPI runtime differs from the release source"
+          print(f"PyPI {installed.version}: all {len(expected)} runtime files match the exact release source")
+          PY
       - name: Record sources and installed package
         run: |
           source .venv/bin/activate
@@ -91,6 +128,7 @@ jobs:
             git rev-parse HEAD
             printf 'Client commit: '
             git -C ../client rev-parse HEAD
+            printf 'Client source: %s\n' "$CLIENT_SOURCE"
             python3 --version
             python3 -c 'from importlib.metadata import version; import platform; print(platform.platform()); print("spacexai-subscription-client==" + version("spacexai-subscription-client"))'
             python3 -c 'from importlib.metadata import version; import json; from pathlib import Path; from packaging.requirements import Requirement; req = Requirement(json.loads(Path("homeassistant/components/spacexai/manifest.json").read_text())["requirements"][0]); assert version(req.name) in req.specifier, "Installed client does not match the manifest"'
@@ -158,7 +196,9 @@ jobs:
         working-directory: core
         shell: bash
     env:
+      CLIENT_SOURCE: ${{ inputs.client-source || 'pypi' }}
       HASS_CI: 1
+      UV_DEFAULT_INDEX: https://pypi.org/simple
     steps:
       - name: Check out validation tools
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -192,6 +232,7 @@ jobs:
         with:
           version: 0.12.6
       - name: Build exact unpublished client for development setup
+        if: env.CLIENT_SOURCE == 'checkout'
         run: |
           uv build --wheel ../client --out-dir "$RUNNER_TEMP/spacexai-wheelhouse"
           printf 'UV_FIND_LINKS=%s/spacexai-wheelhouse\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
@@ -201,8 +242,35 @@ jobs:
           uv venv .venv --python "$(cat .python-version)"
           source .venv/bin/activate
           set -o pipefail
+          if [[ "$CLIENT_SOURCE" == pypi ]]; then
+            test -z "${UV_FIND_LINKS:-}"
+          fi
           script/setup 2>&1 | tee hooks-setup.txt
-          uv pip install --reinstall --no-deps "$RUNNER_TEMP"/spacexai-wheelhouse/*.whl
+          if [[ "$CLIENT_SOURCE" == checkout ]]; then
+            uv pip install --reinstall --no-deps "$RUNNER_TEMP"/spacexai-wheelhouse/*.whl
+          fi
+      - name: Verify PyPI runtime against the exact release source
+        if: env.CLIENT_SOURCE == 'pypi'
+        run: |
+          source .venv/bin/activate
+          python3 -I - <<'PY'
+          from importlib.metadata import distribution
+          import json
+          from pathlib import Path
+          import tomllib
+
+          installed = distribution("spacexai-subscription-client")
+          assert installed.read_text("direct_url.json") is None, "Expected an index-installed package"
+          requirement = json.loads(Path("homeassistant/components/spacexai/manifest.json").read_text())["requirements"][0]
+          assert requirement == f"spacexai-subscription-client=={installed.version}"
+          assert installed.version == tomllib.loads(Path("../client/pyproject.toml").read_text())["project"]["version"]
+          source = Path("../client/src/spacexai_subscription_client")
+          runtime = Path(installed.locate_file("spacexai_subscription_client"))
+          expected = {path.relative_to(source): path.read_bytes() for path in source.rglob("*") if path.is_file() and "__pycache__" not in path.parts}
+          actual = {path.relative_to(runtime): path.read_bytes() for path in runtime.rglob("*") if path.is_file() and "__pycache__" not in path.parts}
+          assert expected and actual == expected, "Installed PyPI runtime differs from the release source"
+          print(f"PyPI {installed.version}: all {len(expected)} runtime files match the exact release source")
+          PY
       - name: Record exact development sources
         env:
           BASE_REF: ${{ inputs.base-ref }}
@@ -211,6 +279,7 @@ jobs:
           {
             git rev-parse HEAD
             git -C ../client rev-parse HEAD
+            printf 'Client source: %s\n' "$CLIENT_SOURCE"
             git rev-parse "$BASE_REF"
             git merge-base --is-ancestor "$BASE_REF" HEAD
             python3 --version
@@ -227,8 +296,7 @@ jobs:
       - name: Run standard native hooks on every contribution file
         env:
           BASE_REF: ${{ inputs.base-ref }}
-          # The strict generated validator below records the publication gate.
-          PREK_SKIP: hassfest
+          PREK_SKIP: ${{ inputs.client-source == 'checkout' && 'hassfest' || '' }}
         run: |
           source .venv/bin/activate
           set -o pipefail
@@ -243,6 +311,9 @@ jobs:
           source .venv/bin/activate
           set -o pipefail
           python3 ../validation/script/spacexai_validate_generated.py 2>&1 | tee generated-validation.txt
+          if [[ "$CLIENT_SOURCE" == pypi ]]; then
+            python3 -c 'import json; from pathlib import Path; assert json.loads(Path("generated-validation.json").read_text())["status"] == "passed", "Released dependency validation must pass without publication exceptions"'
+          fi
       - name: Upload native hook evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
