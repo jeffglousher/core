@@ -4,11 +4,15 @@ Verified September 8, 2026. The initial Python package is published and its
 post-publication checks pass. Three HA companion contributions remain prepared
 for review, not submitted upstream. The contributor has confirmed reading and
 understanding the initial Core code, including the generated changes. Fresh
-initial-only UI/OAuth acceptance and final submission checks still remain.
+initial-only OAuth and setup succeed. Published client 0.1.0 fails conversation
+with HTTP 426; the committed, unpublished 0.1.1 candidate now passes bounded HA
+acceptance. Core still pins 0.1.0, so the actual submission dependency is not
+ready. The next human step is the 0.1.1 library PR and release.
 
 ## Exact first-wave source
 
 - Python 0.1.0: [release v0.1.0](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0), `155d76c5b940108be707bb379c02d476b893b758`.
+- Python 0.1.1 candidate: `codex/initial-client-compatibility`, `a7f7afb514e6a0362d927124fd01b75d25885af9`; committed and pushed clean, not published.
 - Core: `codex/spacexai/initial-release-0-1`, `cd495263eed9794a02a19efb797206e4ff67ef8f`.
 - Brands: `spacexai-initial`, `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
 - Docs: `codex/spacexai/docs-initial-release-0-1`, `44526b046fa26d4ddf0ab037850a54e30ecbf1d0`.
@@ -58,6 +62,28 @@ Python 3.12.13, 3.13.15, and 3.14.5, including version, public import, typing,
 non-editable installation, and exact runtime bytes.
 [Package evidence](PACKAGE_REPAIR_EVIDENCE.md) includes hashes and limitations.
 This does not re-attest private account security or human license review.
+Publication integrity does not establish live compatibility: the initial
+acceptance test below found a provider version-gating failure in this release.
+
+## Unpublished 0.1.1 correction
+
+[Candidate CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34290919712)
+passes all three Python jobs: 130 tests and 100% statement coverage each.
+Local Windows Python 3.12–3.14 runs also pass 130 tests at 100%, with six clean
+wheel/sdist installations, lint, typing, strict Twine, build, and preflight checks.
+Independent LLM review found no blockers. The fix separates the pinned, tested
+Grok Build compatibility value from the truthful package identity and sets
+`store=False`; it introduces no CLI dependency and claims neither an official
+third-party protocol contract nor a guarantee about other provider retention.
+
+The locally built candidate wheel passes isolated HA chat/history, exposed-helper
+control with the unexposed helper unchanged, saved-account restart followed by
+chat/history, and normal removal. A new native Core run passes 50 tests,
+241/241 statements, without failures/errors/skips. This uses an explicit
+temporary dependency override, not an updated shipping manifest: Core still
+requires 0.1.0. See [runtime evidence](RUNTIME_VERIFICATION.md) for the exact
+wheel and bounded checks. The emptied test instance is now stopped, with its
+environment and evidence preserved. No 0.1.1 PR or release exists yet.
 
 ## Current Core verification
 
@@ -163,17 +189,22 @@ comparison does not apply to adding the first version of a library. Actual
 companion PR links and the docs Brands-PR checkbox must wait until those PRs exist.
 The contributor has now confirmed reading and understanding the current Core
 code in response to the question that included the shutdown fix and generated
-changes. Both Core review attestations are checked. The manual locally-tested
-box is also checked: real-host initial lifecycle checks and successful full-stack
-conversation/speech tests are recorded, with their versions and limits explicit.
-This general manual-testing checkbox is not the separate fresh initial-only
-acceptance gate. The local automated-test box is now checked from the actual
-50-test run on the user's Linux host. Review of two other PRs has not been confirmed.
+changes. Both Core review attestations are checked. Real-host manual testing
+confirms fresh login, the published-client failure, and successful bounded
+acceptance with the 0.1.1 candidate override. Because Core still pins the broken
+published 0.1.0, the submitted contribution cannot yet be attested to work as
+expected.
+Earlier full-stack conversation/speech results remain historical, versioned
+evidence, not a substitute for initial-only acceptance. The local automated-test
+box is checked from the actual 50-test run on the user's Linux host. Review of
+two other PRs has not been confirmed; that community contribution is not a
+technical merge gate.
 
 The Core review base remains `38aacedef`. A fresh read of upstream `dev` returned
 `15f231017997bef66540416ef82b2011cbd4cb5f`; the candidate was not rebased during
 this writing pass. Refresh and revalidate it before upstream submission, rather
-than checking perfect-PR compliance while that and live acceptance remain open.
+than checking perfect-PR compliance while that and the corrected dependency's
+publication/pin/validation remain open.
 
 ### Steps before upstream submission
 
@@ -181,23 +212,21 @@ than checking perfect-PR compliance while that and live acceptance remain open.
    code and generated changes. Review the final descriptions and companion
    contributions before submission; renew that review if code changes afterward.
    Do not infer completion of the separate two-other-PRs checklist item.
-2. Complete fresh initial-only browser OAuth login on the separate native
-   instance. Exact `25e04203` matches all seven source blobs; 118 dependencies
-   and PyPI client 0.1.0 are unchanged, and import/dependency checks pass.
-   Configuration validation exits 0, HA is running on loopback-only HTTP,
-   and there are no SpaceXAI entries. Real OAuth start reaches device progress;
-   cancel yields verified 404 and no entry. Stopping during a second pending
-   authorization exits with the process absent, port closed, and no reported
-   late-device-task warning; restart returns to running. The first-party
-   provider sign-in page awaits human approval. This is not completed login or
-   HA UI setup. Verify
-   conversation/history, control of the exposed synthetic helper with the
-   unexposed helper unchanged, restart/token persistence, and removal.
+2. Review, create, and merge the 0.1.1 library PR, then publish through the protected
+   release workflow with human approval. Its candidate is committed, pushed,
+   independently reviewed, and green on all three CI Python versions. Bounded
+   acceptance passes: fresh OAuth, default Assist, chat/history, exposed-helper
+   control with the unexposed helper unchanged, same-account restart with further
+   chat/history, and normal removal. The exposed helper was restored off; the
+   isolated instance was stopped after confirming no account or conversation
+   entity remains. Its environment and evidence are preserved.
+   Verify the published artifacts, update Core's 0.1.0 pin, and rerun
+   exact-published-dependency Core validation.
    Disabled Assist and forced forbidden-tool requests are already covered by
    deterministic tests; no repeated live outage or forced credential expiry is
-   required. Existing full-stack credentials are
-   not fresh-login proof. Human OAuth approval is still needed; do not replace
-   the existing full-stack instance.
+   required. No live token rotation or forced-expiry success is claimed.
+   Do not replace the existing full-stack instance. Earlier pending-flow
+   cancellation/shutdown checks remain recorded in the runtime history.
 3. After creating the companion drafts, replace comparison placeholders with
    actual PR links. Recheck the public integration logo after Brands merges.
 4. Before upstream submission, recheck upstream freshness, rerun relevant
@@ -205,7 +234,8 @@ than checking perfect-PR compliance while that and live acceptance remain open.
    dependent follow-on upstream PRs early.
 
 Use the [one-at-a-time fork-draft instructions](README.md#create-the-three-companion-fork-drafts).
-No further library tag, release, or publication is needed for this wave.
+Do not overwrite or republish 0.1.0. Any corrected release needs its own package
+validation and publication, followed by exact-dependency Core verification.
 
 ## Original contribution provenance
 

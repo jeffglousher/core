@@ -27,7 +27,7 @@ Setup uses browser-based OAuth device authorization, validates the account and a
 
 The published, unofficial `spacexai-subscription-client` library handles provider communication and OAuth. The integration handles Home Assistant configuration, shared sessions, conversations, tool calls, and token persistence. It targets Bronze, not the full quality scale in this first PR.
 
-The integration suite passes all 50 tests locally in a separate Linux environment on my HA host and in native CI, with 100% statement coverage. This includes login cancellation, shutdown, token refresh, provider failures, Assist exposure controls, and saving the default, enabled, or disabled Assist choice during setup. Formatting, typing, lint, hassfest, and generated-file checks pass too. Fresh initial-only sign-in and functional acceptance still need to be completed before this fork draft is ready for upstream submission.
+The integration suite passes all 50 tests locally in a separate Linux environment on my HA host and in native CI, with 100% statement coverage. This includes login cancellation, shutdown, token refresh, provider failures, Assist exposure controls, and saving the default, enabled, or disabled Assist choice during setup. Formatting, typing, lint, hassfest, and generated-file checks pass too. Fresh initial-only OAuth setup and saved-account restart now pass, but live chat with the published client 0.1.0 is blocked by the provider's minimum CLI-version check (HTTP 426). This draft is not ready for submission until the library compatibility fix is reviewed, published, pinned, and retested.
 
 ## Type of change
 <!--
@@ -59,7 +59,7 @@ The integration suite passes all 50 tests locally in a separate Linux environmen
 - Brands pull request: Not created yet; [prepared branding](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
 - New dependency: [PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/), [source](https://github.com/jeffglousher/spacexai-subscription-client/tree/v0.1.0), and [release notes](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.0/CHANGELOG.md). This is a new dependency, so there is no previous version to compare.
 - Validation: 50 local Linux tests pass for Core `cd495263` with the published client, with no failures, errors, or skips. [Native CI](https://github.com/jeffglousher/core/actions/runs/34260917145) passes the same suite, formatting, typing, lint, unchanged development setup, native hooks, hassfest, and generated-file validation for that exact revision. No Windows test result is claimed.
-- Live testing: I'm using the integration on my real Home Assistant system, where conversation works in the full-stack build. The separate initial-only version starts, reaches Grok's authorization step, cancels sign-in cleanly, and shuts down/restarts correctly. Fresh authorization, conversation, Assist control, credential persistence, and removal still need verification on that exact initial-only version.
+- Live testing: Fresh authorization through external Chrome creates one loaded initial-only account and conversation agent with Assist enabled by default. Published client 0.1.0 then fails chat because the provider interprets its package-version header as an outdated CLI version. With the verified 0.1.1 candidate wheel installed as an explicit test-only dependency override, chat/history, exposed-helper control with native tool calls, an unchanged unexposed helper, saved-account restart followed by chat, and account/entity removal all pass. The unchanged Core source also passes all 50 native tests with that wheel. Only the isolated test account was removed; my main HA was untouched. The Core manifest still pins 0.1.0, so these candidate results do not make this submitted dependency ready.
 - Detailed evidence and remaining gates: [first-wave review packet](https://github.com/jeffglousher/core/blob/codex/spacexai-validation/spacexai-review/FIRST_WAVE_READINESS.md).
 
 ## Checklist
@@ -75,7 +75,7 @@ The integration suite passes all 50 tests locally in a separate Linux environmen
 -->
 
 - [x] I understand the code I am submitting and can explain how it works.
-- [x] The code change is tested and works locally.
+- [ ] The code change is tested and works locally.
 - [x] Local tests pass. **Your PR cannot be merged unless tests pass**
 - [x] There is no commented out code in this PR.
 - [x] I have followed the [development checklist][dev-checklist]
@@ -96,7 +96,7 @@ If the code communicates with devices, web services, or third-party tools:
       Updated by running `python3 -m script.gen_requirements_all`.
 - [ ] For the updated dependencies a diff between library versions and ideally a link to the changelog/release notes is added to the PR description.
 
-The dependency-update checkbox does not apply to this new integration; the first release and its notes are linked above. The manual-testing and local automated-test checkboxes record the separate results above. They do not claim that the remaining fresh initial-only acceptance checks have passed. Review of two other PRs has not been confirmed.
+The dependency-update checkbox does not apply to this new integration; the first release and its notes are linked above. Local automated tests pass, but I have cleared the works-locally checkbox because initial-only live testing found the provider rejection above. Earlier full-stack success does not establish that this initial dependency works. Review of two other PRs has not been confirmed.
 
 <!--
   This project is very active and we have a high turnover of pull requests.

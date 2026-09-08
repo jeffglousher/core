@@ -2,13 +2,21 @@
 
 ## Isolated initial-layer acceptance work
 
-A separate native instance on the user's HA host now runs initial Core
-`25e04203dad36c741b56ff7a789b85f6a76b7f7e`, with the published PyPI client
-0.1.0. All seven installed integration source files match Git. The client wheel
-hash is `2d7e8d92087afc3e72ec5839e93631284c378acd4e21121cbc60dc473c767b32`;
-its source bytes were verified. All 118 previously resolved dependency versions
-remained unchanged during the Core-only update; dependency checks and all four
-integration module imports pass. Generated English data uses HA's own tooling.
+A separate native test instance on the user's HA host used initial Core production
+`25e04203dad36c741b56ff7a789b85f6a76b7f7e`, now with the unpublished client 0.1.1
+candidate from `a7f7afb514e6a0362d927124fd01b75d25885af9`. Its locally built
+candidate wheel SHA-256 is
+`33e45dd66a5c3e23058bab8a2dd6cc68ad609b62939981a49abbee753ca362d2`.
+All six installed client files match that wheel and its Windows working-tree
+source; all seven Core source files remain unchanged. The local source uses
+CRLF while Git/Linux uses LF, so this hash does not predict a future Linux-built
+release wheel. Only client 0.1.0 → 0.1.1 changed in the isolated runtime and
+development-test environment; dependency checks pass. HA uses the explicit
+temporary `--skip-pip-packages spacexai-subscription-client` override because
+the shipping manifest still pins 0.1.0. This is not a released-dependency check.
+Generated English data uses HA's own tooling. Final state: the disposable
+account is removed and the empty test service is stopped. The installed
+environment and evidence are preserved; the main HA service remains healthy.
 
 The isolated configuration has two synthetic helpers, no copied production
 credentials, and no real home devices. Normal HA API onboarding also creates
@@ -17,21 +25,81 @@ The instance listens only on loopback and receives no Supervisor credentials.
 The main full-stack installation below was not changed, restarted, or replaced;
 its management API remained healthy after these tests.
 
-A subsequent read-only check again confirmed one loaded SpaceXAI account with
+An earlier read-only check confirmed one loaded SpaceXAI account with
 four subentries on the real system, while the isolated initial instance remained
 running with zero account entries and a pending device-authorization flow.
 The contributor confirmed using the real system; the earlier successful live
 conversation and speech results below remain valid evidence for that full-stack
 version, not a completed fresh-login test of the initial-only candidate.
 
-The next readiness check found that pending login had reached `device_timeout`,
+The next historical readiness check found that pending login had reached `device_timeout`,
 with zero SpaceXAI entries. Retrying through the normal flow opened a fresh
-provider approval page. The isolated instance remains running with confirmed
-loopback HTTP settings. This is a specific missing successful-login test, not
-evidence that an account was already configured. The main management API again
+provider approval page. At that checkpoint the isolated instance had confirmed
+loopback HTTP settings but no successful login. The main management API again
 reported healthy and its SpaceXAI entry remained loaded with four subentries.
 
-Separately, all 50 automated integration tests now pass directly on the user's
+### Published 0.1.0 failure and candidate correction
+
+Fresh provider approval in external Chrome completed through HA's normal flow.
+HA created one loaded account entry and one conversation subentry with default
+Assist enabled and selected model `grok-4.6`. A normal stop, clean termination,
+and restart returned HA to running with stable loopback HTTP settings. The same
+saved account and conversation subentry loaded, with Assist control still enabled.
+This verifies saved-credential persistence, not live token rotation.
+
+The first synthetic chat failed with HA's translated API error. A separate call
+through the exact published client 0.1.0, using the same model and no tools,
+also returned HTTP 426 (Upgrade Required). The provider's plain-text response
+identifies `0.1.0` as an outdated Grok CLI version and requires at least `0.1.202`.
+The package sends its own version as `x-grok-client-version`; the official
+[sampler uses this header for proxy version gating](https://github.com/xai-org/grok-build/blob/75810042ca2762aa0b0fa17864f3f68823ccbea5/crates/codegen/xai-grok-sampler/src/client.rs#L554).
+Its [version source describes the installed CLI build](https://github.com/xai-org/grok-build/blob/75810042ca2762aa0b0fa17864f3f68823ccbea5/crates/codegen/xai-grok-version/src/lib.rs#L1),
+not a documented third-party protocol version. The published initial package is
+functionally blocked despite passing automated tests and publication checks.
+
+A separate process changed only that header to `1.0.24`, the pinned official
+[source-build version](https://github.com/xai-org/grok-build/blob/75810042ca2762aa0b0fa17864f3f68823ccbea5/crates/codegen/xai-grok-version/Cargo.toml#L4),
+while retaining the truthful `0.1.0` package User-Agent and unofficial identifier.
+It returned the expected synthetic text. That earlier probe alone did not prove
+HA acceptance. The subsequent 0.1.1 candidate adds this compatibility declaration,
+keeps a truthful 0.1.1 User-Agent and unofficial identifier, and requests
+`store=False`. It makes no official protocol or general retention guarantee.
+
+### Current candidate acceptance
+
+With the locally built wheel above, actual HA conversation and history pass in
+8.72 seconds, with default Assist control enabled. A native tool call and
+successful result control the exposed synthetic helper; the unexposed helper
+remains unchanged. The exposed helper was restored off.
+
+A normal stop terminates the process and closes its listener with zero late
+device-task warnings. Restart loads the same saved account and conversation
+subentry with default Assist still enabled; chat/history pass again in 9.29
+seconds. Normal API removal then succeeds without requiring restart: no SpaceXAI
+account remains and its conversation entity is removed. The isolated instance
+was confirmed running with stable loopback settings, then stopped normally for
+housekeeping. Final checks confirm process absent, port closed, and zero late
+shutdown warnings. Only this disposable account was removed; no files or the
+main HA account were removed. No live token rotation or forced expiry is claimed. The cause of earlier
+in-app approval attempts remaining pending has not been established; external
+Chrome succeeded.
+
+[Candidate package CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34290919712)
+passes all three Python jobs with 130 tests and 100% statement coverage each,
+including Linux-built wheel/sdist installation checks. Local Windows Python
+3.12–3.14 runs also pass 130 tests at 100%; six clean artifact installations,
+lint, typing, strict Twine, build/preflight, and independent review pass. The
+candidate is committed and pushed clean, but no PR or release exists. Its
+isolated native Core replay passes 50 tests, 241/241 statements, without failures,
+errors, or skips. The main HA remains healthy with its one loaded account and
+four subentries, unchanged by candidate installation or acceptance testing.
+
+The next human step is to review/create/merge the 0.1.1 library PR, then approve
+its protected release. Verify those published artifacts, update Core's dependency,
+and revalidate against the released package afterward; the temporary override
+and local wheel cannot establish that gate.
+
+Before the candidate installation, all 50 automated integration tests passed on the user's
 Linux HA host in a new development environment, not in either running HA venv.
 The tested source matches `cd495263eed9794a02a19efb797206e4ff67ef8f`: the exact
 `25e04203` archive plus its sole changed test file. Three new cases verify the
@@ -40,11 +108,11 @@ saved default/enabled/disabled Assist choice. There are zero failures/errors/ski
 Native test guards and dependency pins remain unchanged; dependency checks pass.
 Production source is byte-identical to the running initial-only build, so this
 test-only addition requires no deployment or new Python release.
-The same candidate also passes [both native CI jobs](https://github.com/jeffglousher/core/actions/runs/34260917145),
+That Core revision with published 0.1.0 also passes [both native CI jobs](https://github.com/jeffglousher/core/actions/runs/34260917145),
 including all 50 tests, scoped checks, unchanged setup, native hooks, and clean
 generated-file/publication validation.
 
-Verified against the updated initial candidate:
+Historical pre-login lifecycle checks against the updated initial candidate:
 
 - HA's native configuration check succeeds and the runtime reaches `RUNNING`.
 - HTTP settings are stable, loopback-only, with no pending reversion timer.
@@ -65,15 +133,8 @@ standard hooks, and generated/publication validation. The new public regression
 fails against the old production code and passes with the fix. This proves
 earlier cancellation, not a measured long shutdown delay.
 
-Fresh provider approval is now awaiting the user on the provider's sign-in page.
-The current device endpoint is [SpaceXAI Accounts](https://accounts.x.ai/oauth2/device);
-the private device code is not included here. This is not completed HA frontend
-or fresh-login acceptance. The finite remaining live sequence is conversation
-and history, control of the exposed synthetic helper while the unexposed helper
-stays unchanged, restart followed by conversation, and account removal.
 Disabled Assist and forced forbidden-tool requests already have deterministic
 coverage; reproducing every provider failure live is not required.
-These remaining successful-account checks need fresh provider approval.
 No quality-tier award is claimed.
 
 ## Unchanged full-stack deployment — September 7, 2026
@@ -133,7 +194,9 @@ failure/recovery is covered by the native public-interface regressions.
 
 Speech entity naming remains quality-blocked despite functional TTS/STT
 success. Initial-only acceptance is now being tested separately as recorded
-above; the fresh human OAuth approval remains pending. No tokens, entry
+above; bounded candidate acceptance passes, while the published dependency
+remains blocked by HTTP 426.
+No tokens, entry
 identifiers, host addresses, signed URLs, raw logs, or private audio are
 included here.
 

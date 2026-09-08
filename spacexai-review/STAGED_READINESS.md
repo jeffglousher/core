@@ -1,10 +1,34 @@
 # Current 23-contribution validation
 
-## Current published-dependency checkpoint
+## Current dependency and candidate checkpoint
 
 September 8, 2026. Python 0.1.0 is published from `155d76c5b940108be707bb379c02d476b893b758`
 with verified hashes, source bytes, signed provenance, and six clean installations.
 [Publication evidence](PACKAGE_REPAIR_EVIDENCE.md) records the exact files and scope.
+Published 0.1.0 remains blocked by HTTP 426. The unpublished 0.1.1 candidate
+`a7f7afb514e6a0362d927124fd01b75d25885af9` is committed and pushed clean on
+`codex/initial-client-compatibility`.
+[Its CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34290919712)
+passes all three Python jobs with 130 tests and 100% statement coverage each.
+Local Windows 3.12–3.14 runs match that count and coverage; six clean artifact
+installations, lint, typing, strict Twine, build/preflight, and independent review
+also pass. No candidate PR or release exists yet.
+
+The locally built candidate wheel is installed only in the isolated initial
+runtime and its development-test environment. Core's seven files are unchanged
+and its manifest still pins 0.1.0; an explicit temporary package override keeps
+the candidate installed. Native Core tests pass again: 50 tests, 241/241
+statements, no failures/errors/skips. Actual HA chat/history pass in 8.72 seconds;
+default Assist controls the exposed helper through a native tool call/result,
+while the unexposed helper stays unchanged. The exposed helper was restored off.
+Normal restart preserves the same account/subentry and chat/history pass again
+in 9.29 seconds. Normal removal clears the disposable account and conversation
+entity without requiring restart. The empty isolated instance was then stopped
+normally: process absent, port closed, zero late-task warnings. Its environment
+and evidence are preserved; the main full stack stays healthy and unchanged.
+The next human step is the
+library PR and protected release, followed by artifact verification, Core pinning,
+and exact-published-dependency revalidation.
 
 Current initial Core `cd495263eed9794a02a19efb797206e4ff67ef8f` contains three commits
 on official dev `38aacedef39eb3f077ce4a112a58bf7286af5e2c`, still exactly 18 files.
@@ -36,15 +60,24 @@ before the full 47-test pass. This proves late cancellation, not shutdown durati
 Both jobs in that run pass, including unchanged script/setup, the full-tree
 general-hook subset, standard native contribution hooks, and generated wiring
 and publication validation. Its harness:
-`15adcb71e31a2ade8db05463da95498082537634`. The isolated `25e04203` instance
-matches all seven source blobs, with all 118 dependencies and PyPI client 0.1.0
-unchanged; import/dependency checks and configuration validation pass. It is
-running on loopback-only HTTP with no SpaceXAI entries. Real OAuth start reaches
-device progress; cancel produces verified 404 without an entry. A second pending
-authorization is cancelled by shutdown: the process exits, its port closes, and
-the reported late-device-task warning is absent. Restart returns to running.
-The first-party provider sign-in page awaits human approval; completed login,
-HA UI setup, and functional acceptance remain pending.
+`15adcb71e31a2ade8db05463da95498082537634`. Before the candidate installation,
+the isolated `25e04203` instance matched all seven source blobs, with all 118
+dependencies and PyPI client 0.1.0 unchanged; import/dependency checks and
+configuration validation passed. It was
+running on loopback-only HTTP. Earlier, real OAuth start/cancel produced verified
+404 without an entry, and shutdown cancelled another pending authorization with
+no reported late-device-task warning; restart returned to running.
+
+Fresh external-Chrome approval has since created one loaded account and one
+conversation subentry with default Assist. A normal restart preserves that same
+entry/subentry, without a token-rotation claim. First chat failed with HTTP 426;
+the exact published client with selected `grok-4.6` and no tools reproduced it.
+The provider treats header version `0.1.0` as an outdated CLI build, requiring
+at least `0.1.202`. Official source identifies this as a CLI-build version, not
+a documented third-party protocol. A separate compatibility-only probe returned
+one expected text response, followed by the locally built candidate's HA
+successes recorded above. These do not establish readiness of the still-pinned
+0.1.0 release or future published artifact identity.
 [Runtime evidence](RUNTIME_VERIFICATION.md) records live scope.
 Later layers have not inherited/retested this fix; the old full stack is unchanged.
 
