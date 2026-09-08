@@ -18,7 +18,7 @@ on:
       client-ref:
         description: Exact subscription client commit to install
         required: true
-        default: b5513112b12a14baa43c295cf82cec8be3604ba7
+        default: 410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3
         type: string
       standard-hooks:
         description: Also build the full development environment and run native hooks
@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jeffglousher/spacexai-subscription-client
-          ref: ${{ inputs.client-ref || 'b5513112b12a14baa43c295cf82cec8be3604ba7' }}
+          ref: ${{ inputs.client-ref || '410730d2c9803d2a4c83cdeb6ebe7f1f2c0b9dd3' }}
           path: client
           persist-credentials: false
       - name: Install system dependencies
