@@ -23,6 +23,7 @@ from homeassistant.config_entries import SOURCE_USER, ConfigFlowResult
 from homeassistant.const import CONF_LLM_HASS_API, CONF_MODEL, CONF_PROMPT
 from homeassistant.core import CoreState, HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import llm
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.httpx_client import get_async_client
 
@@ -179,6 +180,49 @@ async def test_full_oauth_flow(
     )
     mock_flow_client.async_get_account.assert_awaited_once_with(ACCESS_TOKEN)
     mock_flow_client.async_list_models.assert_awaited_once_with(ACCESS_TOKEN)
+
+
+@pytest.mark.parametrize(
+    ("assist_options", "expected_options"),
+    [
+        pytest.param(
+            {},
+            {CONF_LLM_HASS_API: [llm.LLM_API_ASSIST]},
+            id="default",
+        ),
+        pytest.param(
+            {CONF_LLM_HASS_API: [llm.LLM_API_ASSIST]},
+            {CONF_LLM_HASS_API: [llm.LLM_API_ASSIST]},
+            id="enabled",
+        ),
+        pytest.param({CONF_LLM_HASS_API: []}, {}, id="disabled"),
+    ],
+)
+@pytest.mark.usefixtures("mock_setup_entry")
+async def test_conversation_assist_options(
+    hass: HomeAssistant,
+    mock_flow_client: MagicMock,
+    assist_options: dict[str, list[str]],
+    expected_options: dict[str, list[str]],
+) -> None:
+    """Persist the default or selected Assist setting through the public flow."""
+    result = await _finish_device_progress(
+        hass, mock_flow_client, await _start_flow(hass)
+    )
+
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "conversation"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"], {CONF_MODEL: "grok-4.6", **assist_options}
+    )
+
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    entry = result["result"]
+    assert len(entry.subentries) == 1
+    subentry = next(iter(entry.subentries.values()))
+    assert subentry.subentry_type == "conversation"
+    assert subentry.data == {CONF_MODEL: "grok-4.6", **expected_options}
 
 
 @pytest.mark.usefixtures("mock_setup_entry")
