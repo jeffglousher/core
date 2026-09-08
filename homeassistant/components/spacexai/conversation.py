@@ -207,7 +207,11 @@ class SpaceXAIConversationEntity(
                     translation_domain=DOMAIN,
                     translation_key="not_entitled",
                 ) from err
-            except (SpaceXAISubscriptionError, OAuth2TokenRequestError) as err:
+            except (
+                SpaceXAISubscriptionError,
+                OAuth2TokenRequestError,
+                TimeoutError,
+            ) as err:
                 LOGGER.error(
                     "Error communicating with SpaceXAI: %s", type(err).__name__
                 )
