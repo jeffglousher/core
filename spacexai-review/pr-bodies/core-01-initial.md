@@ -2,7 +2,9 @@
   You are amazing! Thanks for contributing to our project!
   Please, DO NOT DELETE ANY TEXT from this template! (unless instructed).
 -->
+
 ## Breaking change
+
 <!--
   If your PR contains a breaking change for existing users, it is important
   to tell them what breaks, how to make it work again and why we did this.
@@ -14,6 +16,7 @@
 None. This adds a new integration.
 
 ## Proposed change
+
 <!--
   Describe the big picture of your changes here to communicate to the
   maintainers why we should accept this pull request. If it fixes a bug
@@ -27,9 +30,10 @@ Setup uses browser-based OAuth device authorization, validates the account and a
 
 The unofficial `spacexai-subscription-client` library handles OAuth and provider requests. The integration uses Home Assistant's shared HTTP sessions, conversation history, LLM tool interface, and token persistence.
 
-I've tested browser sign-in, conversation history, control of an exposed helper while an unexposed helper stays unchanged, conversation after restart, and account removal. All 50 integration tests pass locally on Linux and in CI with 100% statement coverage.
+I've tested browser sign-in, conversation history, control of an exposed helper while an unexposed helper stays unchanged, conversation after restart, and account removal. All 50 integration tests pass locally on Linux and in the integration-validation workflow with 100% statement coverage.
 
 ## Type of change
+
 <!--
   What type of change does your PR introduce to Home Assistant?
   NOTE: Please, check only 1! box!
@@ -46,6 +50,7 @@ I've tested browser sign-in, conversation history, control of an exposed helper 
 - [ ] Code quality improvements to existing code or addition of tests
 
 ## Additional information
+
 <!--
   Details are important, and help maintainers processing your PR.
   Please be sure to fill out additional details, if applicable.
@@ -58,9 +63,10 @@ I've tested browser sign-in, conversation history, control of an exposed helper 
 - Link to frontend pull request: Not applicable.
 - Brands pull request: [jeffglousher/brands#1](https://github.com/jeffglousher/brands/pull/1).
 - New dependency: `spacexai-subscription-client==0.1.1` — [PyPI](https://pypi.org/project/spacexai-subscription-client/0.1.1/), [release](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.1), [source](https://github.com/jeffglousher/spacexai-subscription-client/tree/v0.1.1), [changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.1/CHANGELOG.md).
-- Testing: [Core CI](https://github.com/jeffglousher/core/actions/runs/34304854117) passes all 50 integration tests against the PyPI package, with 100% statement coverage, formatting, typing, native hooks, generated requirements, and hassfest. [Library release checks](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34304360439) pass 130 tests with 100% statement coverage on Python 3.12–3.14, with verified wheel and source-distribution installations.
+- Testing: [Integration validation](https://github.com/jeffglousher/core/actions/runs/34304854117) passes all 50 integration tests against the PyPI package, with 100% statement coverage, formatting, typing, native hooks, generated requirements, and hassfest. [Library release checks](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34304360439) pass 130 tests with 100% statement coverage on Python 3.12–3.14, with verified wheel and source-distribution installations.
 
 ## Checklist
+
 <!--
   Put an `x` in the boxes that apply. You can also fill these out after
   creating the PR. If you're unsure about any of them, don't hesitate to ask.
@@ -122,6 +128,7 @@ To help with the load of incoming pull requests:
 
   Below, some useful links you could explore:
 -->
+
 [dev-checklist]: https://developers.home-assistant.io/docs/development_checklist/
 [manifest-docs]: https://developers.home-assistant.io/docs/creating_integration_manifest/
 [quality-scale]: https://developers.home-assistant.io/docs/integration_quality_scale_index/

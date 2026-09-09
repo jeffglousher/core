@@ -1,8 +1,10 @@
 # SpaceXAI integration PR drafts
 
-Use the complete descriptions below. They focus on the integration, its behavior,
-validation, and companion contributions. Your approved review checkboxes are
-recorded. No description was posted or changed on your behalf.
+The complete descriptions below are posted to the three existing fork drafts
+with your approval. Their contents were read back and verified. They focus on
+the integration, its behavior, validation, and companion contributions.
+Your approved review checkboxes are recorded; titles, branches, and draft status
+are unchanged.
 
 ## Python package publication
 
@@ -28,7 +30,7 @@ No local package substitute or publication exception is used.
 **Title:** Add SpaceXAI conversation integration
 
 [Open your existing draft #39](https://github.com/jeffglousher/core/pull/39)
-and replace its description with the [complete Core write-up](pr-bodies/core-01-initial.md).
+with the posted [complete Core write-up](pr-bodies/core-01-initial.md).
 Do not create a duplicate Core PR.
 
 - Repository: `jeffglousher/core`.
@@ -42,7 +44,7 @@ Do not create a duplicate Core PR.
 **Title:** Add SpaceXAI integration branding
 
 [Open your Brands draft #1](https://github.com/jeffglousher/brands/pull/1)
-and replace its description with the [complete Brands write-up](pr-bodies/brands-01-initial.md).
+with the posted [complete Brands write-up](pr-bodies/brands-01-initial.md).
 
 - Repository: `jeffglousher/brands`.
 - Base: `codex/spacexai/review-base`.
@@ -55,7 +57,7 @@ and replace its description with the [complete Brands write-up](pr-bodies/brands
 **Title:** Document the SpaceXAI conversation integration
 
 [Open your documentation draft #1](https://github.com/jeffglousher/home-assistant.io/pull/1)
-and replace its description with the [complete documentation write-up](pr-bodies/docs-01-initial.md).
+with the posted [complete documentation write-up](pr-bodies/docs-01-initial.md).
 
 - Repository: `jeffglousher/home-assistant.io`.
 - Base: `codex/spacexai/review-base-release-0-1`.
@@ -74,4 +76,6 @@ The unchecked change-type alternatives and Core dependency-upgrade comparison
 are inapplicable. The two-other-PRs box remains as you left it in draft #39.
 The docs Brands-PR box stays open until an actual PR exists in
 `home-assistant/brands`; a fork-only review draft does not complete that item.
+The docs branch confirmation stays open for upstream submission to `next`;
+the current fork draft intentionally targets its fixed review base.
 The descriptions link to all three actual fork PRs.

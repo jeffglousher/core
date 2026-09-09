@@ -5,7 +5,9 @@
   Pull requests for adding new custom components will no longer be accepted. Please refer to the Brands Proxy API announcement for more details:
   https://developers.home-assistant.io/blog/2026/02/24/brands-proxy-api
 -->
+
 ## Proposed change
+
 <!-- 
   Describe the big picture of your changes here to communicate to the
   maintainers why we should accept this pull request.
@@ -18,6 +20,7 @@ The artwork uses the [official SpaceXAI and Grok asset pack](https://data.x.ai/l
 The complete [Brands validation](https://github.com/jeffglousher/core/actions/runs/34245078515) passes with zero issues.
 
 ## Type of change
+
 <!--
   What type of change does your PR introduce to the Home Assistant Brands?
   NOTE: Please, check only 1! box! 
@@ -32,6 +35,7 @@ The complete [Brands validation](https://github.com/jeffglousher/core/actions/ru
 - [ ] Removing an icon or logo
 
 ## Additional information
+
 <!--
   Details are important, and help maintainers processing your PR.
   Please be sure to fill out additional details, if applicable.
@@ -43,6 +47,7 @@ The complete [Brands validation](https://github.com/jeffglousher/core/actions/ru
 - Link to integration documentation on our website: Not available until the new integration is merged.
 
 ## Checklist
+
 <!--
   Put an `x` in the boxes that apply. You can also fill these out after
   creating the PR. If you're unsure about any of them, don't hesitate to ask.
