@@ -5,7 +5,7 @@ rules:
     comment: The integration does not provide actions.
   appropriate-polling:
     status: exempt
-    comment: The integration only makes requests in response to user conversations.
+    comment: The integration does not periodically poll for state updates.
   brands: done
   common-modules: done
   config-flow-test-coverage: done
@@ -34,9 +34,7 @@ rules:
   unique-config-entry: done
 
   # Silver
-  action-exceptions:
-    status: exempt
-    comment: The integration does not provide actions.
+  action-exceptions: done
   config-entry-unloading: done
   docs-configuration-parameters: todo
   docs-installation-parameters: todo
@@ -83,7 +81,7 @@ rules:
     comment: User-created conversation agents are enabled by default.
   entity-translations:
     status: exempt
-    comment: The conversation entity uses the user-defined subentry title.
+    comment: The entity uses its device name and has no entity-specific name to translate.
   exception-translations: done
   icon-translations:
     status: exempt
