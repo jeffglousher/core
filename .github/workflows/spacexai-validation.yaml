@@ -13,16 +13,16 @@ on:
       core-ref:
         description: Exact Core commit to validate
         required: true
-        default: 82984cdde6d0801e2d79753ce39645bc658a3266
+        default: a880ed58730093540cd768db8abd6bece8656989
         type: string
       client-ref:
         description: Exact client source commit to install or verify against PyPI
         required: true
-        default: a7f7afb514e6a0362d927124fd01b75d25885af9
+        default: da47fd71fcb55012fbe182bb445ad36b81c60f51
         type: string
       client-source:
         description: Install the released PyPI package or an unpublished checkout
-        default: checkout
+        default: pypi
         type: choice
         options:
           - pypi
@@ -58,7 +58,7 @@ jobs:
         working-directory: core
         shell: bash
     env:
-      CLIENT_SOURCE: ${{ inputs.client-source || 'checkout' }}
+      CLIENT_SOURCE: ${{ inputs.client-source || 'pypi' }}
       PYTHONASYNCIODEBUG: 1
       HASS_CI: 1
       UV_DEFAULT_INDEX: https://pypi.org/simple
@@ -72,14 +72,14 @@ jobs:
       - name: Check out Core under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.core-ref || '82984cdde6d0801e2d79753ce39645bc658a3266' }}
+          ref: ${{ inputs.core-ref || 'a880ed58730093540cd768db8abd6bece8656989' }}
           path: core
           persist-credentials: false
       - name: Check out subscription client under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jeffglousher/spacexai-subscription-client
-          ref: ${{ inputs.client-ref || 'a7f7afb514e6a0362d927124fd01b75d25885af9' }}
+          ref: ${{ inputs.client-ref || 'da47fd71fcb55012fbe182bb445ad36b81c60f51' }}
           path: client
           persist-credentials: false
       - name: Install system dependencies
@@ -233,7 +233,7 @@ jobs:
         working-directory: core
         shell: bash
     env:
-      CLIENT_SOURCE: ${{ inputs.client-source || 'checkout' }}
+      CLIENT_SOURCE: ${{ inputs.client-source || 'pypi' }}
       HASS_CI: 1
       UV_DEFAULT_INDEX: https://pypi.org/simple
     steps:
