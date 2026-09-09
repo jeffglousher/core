@@ -6,6 +6,21 @@ on:
     branches:
       - codex/spacexai-docs-validation
   workflow_dispatch:
+    inputs:
+      docs-ref:
+        description: Exact initial documentation commit to validate
+        required: true
+        default: 7cb7f031a13e0964d5612707cbaa0048b141a973
+        type: string
+      brands-ref:
+        description: Exact Brands commit to validate
+        required: true
+        default: a82077c6aaafd2f1efd8872b41caf97f46f8d4cf
+        type: string
+      include-followups:
+        description: Also validate final documentation and its blueprint
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -22,11 +37,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - layer: initial
-            revision: 44526b046fa26d4ddf0ab037850a54e30ecbf1d0
-          - layer: final
-            revision: 69221dc8a853972e4b4fcbf78d4fbba8047b393d
+        layer: ${{ fromJSON(inputs.include-followups && '["initial","final"]' || '["initial"]') }}
+    env:
+      DOCS_REF: ${{ matrix.layer == 'initial' && (inputs.docs-ref || '7cb7f031a13e0964d5612707cbaa0048b141a973') || '69221dc8a853972e4b4fcbf78d4fbba8047b393d' }}
     defaults:
       run:
         working-directory: docs
@@ -36,7 +49,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jeffglousher/home-assistant.io
-          ref: ${{ matrix.revision }}
+          ref: ${{ env.DOCS_REF }}
           path: docs
           persist-credentials: false
       - name: Install Ruby and locked Jekyll dependencies
@@ -53,7 +66,7 @@ jobs:
           cache-dependency-path: docs/package-lock.json
       - name: Record and verify tested source
         env:
-          EXPECTED_SHA: ${{ matrix.revision }}
+          EXPECTED_SHA: ${{ env.DOCS_REF }}
         run: |
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           {
@@ -98,7 +111,7 @@ jobs:
           retention-days: 14
 
   blueprint:
-    if: github.repository == 'jeffglousher/core'
+    if: github.repository == 'jeffglousher/core' && inputs.include-followups
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     defaults:
@@ -161,6 +174,8 @@ jobs:
     if: github.repository == 'jeffglousher/core'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    env:
+      BRANDS_REF: ${{ inputs.brands-ref || 'a82077c6aaafd2f1efd8872b41caf97f46f8d4cf' }}
     defaults:
       run:
         working-directory: brands
@@ -170,7 +185,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: jeffglousher/brands
-          ref: e3ac8da8bf579ec54210cc211e1eaa0768052679
+          ref: ${{ env.BRANDS_REF }}
           path: brands
           persist-credentials: false
       - name: Install native image validation tools
@@ -179,7 +194,7 @@ jobs:
           sudo apt-get install --no-install-recommends -y imagemagick optipng
       - name: Record and verify tested source
         run: |
-          test "$(git rev-parse HEAD)" = 'e3ac8da8bf579ec54210cc211e1eaa0768052679'
+          test "$(git rev-parse HEAD)" = "$BRANDS_REF"
           {
             git rev-parse HEAD
             identify -version
