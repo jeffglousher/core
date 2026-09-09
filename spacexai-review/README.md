@@ -1,193 +1,77 @@
-# SpaceXAI first-wave review packet
+# SpaceXAI integration PR drafts
 
-Current packet: September 8, 2026. Python 0.1.0 is published and verified.
-The remaining contributions are initial Core, Brands, and documentation.
-These are prepared for human review on your forks; no companion PR was opened.
-Published 0.1.0 fails conversation with HTTP 426. The committed 0.1.1 candidate
-passes bounded initial-only HA acceptance and is now the prepared Core requirement.
-It is not published: dependency transparency remains open. The next human step
-is the library correction, not Core submission.
+Use the complete descriptions below. They focus on the integration, its behavior,
+validation, and companion contributions. Your approved review checkboxes are
+recorded. No description was posted or changed on your behalf.
 
-OAuth device authorization remains the only login path. There is no API-key
-fallback or runtime Grok CLI dependency.
+## Python package publication
 
-## Completed: Python 0.1.0 publication
+[Library PR #2](https://github.com/jeffglousher/spacexai-subscription-client/pull/2)
+is merged. [Release v0.1.1](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.1)
+targets `da47fd71fcb55012fbe182bb445ad36b81c60f51`, whose source tree matches the
+reviewed candidate exactly. All required PR, merged-main, and release checks pass.
 
-[Package PR #1](https://github.com/jeffglousher/spacexai-subscription-client/pull/1)
-is merged. [Release v0.1.0](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.0)
-and [PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/)
-come from `155d76c5b940108be707bb379c02d476b893b758`, whose tree exactly matches
-the reviewed source. Both distribution files passed source-byte and cryptographic
-attestation checks; all six clean wheel/sdist installations passed on Python
-3.12–3.14. [Publication evidence](PACKAGE_REPAIR_EVIDENCE.md) records the scope.
+[PyPI 0.1.1](https://pypi.org/project/spacexai-subscription-client/0.1.1/) is published.
+The [release run](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34304360439)
+passed after your protected publication approval. The published wheel and source
+distribution match the verified release artifacts. Post-publication source,
+cryptographic provenance, and all six clean-install checks pass.
+The [publication receipt](PACKAGE_RELEASE_0_1_1.json) records the verified sources.
 
-Do not recreate the merged 0.1.0 draft or republish that version.
+Core's dependency-transparency rule is complete. [Published-dependency Core validation](https://github.com/jeffglousher/core/actions/runs/34304854117)
+passes both jobs using the actual PyPI package: 50 tests, 100% statement coverage,
+native setup and hooks, generated wiring, and hassfest with zero findings.
+No local package substitute or publication exception is used.
 
-## Next: review the Python 0.1.1 correction
+## Core
 
-Review the [completed PR write-up](pr-bodies/python-01-compatibility.md) and
-[open the prepared library PR form](https://github.com/jeffglousher/spacexai-subscription-client/compare/main...codex/initial-client-compatibility?quick_pull=1&title=Fix+subscription+proxy+compatibility+for+0.1.1)
-at `a7f7afb514e6a0362d927124fd01b75d25885af9`, then create and merge its library
-PR after review. No 0.1.1 PR or release has been created.
-[CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34290919712)
-passes all three Python jobs: 130 tests and 100% statement coverage each.
-Local Python 3.12–3.14 checks, six clean artifact installations, and independent
-code review also pass. After merging, publish through the protected release
-workflow with human approval. Core's prepared pin is 0.1.1; after publication,
-verify the actual PyPI files, complete the publication rule, and rerun
-exact-published-dependency checks. Prior temporary-override acceptance is
-historical candidate evidence, not a published-artifact check.
+**Title:** Add SpaceXAI conversation integration
 
-### Your merge and publication steps
+[Open your existing draft #39](https://github.com/jeffglousher/core/pull/39)
+and replace its description with the [complete Core write-up](pr-bodies/core-01-initial.md).
+Do not create a duplicate Core PR.
 
-1. Open the library form above and paste its complete write-up. The destination
-   is `jeffglousher/spacexai-subscription-client`, base `main`, compare
-   `codex/initial-client-compatibility`. Review the nine changed files and description.
-2. If you create a draft, mark it **Ready for review** after your review. Wait for
-   **Python 3.12**, **Python 3.13**, and **Python 3.14** to pass on that PR and
-   resolve any conversations. The repository does not require a second reviewer.
-3. Select **Create a merge commit** and confirm the merge. Do not bypass checks.
-   This preserves the reviewed candidate commit. Keep the branch for now.
-4. Tell me it is merged. I can verify the resulting `main` commit and its checks,
-   prepare the exact `v0.1.1` tag/release, and verify the published distributions.
-   The release must target that verified current `main`, not the unmerged branch.
-5. When the release preflight and all three release-check jobs pass, you approve
-   the **pypi** environment deployment. That approval must remain yours.
+- Repository: `jeffglousher/core`.
+- Base: `codex/spacexai/review-base-release-0-1`.
+- Compare: `codex/spacexai/initial-release-0-1`.
+- Scope: 18 changed files.
+- Current source: `a880ed58730093540cd768db8abd6bece8656989`.
 
-The existing publishing workflow runs when a GitHub release is published;
-pushing a tag alone does not publish. Do not overwrite `v0.1.0`. After verifying
-PyPI 0.1.1, complete Core's publication rule and rerun validation using PyPI rather
-than the source checkout. Refresh and revalidate the upstream base before any
-upstream Core submission.
+## Brands
 
-<a id="create-the-three-companion-fork-drafts"></a>
+**Title:** Add SpaceXAI integration branding
 
-## Your three companion draft forms
+[Open your Brands draft #1](https://github.com/jeffglousher/brands/pull/1)
+and replace its description with the [complete Brands write-up](pr-bodies/brands-01-initial.md).
 
-These are review drafts on your forks, not submissions to Home Assistant.
-You can create them for review while the library publication is pending. Do not
-merge these drafts into their fixed review-base branches; those bases preserve
-the isolated diffs. Upstream submission waits for the published dependency and
-the remaining review gates.
+- Repository: `jeffglousher/brands`.
+- Base: `codex/spacexai/review-base`.
+- Compare: `spacexai-initial`.
+- Scope: eight PNG assets.
+- Current source: `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
 
-Open each form, paste the matching **complete write-up**, review the preview,
-and select **Create draft pull request** from the create-button dropdown.
-The links select the branches and title; they do not submit anything or prefill
-the body. Keep every template section and checkbox, including unchecked choices.
+## Documentation
 
-1. **Core:** [open draft form](https://github.com/jeffglousher/core/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/initial-release-0-1?quick_pull=1&title=Add+SpaceXAI+conversation+integration)
-   · [complete write-up](pr-bodies/core-01-initial.md). Confirm `jeffglousher/core`,
-   base `codex/spacexai/review-base-release-0-1`, compare `codex/spacexai/initial-release-0-1`.
-   The preview contains 18 changed files in four commits.
-2. **Brands:** [open draft form](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial?quick_pull=1&title=Add+SpaceXAI+integration+branding)
-   · [complete write-up](pr-bodies/brands-01-initial.md). Confirm `jeffglousher/brands`,
-   base `codex/spacexai/review-base`, compare `spacexai-initial`.
-   The preview contains eight PNG assets in one commit.
-3. **Documentation:** [open draft form](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/docs-initial-release-0-1?quick_pull=1&title=Document+the+SpaceXAI+conversation+integration)
-   · [complete write-up](pr-bodies/docs-01-initial.md). Confirm `jeffglousher/home-assistant.io`,
-   base `codex/spacexai/review-base-release-0-1`, compare `codex/spacexai/docs-initial-release-0-1`.
-   The preview contains one new integration page in one commit.
+**Title:** Document the SpaceXAI conversation integration
 
-Share the resulting URLs so the prepared companion references can be updated.
-Your prior Core code-understanding and generated-code-review confirmations remain
-recorded. Those boxes are cleared for this refreshed draft until you review the
-new dependency metadata and generated requirement. The 0.1.1 candidate
-passes bounded live checks; final review of the new dependency metadata and
-publication remain outstanding. Creating this fork draft is not upstream submission.
-The [checkbox notes](FIRST_WAVE_READINESS.md#draft-descriptions-and-checkboxes)
-explain which items are verified, which do not apply, and which still need
-actual testing, PR creation, or your personal confirmation.
+[Open your documentation draft #1](https://github.com/jeffglousher/home-assistant.io/pull/1)
+and replace its description with the [complete documentation write-up](pr-bodies/docs-01-initial.md).
 
-All applicable verified automated and local-test boxes are checked. After you
-review this revision, you can check Core's code-understanding and generated-code
-review boxes. Leave development-checklist and perfect-PR compliance open until
-publication, released-package checks, and upstream readiness are complete.
-The docs Brands-PR box refers to an actual PR in `home-assistant/brands`; a
-fork-only review draft does not complete it. Review of two other Core PRs is
-your optional personal confirmation, not an automated gate. Other unchecked
-change types and the new-integration dependency-upgrade comparison are not applicable.
+- Repository: `jeffglousher/home-assistant.io`.
+- Base: `codex/spacexai/review-base-release-0-1`.
+- Compare: `codex/spacexai/docs-initial-release-0-1`.
+- Scope: one integration page.
+- Current source: `44526b046fa26d4ddf0ab037850a54e30ecbf1d0`.
 
-The Core candidate has four commits: the initial integration, focused shutdown
-fix, three Assist-choice setup tests, and corrected 0.1.1 dependency metadata.
-Docs contains one commit. Their checked official upstream
-bases are `38aacedef39eb3f077ce4a112a58bf7286af5e2c` and
-`1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a`. Their new fixed review-base branches
-produce exactly 18 Core files and one docs page. Brands retains its existing
-fixed base `2751989265f1e13fa596dbdec9363b7bed0f0f48` and eight assets.
+## Submission details
 
-All old staging branches and review bases are preserved. Do not use the fork
-default branches or move these fixed review bases. Replace companion comparison
-links with actual draft PR links after you create them.
+These are review drafts on your forks. Do not merge them into the fixed review
+bases. Before upstream submission, verify the released dependency and current
+upstream compatibility. Preserve review history on the open Core PR.
 
-## Readiness and boundaries
-
-[First-wave readiness](FIRST_WAVE_READINESS.md) records the current checks and
-remaining gates. Current Core `82984cdde6d0801e2d79753ce39645bc658a3266` is pushed
-clean. Its matching-pin native run passes all 50 tests in 2.47 seconds, with
-241/241 statements covered, zero exclusions, and no failures/errors/skips.
-Ruff, formatting, and dependency checks pass. The installed 0.1.1 candidate
-matches the manifest without an override. Hassfest reports exactly the known
-publication `todo`. [Current CI](https://github.com/jeffglousher/core/actions/runs/34298154970)
-passes both jobs, including typing, generated requirements, unchanged native
-setup, full-tree general checks, and contribution hooks. Its separate hassfest
-report is blocked only on dependency publication, with no other findings or
-warnings; green CI does not complete that gate. The [new matching-pin receipt](INITIAL_PIN_VALIDATION_20260908.json)
-is separate from the earlier live receipt. The prior Core `cd495263eed9794a02a19efb797206e4ff67ef8f` passed
-50 related tests locally on the user's Linux HA host, with zero failures,
-errors, or skips and 241/241 statements covered (100%, zero exclusions).
-The three new tests verify default, enabled, and disabled Assist settings saved
-through the real configuration flow. At that checkpoint production files were unchanged from `25e04203`.
-[Previous native CI](https://github.com/jeffglousher/core/actions/runs/34260917145)
-passes both jobs for this exact revision, including all 50 tests, scoped checks,
-unchanged setup, native hooks, and generated-file validation. The previous
-[native integration job](https://github.com/jeffglousher/core/actions/runs/34251664631)
-passes 47 tests with 241/241 statements covered (100%, zero exclusions).
-The new test fails against the previous production code and passes with the fix.
-The same run also passes unchanged native setup, full-tree general hooks,
-standard contribution hooks, and clean generated/publication validation.
-These automated checks remain valid; they did not detect the live proxy's
-client-version rejection of published 0.1.0.
-
-The earlier external-Chrome OAuth test completed on the isolated native instance
-at `25e04203`. HA saved one loaded account and one conversation subentry with
-default Assist enabled. A normal restart preserved that same entry and subentry;
-this does not prove token rotation. The first chat failed with HTTP 426. A separate
-call using the exact published client, selected `grok-4.6`, and no tools failed
-identically: the provider interpreted version `0.1.0` as an outdated CLI build
-and required at least `0.1.202`.
-
-That live check used the local 0.1.1 candidate wheel in the isolated runtime and
-its development-test environment. Only the client version changed then; all
-seven Core source files were unchanged. Native Core tests passed again: 50 tests,
-241/241 statements, no failures/errors/skips. Live chat/history pass in 8.72
-seconds; Assist controls the exposed helper through a native tool call/result,
-while the unexposed helper stays unchanged. The exposed helper was restored off.
-Normal restart preserves the same account/subentry and chat/history pass again
-in 9.29 seconds. Normal removal deletes the disposable account and conversation
-entity without requiring restart. The empty isolated instance was then stopped
-normally; its process is absent and port closed, with zero late-task warnings.
-[Runtime evidence](RUNTIME_VERIFICATION.md) records the wheel and temporary
-override; the [redacted receipt](INITIAL_LIVE_ACCEPTANCE_20260908.json) records
-the bounded historical results. Upstream submission remains on hold for publication,
-exact-published-dependency validation, upstream freshness, and human review. Public logo
-delivery still needs checking after the Brands merge.
-
-[The 23-contribution design stack](STACK.md) remains preserved. The new initial
-submission candidates do not claim that all later layers were replayed onto
-today's upstream. The shutdown and client compatibility/storage fixes still
-need carrying into later layers
-and retesting; no all-stack green claim is made. Package versions 0.2–0.5 remain
-unpublished; speech and later Core layers retain the separate
-`has-entity-name: todo` blocker. No Bronze,
-Gold, or Platinum award is claimed.
-
-[Current native evidence](STAGED_READINESS.md) distinguishes the current source-checkout
-candidate from historical published-0.1.0 runs. [Runtime verification](RUNTIME_VERIFICATION.md)
-separates the isolated initial checks from the earlier full-stack deployment:
-dogfood `18be3997`, Core `b8be5c4f`, and client `f58ec77a`.
-This work did not redeploy or replace that full stack.
-
-Under [Home Assistant's AI policy](https://developers.home-assistant.io/docs/ai_policy),
-a human must review, understand, and be able to explain every submitted change.
-Private credentials, host inventory, raw deployment logs, and media samples
-are excluded from this public packet.
+All original template sections, comments, and checkbox labels remain intact.
+The unchecked change-type alternatives and Core dependency-upgrade comparison
+are inapplicable. The two-other-PRs box remains as you left it in draft #39.
+The docs Brands-PR box stays open until an actual PR exists in
+`home-assistant/brands`; a fork-only review draft does not complete that item.
+The descriptions link to all three actual fork PRs.

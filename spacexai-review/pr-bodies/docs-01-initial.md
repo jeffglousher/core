@@ -13,11 +13,11 @@
     additional information section.
 -->
 
-I'm documenting the new SpaceXAI integration so people with an eligible xAI subscription can add Grok as a conversation agent in Home Assistant. The page covers browser sign-in, model and instruction settings, Assist access, troubleshooting, and removal.
+I'm documenting the SpaceXAI conversation integration for people with an eligible xAI subscription. The page covers browser sign-in, model and instruction settings, Assist access, troubleshooting, and removal.
 
-I'm keeping this first contribution focused on conversation. The page explains that Assist is selected by default, how to disable it, and which messages and entity data are sent to xAI. It also makes clear that this is a community-maintained integration and links to the provider's privacy information and terms.
+The page explains that Assist is enabled by default, how to disable it, and which messages and entity data are sent to xAI. It identifies the integration as community-maintained and links to the provider's privacy information and terms.
 
-This is one new integration page, based on `next`. The documentation checks and prescribed Jekyll build pass. The [review record](https://github.com/jeffglousher/core/blob/codex/spacexai-validation/spacexai-review/FIRST_WAVE_READINESS.md#documentation-and-brands) contains the exact-source results and remaining preview checks.
+This adds one integration page on `next`. The prose checks and prescribed [Jekyll build](https://github.com/jeffglousher/core/actions/runs/34245078515) pass.
 
 ## Type of change
 <!--
@@ -39,8 +39,8 @@ This is one new integration page, based on `next`. The documentation checks and 
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: Not opened yet; [prepared Core changes](https://github.com/jeffglousher/core/compare/38aacedef39eb3f077ce4a112a58bf7286af5e2c...82984cdde6d0801e2d79753ce39645bc658a3266) on `codex/spacexai/initial-release-0-1`.
-- Link to parent pull request in the Brands repository: Not opened yet; [prepared Brands changes](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
+- Link to parent pull request in the codebase: [jeffglousher/core#39](https://github.com/jeffglousher/core/pull/39).
+- Link to parent pull request in the Brands repository: [jeffglousher/brands#1](https://github.com/jeffglousher/brands/pull/1).
 - This PR fixes or closes issue: Not applicable; this documents a new integration.
 
 ## Checklist

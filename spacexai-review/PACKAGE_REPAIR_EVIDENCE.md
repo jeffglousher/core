@@ -1,6 +1,13 @@
 # Current package boundary and release evidence — September 8, 2026
 
-## Current correction — unpublished 0.1.1
+## Current publication — 0.1.1
+
+Client 0.1.1 is published from tagged release `da47fd71fcb55012fbe182bb445ad36b81c60f51`.
+Published artifacts, provenance, and all six clean installs pass verification.
+Core also passes its release-backed native checks, including clean hassfest.
+The [publication receipt](PACKAGE_RELEASE_0_1_1.json) records exact sources and results.
+
+## Historical candidate checkpoint — unpublished 0.1.1
 
 The published 0.1.0 package passes the artifact checks below but failed initial
 live conversation with HTTP 426. Client 0.1.1 at

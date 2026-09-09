@@ -1,5 +1,9 @@
 # Current 23-contribution validation
 
+This is a historical validation checkpoint. For the current published 0.1.1
+dependency and Core validation, use the [current handoff](README.md) and
+[publication receipt](PACKAGE_RELEASE_0_1_1.json).
+
 ## Current dependency and candidate checkpoint
 
 September 8, 2026. Python 0.1.0 is published from `155d76c5b940108be707bb379c02d476b893b758`

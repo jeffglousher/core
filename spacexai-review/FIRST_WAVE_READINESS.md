@@ -1,5 +1,9 @@
 # SpaceXAI first-wave readiness
 
+This is an archived pre-publication checkpoint. Client 0.1.1 is now published
+and release-backed Core validation passes; use the [current handoff](README.md)
+and [publication receipt](PACKAGE_RELEASE_0_1_1.json) for the current status.
+
 Verified September 8, 2026. The initial Python package is published and its
 post-publication checks pass. Three HA companion contributions remain prepared
 for review, not submitted upstream. The contributor has confirmed reading and
