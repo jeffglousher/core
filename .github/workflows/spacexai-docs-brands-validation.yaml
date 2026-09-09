@@ -10,7 +10,7 @@ on:
       docs-ref:
         description: Exact initial documentation commit to validate
         required: true
-        default: 7cb7f031a13e0964d5612707cbaa0048b141a973
+        default: 737c9022f862149f38e8cd380891aa72238bb97e
         type: string
       brands-ref:
         description: Exact Brands commit to validate
@@ -39,7 +39,7 @@ jobs:
       matrix:
         layer: ${{ fromJSON(inputs.include-followups && '["initial","final"]' || '["initial"]') }}
     env:
-      DOCS_REF: ${{ matrix.layer == 'initial' && (inputs.docs-ref || '7cb7f031a13e0964d5612707cbaa0048b141a973') || '69221dc8a853972e4b4fcbf78d4fbba8047b393d' }}
+      DOCS_REF: ${{ matrix.layer == 'initial' && (inputs.docs-ref || '737c9022f862149f38e8cd380891aa72238bb97e') || '69221dc8a853972e4b4fcbf78d4fbba8047b393d' }}
     defaults:
       run:
         working-directory: docs
