@@ -1,10 +1,22 @@
-# SpaceXAI integration PR drafts
+# SpaceXAI integration submissions
 
-The complete descriptions below are posted to the three existing fork drafts
-with your approval. Their contents were read back and verified. They focus on
-the integration, its behavior, validation, and companion contributions.
-Your approved review checkboxes are recorded; titles, branches, and draft status
-are unchanged.
+The actual Home Assistant upstream drafts are created and cross-linked:
+
+- [Core #181709](https://github.com/home-assistant/core/pull/181709), targeting `dev`, with the [complete Core write-up](upstream-pr-bodies/core-01-initial.md).
+- [Brands #11129](https://github.com/home-assistant/brands/pull/11129), targeting `master`, with the [complete Brands write-up](upstream-pr-bodies/brands-01-initial.md).
+- [Documentation #48027](https://github.com/home-assistant/home-assistant.io/pull/48027), targeting `next`, with the [complete documentation write-up](upstream-pr-bodies/docs-01-initial.md).
+
+Each submission uses `codex/spacexai/upstream-initial` in its respective fork,
+with one focused commit on the upstream base fetched for submission:
+
+- Core: `0793f36fb66de6a759479cf00d8142edba36b151`, based on `005d3fb369c3abf84a151c09d53f53cce27523d9`.
+- Brands: `a82077c6aaafd2f1efd8872b41caf97f46f8d4cf`, based on `1a8f7ea2f5fb862db615fa5fcb78b9a70f29c579`.
+- Documentation: `7cb7f031a13e0964d5612707cbaa0048b141a973`, based on `9ec3189633c7905570e5012d52200e9000054c68`.
+
+The integration, tests, artwork, and documentation page are unchanged from the
+approved staging versions. All posted bodies were read back and verified.
+The upstream PRs remain drafts while their own checks run; do not create duplicates.
+The original fork drafts below remain unchanged staging records.
 
 ## Python package publication
 
@@ -20,12 +32,18 @@ distribution match the verified release artifacts. Post-publication source,
 cryptographic provenance, and all six clean-install checks pass.
 The [publication receipt](PACKAGE_RELEASE_0_1_1.json) records the verified sources.
 
-Core's dependency-transparency rule is complete. [Published-dependency Core validation](https://github.com/jeffglousher/core/actions/runs/34312244846)
+Core's dependency-transparency rule is complete. [Published-dependency Core validation](https://github.com/jeffglousher/core/actions/runs/34315017451)
 passes both jobs using the actual PyPI package: 50 tests, 100% statement coverage,
 native setup and hooks, generated wiring, and hassfest with zero findings.
 No local package substitute or publication exception is used.
 
-## Core
+[Companion validation](https://github.com/jeffglousher/core/actions/runs/34315264556)
+passes the native documentation linters and prescribed Jekyll build, plus the
+full Brands validator: 19,237 images checked with zero issues. This run tests only
+the initial submissions; later documentation and blueprint validation require
+an explicit opt-in.
+
+## Core staging record
 
 **Title:** Add SpaceXAI conversation integration
 
@@ -39,7 +57,7 @@ Do not create a duplicate Core PR.
 - Scope: 18 changed files.
 - Current source: `359b12ec6b6c327489c98654ee557f3861dc600a`.
 
-## Brands
+## Brands staging record
 
 **Title:** Add SpaceXAI integration branding
 
@@ -52,7 +70,7 @@ with the posted [complete Brands write-up](pr-bodies/brands-01-initial.md).
 - Scope: eight PNG assets.
 - Current source: `e3ac8da8bf579ec54210cc211e1eaa0768052679`.
 
-## Documentation
+## Documentation staging record
 
 **Title:** Document the SpaceXAI conversation integration
 
@@ -65,17 +83,15 @@ with the posted [complete documentation write-up](pr-bodies/docs-01-initial.md).
 - Scope: one integration page.
 - Current source: `44526b046fa26d4ddf0ab037850a54e30ecbf1d0`.
 
-## Submission details
+## Template and staging details
 
-These are review drafts on your forks. Do not merge them into the fixed review
-bases. Before upstream submission, verify the released dependency and current
-upstream compatibility. Preserve review history on the open Core PR.
+Do not merge the fork staging drafts into their fixed review bases. Preserve
+the history of every open PR; the new submissions did not rewrite those branches.
 
 All original template sections, comments, and checkbox labels remain intact.
 The unchecked change-type alternatives and Core dependency-upgrade comparison
 are inapplicable. The two-other-PRs box remains as you left it in draft #39.
-The docs Brands-PR box stays open until an actual PR exists in
-`home-assistant/brands`; a fork-only review draft does not complete that item.
-The docs branch confirmation stays open for upstream submission to `next`;
-the current fork draft intentionally targets its fixed review base.
-The descriptions link to all three actual fork PRs.
+The upstream documentation write-up checks both the Brands-PR and correct-branch
+confirmations: Brands #11129 exists and documentation #48027 targets `next`.
+The preserved staging descriptions retain their earlier fork links and checkbox
+states. Use the upstream descriptions linked above for the current submissions.

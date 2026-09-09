@@ -13,7 +13,7 @@ on:
       core-ref:
         description: Exact Core commit to validate
         required: true
-        default: 359b12ec6b6c327489c98654ee557f3861dc600a
+        default: 0793f36fb66de6a759479cf00d8142edba36b151
         type: string
       client-ref:
         description: Exact client source commit to install or verify against PyPI
@@ -37,7 +37,7 @@ on:
         type: boolean
       base-ref:
         description: Exact upstream base for contribution-scoped native hooks
-        default: 38aacedef39eb3f077ce4a112a58bf7286af5e2c
+        default: 005d3fb369c3abf84a151c09d53f53cce27523d9
         type: string
 
 permissions:
@@ -72,7 +72,7 @@ jobs:
       - name: Check out Core under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.core-ref || '359b12ec6b6c327489c98654ee557f3861dc600a' }}
+          ref: ${{ inputs.core-ref || '0793f36fb66de6a759479cf00d8142edba36b151' }}
           path: core
           persist-credentials: false
       - name: Check out subscription client under test
