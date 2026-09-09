@@ -30,7 +30,7 @@ Setup uses browser-based OAuth device authorization, validates the account and a
 
 The unofficial `spacexai-subscription-client` library handles OAuth device authorization and subscription API requests. Home Assistant's OAuth helpers manage token refresh and persistence. The integration uses Home Assistant's shared HTTP sessions, conversation history, and LLM tool interface.
 
-I've tested browser sign-in, conversation history, control of an exposed helper while an unexposed helper stays unchanged, conversation after restart, and account removal. All 50 integration tests pass locally on Linux and in the integration-validation workflow with 100% statement coverage.
+I've tested browser sign-in, conversation history, control of an exposed helper while an unexposed helper stays unchanged, conversation after restart, and account removal. All 52 integration tests pass in the Linux integration-validation workflow with 100% statement coverage.
 
 ## Type of change
 
@@ -63,7 +63,7 @@ I've tested browser sign-in, conversation history, control of an exposed helper 
 - Link to frontend pull request: Not applicable.
 - Brands pull request: [home-assistant/brands#11129](https://github.com/home-assistant/brands/pull/11129).
 - New dependency: `spacexai-subscription-client==0.1.1` — [PyPI](https://pypi.org/project/spacexai-subscription-client/0.1.1/), [release](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.1), [source](https://github.com/jeffglousher/spacexai-subscription-client/tree/v0.1.1), [changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.1/CHANGELOG.md).
-- Testing: [Integration validation](https://github.com/jeffglousher/core/actions/runs/34315017451) passes all 50 integration tests against the PyPI package, with 100% statement coverage, formatting, typing, native hooks, generated requirements, and hassfest. [Library release checks](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34304360439) pass 130 tests with 100% statement coverage on Python 3.12–3.14, with verified wheel and source-distribution installations.
+- Testing: [Integration validation](https://github.com/jeffglousher/core/actions/runs/34347124653) passes all 52 integration tests against the PyPI package, with 100% statement coverage, formatting, typing, native hooks, generated requirements, and hassfest. [Library release checks](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34304360439) pass 130 tests with 100% statement coverage on Python 3.12–3.14, with verified wheel and source-distribution installations.
 
 ## Checklist
 

@@ -19,7 +19,7 @@ I'm documenting the SpaceXAI conversation integration for people with an eligibl
 
 The page explains that Assist is enabled by default, how to disable it, and which messages and entity data are sent to xAI. It identifies the integration as community-maintained and links to the provider's privacy information and terms.
 
-This adds one integration page for an upcoming Home Assistant release. The prose checks and prescribed [Jekyll build](https://github.com/jeffglousher/core/actions/runs/34315264556) pass.
+This adds one integration page for an upcoming Home Assistant release. The prose checks and prescribed [Jekyll build](https://github.com/jeffglousher/core/actions/runs/34347046875) pass.
 
 ## Type of change
 

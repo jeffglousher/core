@@ -6,17 +6,22 @@ The actual Home Assistant upstream drafts are created and cross-linked:
 - [Brands #11129](https://github.com/home-assistant/brands/pull/11129), targeting `master`, with the [complete Brands write-up](upstream-pr-bodies/brands-01-initial.md).
 - [Documentation #48027](https://github.com/home-assistant/home-assistant.io/pull/48027), targeting `next`, with the [complete documentation write-up](upstream-pr-bodies/docs-01-initial.md).
 
-Each submission uses `codex/spacexai/upstream-initial` in its respective fork,
-with one focused commit on the upstream base fetched for submission:
+Each submission uses `codex/spacexai/upstream-initial` in its respective fork.
+Review fixes are added as new commits, preserving the submitted history:
 
-- Core: `0793f36fb66de6a759479cf00d8142edba36b151`, based on `005d3fb369c3abf84a151c09d53f53cce27523d9`.
+- Core: `d6b69cd9656e898d1e6ca6bf135f72ff38e6b05b`, based on `005d3fb369c3abf84a151c09d53f53cce27523d9`.
 - Brands: `a82077c6aaafd2f1efd8872b41caf97f46f8d4cf`, based on `1a8f7ea2f5fb862db615fa5fcb78b9a70f29c579`.
-- Documentation: `7cb7f031a13e0964d5612707cbaa0048b141a973`, based on `9ec3189633c7905570e5012d52200e9000054c68`.
+- Documentation: `737c9022f862149f38e8cd380891aa72238bb97e`, based on `9ec3189633c7905570e5012d52200e9000054c68`.
 
-The integration, tests, artwork, and documentation page are unchanged from the
-approved staging versions. All posted bodies were read back and verified.
-The upstream PRs remain drafts while their own checks run; do not create duplicates.
+Core validates the saved conversation model during setup and reports a translated
+setup error when it is unavailable. Tests cover the error, recovery, and catalog
+ordering; documentation explains recovery. The artwork is unchanged.
+The linked write-ups reflect the verified validation below; checkbox states are unchanged.
+The upstream PRs remain drafts; do not create duplicates.
 The original fork drafts below remain unchanged staging records.
+
+As of September 9, Core's latest upstream commit has no attached checks.
+The independent fork validation below does not replace upstream CI or maintainer review.
 
 ## Python package publication
 
@@ -32,12 +37,15 @@ distribution match the verified release artifacts. Post-publication source,
 cryptographic provenance, and all six clean-install checks pass.
 The [publication receipt](PACKAGE_RELEASE_0_1_1.json) records the verified sources.
 
-Core's dependency-transparency rule is complete. [Published-dependency Core validation](https://github.com/jeffglousher/core/actions/runs/34315017451)
-passes both jobs using the actual PyPI package: 50 tests, 100% statement coverage,
+Core's dependency-transparency rule is complete. [Published-dependency Core validation](https://github.com/jeffglousher/core/actions/runs/34347124653)
+passes both jobs using the actual PyPI package: 52 tests, 247/247 statements covered,
 native setup and hooks, generated wiring, and hassfest with zero findings.
-No local package substitute or publication exception is used.
+There are no test failures, errors, skips, or coverage exclusions. No local package
+substitute or publication exception is used. This is native Linux CI verification;
+the expanded suite was not rerun on the user's HA device, and no new live acceptance
+or deployment is claimed.
 
-[Companion validation](https://github.com/jeffglousher/core/actions/runs/34315264556)
+[Companion validation](https://github.com/jeffglousher/core/actions/runs/34347046875)
 passes the native documentation linters and prescribed Jekyll build, plus the
 full Brands validator: 19,237 images checked with zero issues. This run tests only
 the initial submissions; later documentation and blueprint validation require
