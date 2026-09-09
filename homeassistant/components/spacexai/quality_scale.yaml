@@ -10,7 +10,9 @@ rules:
   common-modules: done
   config-flow-test-coverage: done
   config-flow: done
-  dependency-transparency: done
+  dependency-transparency:
+    status: todo
+    comment: Publish and verify client 0.1.1 before upstream submission.
   docs-actions:
     status: exempt
     comment: The integration does not provide actions.
