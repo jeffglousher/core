@@ -13,7 +13,7 @@
     additional information section.
 -->
 
-Document the new SpaceXAI integration so people with an eligible xAI subscription can add Grok as a conversation agent in Home Assistant. The page covers browser sign-in, model and instruction settings, Assist access, troubleshooting, and removal.
+I'm documenting the new SpaceXAI integration so people with an eligible xAI subscription can add Grok as a conversation agent in Home Assistant. The page covers browser sign-in, model and instruction settings, Assist access, troubleshooting, and removal.
 
 I'm keeping this first contribution focused on conversation. The page explains that Assist is selected by default, how to disable it, and which messages and entity data are sent to xAI. It also makes clear that this is a community-maintained integration and links to the provider's privacy information and terms.
 

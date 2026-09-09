@@ -26,7 +26,7 @@ Do not recreate the merged 0.1.0 draft or republish that version.
 ## Next: review the Python 0.1.1 correction
 
 Review the [completed PR write-up](pr-bodies/python-01-compatibility.md) and
-[candidate diff](https://github.com/jeffglousher/spacexai-subscription-client/compare/main...codex/initial-client-compatibility)
+[open the prepared library PR form](https://github.com/jeffglousher/spacexai-subscription-client/compare/main...codex/initial-client-compatibility?quick_pull=1&title=Fix+subscription+proxy+compatibility+for+0.1.1)
 at `a7f7afb514e6a0362d927124fd01b75d25885af9`, then create and merge its library
 PR after review. No 0.1.1 PR or release has been created.
 [CI](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34290919712)
@@ -38,24 +38,57 @@ verify the actual PyPI files, complete the publication rule, and rerun
 exact-published-dependency checks. Prior temporary-override acceptance is
 historical candidate evidence, not a published-artifact check.
 
+### Your merge and publication steps
+
+1. Open the library form above and paste its complete write-up. The destination
+   is `jeffglousher/spacexai-subscription-client`, base `main`, compare
+   `codex/initial-client-compatibility`. Review the nine changed files and description.
+2. If you create a draft, mark it **Ready for review** after your review. Wait for
+   **Python 3.12**, **Python 3.13**, and **Python 3.14** to pass on that PR and
+   resolve any conversations. The repository does not require a second reviewer.
+3. Select **Create a merge commit** and confirm the merge. Do not bypass checks.
+   This preserves the reviewed candidate commit. Keep the branch for now.
+4. Tell me it is merged. I can verify the resulting `main` commit and its checks,
+   prepare the exact `v0.1.1` tag/release, and verify the published distributions.
+   The release must target that verified current `main`, not the unmerged branch.
+5. When the release preflight and all three release-check jobs pass, you approve
+   the **pypi** environment deployment. That approval must remain yours.
+
+The existing publishing workflow runs when a GitHub release is published;
+pushing a tag alone does not publish. Do not overwrite `v0.1.0`. After verifying
+PyPI 0.1.1, complete Core's publication rule and rerun validation using PyPI rather
+than the source checkout. Refresh and revalidate the upstream base before any
+upstream Core submission.
+
 <a id="create-the-three-companion-fork-drafts"></a>
 
-## Prepared Core fork draft — after the corrected dependency is published
+## Your three companion draft forms
 
-For the later Core step, read its [write-up](pr-bodies/core-01-initial.md)
-and [exact diff](https://github.com/jeffglousher/core/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/initial-release-0-1)
-and make sure you understand the change before creating the draft.
+These are review drafts on your forks, not submissions to Home Assistant.
+You can create them for review while the library publication is pending. Do not
+merge these drafts into their fixed review-base branches; those bases preserve
+the isolated diffs. Upstream submission waits for the published dependency and
+the remaining review gates.
 
-The title is **Add SpaceXAI conversation integration**. This command creates a
-draft in `jeffglousher/core`, not `home-assistant/core`. Its absolute body-file
-path works from any directory on this device. It is provided for you to run;
-it has not been executed.
+Open each form, paste the matching **complete write-up**, review the preview,
+and select **Create draft pull request** from the create-button dropdown.
+The links select the branches and title; they do not submit anything or prefill
+the body. Keep every template section and checkbox, including unchecked choices.
 
-```shell
-gh pr create --draft --repo jeffglousher/core --base codex/spacexai/review-base-release-0-1 --head codex/spacexai/initial-release-0-1 --title "Add SpaceXAI conversation integration" --body-file "C:/Users/jeffg/dev/core/.worktrees/spacexai-validation/spacexai-review/pr-bodies/core-01-initial.md"
-```
+1. **Core:** [open draft form](https://github.com/jeffglousher/core/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/initial-release-0-1?quick_pull=1&title=Add+SpaceXAI+conversation+integration)
+   · [complete write-up](pr-bodies/core-01-initial.md). Confirm `jeffglousher/core`,
+   base `codex/spacexai/review-base-release-0-1`, compare `codex/spacexai/initial-release-0-1`.
+   The preview contains 18 changed files in four commits.
+2. **Brands:** [open draft form](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial?quick_pull=1&title=Add+SpaceXAI+integration+branding)
+   · [complete write-up](pr-bodies/brands-01-initial.md). Confirm `jeffglousher/brands`,
+   base `codex/spacexai/review-base`, compare `spacexai-initial`.
+   The preview contains eight PNG assets in one commit.
+3. **Documentation:** [open draft form](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/docs-initial-release-0-1?quick_pull=1&title=Document+the+SpaceXAI+conversation+integration)
+   · [complete write-up](pr-bodies/docs-01-initial.md). Confirm `jeffglousher/home-assistant.io`,
+   base `codex/spacexai/review-base-release-0-1`, compare `codex/spacexai/docs-initial-release-0-1`.
+   The preview contains one new integration page in one commit.
 
-Share the resulting Core draft URL before proceeding to the next contribution.
+Share the resulting URLs so the prepared companion references can be updated.
 Your prior Core code-understanding and generated-code-review confirmations remain
 recorded. Those boxes are cleared for this refreshed draft until you review the
 new dependency metadata and generated requirement. The 0.1.1 candidate
@@ -65,12 +98,14 @@ The [checkbox notes](FIRST_WAVE_READINESS.md#draft-descriptions-and-checkboxes)
 explain which items are verified, which do not apply, and which still need
 actual testing, PR creation, or your personal confirmation.
 
-## Queued companions
-
-Keep these separate for later, one-at-a-time review and creation:
-
-- **Add SpaceXAI integration branding** — [write-up](pr-bodies/brands-01-initial.md), [preview](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
-- **Document the SpaceXAI conversation integration** — [write-up](pr-bodies/docs-01-initial.md), [preview](https://github.com/jeffglousher/home-assistant.io/compare/codex/spacexai/review-base-release-0-1...codex/spacexai/docs-initial-release-0-1).
+All applicable verified automated and local-test boxes are checked. After you
+review this revision, you can check Core's code-understanding and generated-code
+review boxes. Leave development-checklist and perfect-PR compliance open until
+publication, released-package checks, and upstream readiness are complete.
+The docs Brands-PR box refers to an actual PR in `home-assistant/brands`; a
+fork-only review draft does not complete it. Review of two other Core PRs is
+your optional personal confirmation, not an automated gate. Other unchecked
+change types and the new-integration dependency-upgrade comparison are not applicable.
 
 The Core candidate has four commits: the initial integration, focused shutdown
 fix, three Assist-choice setup tests, and corrected 0.1.1 dependency metadata.

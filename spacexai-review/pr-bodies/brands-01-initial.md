@@ -11,7 +11,7 @@
   maintainers why we should accept this pull request.
 -->
 
-Add the icons and logos for the new SpaceXAI conversation integration. This change contains only the eight PNG assets under `core_integrations/spacexai`: light and dark variants at standard and high-density resolutions.
+I'm adding the icons and logos for the new SpaceXAI conversation integration. This change contains only the eight PNG assets under `core_integrations/spacexai`: light and dark variants at standard and high-density resolutions.
 
 The artwork comes from the [official SpaceXAI and Grok asset pack](https://data.x.ai/logos/SpaceXAI_Grok_Assets.zip). The square symbols are centered on transparent icon canvases; the landscape symbols are trimmed and resized proportionally for the logos. The integration itself is community-maintained, not an official xAI product.
 
