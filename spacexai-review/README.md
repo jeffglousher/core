@@ -20,7 +20,7 @@ distribution match the verified release artifacts. Post-publication source,
 cryptographic provenance, and all six clean-install checks pass.
 The [publication receipt](PACKAGE_RELEASE_0_1_1.json) records the verified sources.
 
-Core's dependency-transparency rule is complete. [Published-dependency Core validation](https://github.com/jeffglousher/core/actions/runs/34304854117)
+Core's dependency-transparency rule is complete. [Published-dependency Core validation](https://github.com/jeffglousher/core/actions/runs/34312244846)
 passes both jobs using the actual PyPI package: 50 tests, 100% statement coverage,
 native setup and hooks, generated wiring, and hassfest with zero findings.
 No local package substitute or publication exception is used.
@@ -37,7 +37,7 @@ Do not create a duplicate Core PR.
 - Base: `codex/spacexai/review-base-release-0-1`.
 - Compare: `codex/spacexai/initial-release-0-1`.
 - Scope: 18 changed files.
-- Current source: `a880ed58730093540cd768db8abd6bece8656989`.
+- Current source: `359b12ec6b6c327489c98654ee557f3861dc600a`.
 
 ## Brands
 

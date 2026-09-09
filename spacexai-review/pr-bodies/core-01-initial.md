@@ -26,9 +26,9 @@ None. This adds a new integration.
 
 I'm adding a community-maintained SpaceXAI integration that lets people use Grok as a conversation agent with their xAI subscription.
 
-Setup uses browser-based OAuth device authorization, validates the account and available models, and creates one conversation agent per account. Users can choose the model and instructions. Assist control is enabled by default, can be disabled during setup, and respects Home Assistant's exposed entities. No API key or installed CLI is required.
+Setup uses browser-based OAuth device authorization, validates the account and available models, and creates one conversation agent per account. Users choose the model and instructions during setup. Assist control is enabled by default, can be disabled during setup, and respects Home Assistant's exposed entities. No API key or installed CLI is required.
 
-The unofficial `spacexai-subscription-client` library handles OAuth and provider requests. The integration uses Home Assistant's shared HTTP sessions, conversation history, LLM tool interface, and token persistence.
+The unofficial `spacexai-subscription-client` library handles OAuth device authorization and subscription API requests. Home Assistant's OAuth helpers manage token refresh and persistence. The integration uses Home Assistant's shared HTTP sessions, conversation history, and LLM tool interface.
 
 I've tested browser sign-in, conversation history, control of an exposed helper while an unexposed helper stays unchanged, conversation after restart, and account removal. All 50 integration tests pass locally on Linux and in the integration-validation workflow with 100% statement coverage.
 
@@ -63,7 +63,7 @@ I've tested browser sign-in, conversation history, control of an exposed helper 
 - Link to frontend pull request: Not applicable.
 - Brands pull request: [jeffglousher/brands#1](https://github.com/jeffglousher/brands/pull/1).
 - New dependency: `spacexai-subscription-client==0.1.1` — [PyPI](https://pypi.org/project/spacexai-subscription-client/0.1.1/), [release](https://github.com/jeffglousher/spacexai-subscription-client/releases/tag/v0.1.1), [source](https://github.com/jeffglousher/spacexai-subscription-client/tree/v0.1.1), [changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.1/CHANGELOG.md).
-- Testing: [Integration validation](https://github.com/jeffglousher/core/actions/runs/34304854117) passes all 50 integration tests against the PyPI package, with 100% statement coverage, formatting, typing, native hooks, generated requirements, and hassfest. [Library release checks](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34304360439) pass 130 tests with 100% statement coverage on Python 3.12–3.14, with verified wheel and source-distribution installations.
+- Testing: [Integration validation](https://github.com/jeffglousher/core/actions/runs/34312244846) passes all 50 integration tests against the PyPI package, with 100% statement coverage, formatting, typing, native hooks, generated requirements, and hassfest. [Library release checks](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34304360439) pass 130 tests with 100% statement coverage on Python 3.12–3.14, with verified wheel and source-distribution installations.
 
 ## Checklist
 

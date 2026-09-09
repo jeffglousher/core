@@ -13,7 +13,7 @@ on:
       core-ref:
         description: Exact Core commit to validate
         required: true
-        default: a880ed58730093540cd768db8abd6bece8656989
+        default: 359b12ec6b6c327489c98654ee557f3861dc600a
         type: string
       client-ref:
         description: Exact client source commit to install or verify against PyPI
@@ -72,7 +72,7 @@ jobs:
       - name: Check out Core under test
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.core-ref || 'a880ed58730093540cd768db8abd6bece8656989' }}
+          ref: ${{ inputs.core-ref || '359b12ec6b6c327489c98654ee557f3861dc600a' }}
           path: core
           persist-credentials: false
       - name: Check out subscription client under test
