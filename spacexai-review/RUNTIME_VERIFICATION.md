@@ -1,6 +1,16 @@
 # Current runtime evidence — September 8, 2026
 
-## Isolated initial-layer acceptance work
+Current Core `82984cdde6d0801e2d79753ce39645bc658a3266` requires client 0.1.1
+and keeps its publication rule open. Its matching-pin native run passes all
+50 tests with 241/241 statements covered and no failures/errors/skips; installed
+candidate 0.1.1 matches the requirement without an override. Only three metadata/
+generated files changed, not runtime Python. See [current readiness](FIRST_WAVE_READINESS.md)
+and the [separate matching-pin receipt](INITIAL_PIN_VALIDATION_20260908.json)
+for the validation scope. The live receipt below is preserved history: it tested
+the same client candidate with an explicit override of the older Core pin.
+The test service remains stopped; this packet update did not deploy new code.
+
+## Historical isolated initial-layer acceptance
 
 A separate native test instance on the user's HA host used initial Core production
 `25e04203dad36c741b56ff7a789b85f6a76b7f7e`, now with the unpublished client 0.1.1
@@ -11,9 +21,9 @@ All six installed client files match that wheel and its Windows working-tree
 source; all seven Core source files remain unchanged. The local source uses
 CRLF while Git/Linux uses LF, so this hash does not predict a future Linux-built
 release wheel. Only client 0.1.0 → 0.1.1 changed in the isolated runtime and
-development-test environment; dependency checks pass. HA uses the explicit
+development-test environment; dependency checks pass. The live test used the explicit
 temporary `--skip-pip-packages spacexai-subscription-client` override because
-the shipping manifest still pins 0.1.0. This is not a released-dependency check.
+that tested manifest pinned 0.1.0. This was not a released-dependency check.
 Generated English data uses HA's own tooling. Final state: the disposable
 account is removed and the empty test service is stopped. The installed
 environment and evidence are preserved; the main HA service remains healthy.
@@ -95,8 +105,8 @@ errors, or skips. The main HA remains healthy with its one loaded account and
 four subentries, unchanged by candidate installation or acceptance testing.
 
 The next human step is to review/create/merge the 0.1.1 library PR, then approve
-its protected release. Verify those published artifacts, update Core's dependency,
-and revalidate against the released package afterward; the temporary override
+its protected release. Verify those published artifacts, complete Core's dependency
+publication rule, and revalidate against the released package; the temporary override
 and local wheel cannot establish that gate.
 
 Before the candidate installation, all 50 automated integration tests passed on the user's

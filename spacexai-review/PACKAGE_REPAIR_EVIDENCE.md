@@ -1,6 +1,36 @@
 # Current package boundary and release evidence — September 8, 2026
 
-## Current publication verification — 0.1.0
+## Current correction — unpublished 0.1.1
+
+The published 0.1.0 package passes the artifact checks below but failed initial
+live conversation with HTTP 426. Client 0.1.1 at
+`a7f7afb514e6a0362d927124fd01b75d25885af9` on `codex/initial-client-compatibility`
+corrects the proxy compatibility header while preserving truthful unofficial
+identity and requests `store=False`. No CLI dependency or official third-party
+protocol guarantee is introduced.
+
+[CI 34290919712](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34290919712)
+passes all three Python jobs: 130 tests, 100% statement coverage, lint, typing,
+build, strict Twine, artifact preflight, and isolated wheel/sdist installations.
+Local Windows Python 3.12–3.14 runs also pass 130 tests at 100%, with six clean
+artifact installations. Independent code review found no blockers.
+
+The locally built candidate wheel passes bounded initial-only HA acceptance;
+[runtime evidence](RUNTIME_VERIFICATION.md) records its exact hash, Windows
+newline scope, temporary dependency override, successful checks, and final
+stopped state. This is not evidence of a published 0.1.1 artifact. The candidate
+is committed and pushed; no 0.1.1 PR, tag, release, or PyPI version exists.
+Core now pins this candidate at `82984cdde6d0801e2d79753ce39645bc658a3266`;
+50 matching-pin native tests pass without an override, while the dependency
+publication rule remains explicitly open.
+
+Next, the contributor reviews/creates/merges the [prepared library PR](pr-bodies/python-01-compatibility.md),
+then approves publication through the protected release workflow. Verify the
+actual PyPI distributions, source/tag identity, attestations, and clean installs
+before completing Core's dependency-transparency gate and release-backed checks.
+Do not republish or overwrite 0.1.0. Later package branches remain separate.
+
+## Historical publication verification — 0.1.0
 
 [PR #1](https://github.com/jeffglousher/spacexai-subscription-client/pull/1)
 is merged and [0.1.0 is published on PyPI](https://pypi.org/project/spacexai-subscription-client/0.1.0/).

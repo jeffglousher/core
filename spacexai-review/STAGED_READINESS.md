@@ -14,10 +14,10 @@ Local Windows 3.12–3.14 runs match that count and coverage; six clean artifact
 installations, lint, typing, strict Twine, build/preflight, and independent review
 also pass. No candidate PR or release exists yet.
 
-The locally built candidate wheel is installed only in the isolated initial
-runtime and its development-test environment. Core's seven files are unchanged
-and its manifest still pins 0.1.0; an explicit temporary package override keeps
-the candidate installed. Native Core tests pass again: 50 tests, 241/241
+The earlier locally built candidate wheel was installed only in the isolated
+initial runtime and its development-test environment. Core's seven files were
+unchanged and its manifest then pinned 0.1.0; an explicit temporary override
+kept the candidate installed. Native Core tests passed again: 50 tests, 241/241
 statements, no failures/errors/skips. Actual HA chat/history pass in 8.72 seconds;
 default Assist controls the exposed helper through a native tool call/result,
 while the unexposed helper stays unchanged. The exposed helper was restored off.
@@ -27,10 +27,31 @@ entity without requiring restart. The empty isolated instance was then stopped
 normally: process absent, port closed, zero late-task warnings. Its environment
 and evidence are preserved; the main full stack stays healthy and unchanged.
 The next human step is the
-library PR and protected release, followed by artifact verification, Core pinning,
+library PR and protected release, followed by artifact verification,
 and exact-published-dependency revalidation.
 
-Current initial Core `cd495263eed9794a02a19efb797206e4ff67ef8f` contains three commits
+Current Core `82984cdde6d0801e2d79753ce39645bc658a3266` is pushed clean and
+requires 0.1.1, with dependency transparency `todo` until publication/verification.
+Its matching-pin native run passes 50 tests in 2.47 seconds, 241/241 statements,
+zero exclusions/failures/errors/skips, Ruff check/format, and dependency checks.
+All 27,778 tracked files were compared: only the three intended metadata/generated
+files differ. The installed candidate matches the manifest without an override.
+Hassfest reports exactly the publication finding.
+[Current CI 34298154970](https://github.com/jeffglousher/core/actions/runs/34298154970)
+passes both exact-source jobs: Core `82984cdd`, client `a7f7afb5`,
+installed 0.1.1, 50 tests, 241/241 statements, all four modules at 100%, Ruff,
+MyPy, Pylint, and generated requirements. Unchanged setup, full-tree general
+checks, and all native contribution hooks pass. The independent hassfest report
+is `blocked_only_on_dependency_publication`, exit 1, with exactly that finding
+and no warnings. Green CI does not close the Bronze/publication gate. The run
+uses source-checkout mode. Harness `47cb076e7bb` updates its defaults to this
+pair and passes actionlint. The [new matching-pin receipt](INITIAL_PIN_VALIDATION_20260908.json)
+is separate from the old live-override receipt.
+This does not relabel the historical live receipt or certify a published artifact.
+
+### Previous published-dependency checkpoint
+
+Initial Core `cd495263eed9794a02a19efb797206e4ff67ef8f` contained three commits
 on official dev `38aacedef39eb3f077ce4a112a58bf7286af5e2c`, still exactly 18 files.
 The second commit gives device polling HA background-task shutdown ownership
 and adds one public shutdown regression. The third adds three public-flow tests
@@ -76,10 +97,11 @@ The provider treats header version `0.1.0` as an outdated CLI build, requiring
 at least `0.1.202`. Official source identifies this as a CLI-build version, not
 a documented third-party protocol. A separate compatibility-only probe returned
 one expected text response, followed by the locally built candidate's HA
-successes recorded above. These do not establish readiness of the still-pinned
-0.1.0 release or future published artifact identity.
+successes recorded above. These do not establish future published artifact
+identity or complete the current 0.1.1 publication gate.
 [Runtime evidence](RUNTIME_VERIFICATION.md) records live scope.
-Later layers have not inherited/retested this fix; the old full stack is unchanged.
+Later layers have not inherited/retested the shutdown or client compatibility/
+storage corrections; the old full stack is unchanged.
 
 ### Historical release-backed replay
 

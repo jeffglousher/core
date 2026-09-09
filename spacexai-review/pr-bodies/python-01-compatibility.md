@@ -26,12 +26,14 @@ convention; it is not presented as an official xAI protocol-version contract.
   Assist control pass in the separate initial-only HA instance; the unexposed
   test helper stays unchanged. The same account supports chat after a clean
   restart, and account/entity removal completes without requiring restart.
-  This is a temporary candidate dependency override,
-  not a claim that the Core manifest already pins a published `0.1.1`.
+  That live run used a temporary candidate dependency override. The prepared
+  Core branch now pins `0.1.1` and separately passes all 50 native tests with
+  that exact candidate and no override. Publication is still pending.
 
 ## Release
 
 Review and merge this patch before releasing `v0.1.1` through the existing
 protected publishing workflow. Do not replace `v0.1.0`. After publication and
-artifact verification, update the initial Core dependency and rerun its checks.
+artifact verification, complete the prepared Core publication gate and rerun
+its checks using the actual PyPI package.
 The updated `RELEASING.md` contains the publication checklist.

@@ -6,44 +6,58 @@ The packet is separate from every upstream-shaped contribution diff.
 
 ## Current first-wave submission candidates
 
-Python 0.1.0 is now [published](https://pypi.org/project/spacexai-subscription-client/0.1.0/)
-from release/main `155d76c5b940108be707bb379c02d476b893b758`; its tree exactly
-matches the reviewed initial source below. The package PR is merged.
+Python 0.1.0 is [published](https://pypi.org/project/spacexai-subscription-client/0.1.0/)
+from `155d76c5b940108be707bb379c02d476b893b758`, but live initial conversation
+failed with HTTP 426. The reviewed correction is client 0.1.1 at
+`a7f7afb514e6a0362d927124fd01b75d25885af9` on `codex/initial-client-compatibility`.
+All three Python CI jobs pass 130 tests with 100% statement coverage, artifact
+checks, and clean installations. It is committed and pushed, not published;
+no 0.1.1 PR or release exists.
 
-The current initial Core candidate is `codex/spacexai/initial-release-0-1` at
-`25e04203dad36c741b56ff7a789b85f6a76b7f7e`, two commits on official dev
-`38aacedef39eb3f077ce4a112a58bf7286af5e2c`, with exactly 18 changed files.
-The replay marked `dependency-transparency: done`; the additive repair uses
-HA background-task ownership for device polling and adds a public shutdown
-regression. The original pushed commit is preserved. Native integration checks
-pass 47 tests and 241/241 statements (100%); unchanged native setup, full-tree
-general hooks, standard contribution hooks, and generated/publication validation
-also pass on this head. [Current evidence](STAGED_READINESS.md) retains the exact
-run and limits.
+The current initial Core branch is `codex/spacexai/initial-release-0-1` at
+`82984cdde6d0801e2d79753ce39645bc658a3266`, four commits on official dev
+`38aacedef39eb3f077ce4a112a58bf7286af5e2c` with exactly 18 changed files. It retains the focused
+shutdown repair and default/enabled/disabled Assist setup tests, and now prepares
+the corrected 0.1.1 requirement. The dependency-transparency rule remains `todo`
+until that version is published and verified. The matching-pin native run passes
+50 tests and 241/241 statements with no override;
+[current CI](https://github.com/jeffglousher/core/actions/runs/34298154970) passes
+both integration and full-native-hooks jobs. The separate hassfest report remains
+blocked only on dependency publication; CI success does not close that gate.
+[First-wave readiness](FIRST_WAVE_READINESS.md) records the scope; no completed Bronze or
+upstream-ready status is claimed.
 
-The separate initial-only instance at this head passes configuration/startup,
-real OAuth start/cancel, and clean shutdown/restart with authorization pending.
-No account entry was created; the provider sign-in page awaits human approval.
-Completed login, UI setup, conversation, Assist control, persistence, and removal
-remain pending. This does not update the older full-stack deployment below.
+Bounded initial-only candidate acceptance passes: fresh external-Chrome OAuth,
+chat/history, exposed-helper control with the unexposed helper unchanged,
+same-account restart followed by chat, and normal account/entity removal.
+Those live checks used the verified local 0.1.1 wheel as an explicit override
+of the earlier Core 0.1.0 pin. The empty isolated instance was then stopped;
+its environment and evidence are preserved. The [runtime record](RUNTIME_VERIFICATION.md)
+keeps this history separate from current dependency checks. The old full-stack
+deployment below was not changed.
 
 Initial docs is `codex/spacexai/docs-initial-release-0-1` at
 `44526b046fa26d4ddf0ab037850a54e30ecbf1d0`, one commit on official next
 `1b359d16aca5ba2c6b7983fa36c8c5f2334c5c5a`; the 96-line page is byte-unchanged.
 Brands remains at the source listed below.
 
-Use these candidates for the [three remaining fork drafts](README.md#create-the-three-companion-fork-drafts).
+First review/create/merge the [0.1.1 library correction](README.md#next-review-the-python-011-correction),
+then approve its protected release and verify the published artifacts before
+completing Core's publication gate and the three companion fork drafts.
 The old 23-layer design and all its branch histories remain available below;
 they have not all been replayed onto today's upstream. Follow-ons still use
 unpublished package versions and must retain their publication blockers.
-The shutdown fix has not yet been carried into or retested through these later
-layers; previous green receipts do not certify an updated complete stack.
+The shutdown fix and client compatibility/storage correction have not been
+carried into or retested through these later layers; previous green receipts
+do not certify an updated complete stack.
 
 ## Scope and order
 
 There are 23 prepared contributions: 11 Core, five package, six docs, and one
 Brands contribution. They are not 23 open upstream PRs. The first wave remains
-four contributions: client 0.1.0, initial Core, Brands, and initial docs.
+four contribution areas: the initial client (now requiring corrective 0.1.1),
+initial Core, Brands, and initial docs. The corrective library PR does not add
+a new feature wave or a separate initial Core dependency-upgrade PR.
 
 OAuth-only provider communication belongs in the unofficial Python client.
 Core handles HA adaptation, configuration, lifecycle, and entity/action behavior.
@@ -79,7 +93,7 @@ pass after the coverage tests were inherited. The preserved initial has
 241/241 statements covered (100%), with no excluded statements. This does not
 claim 100% for every follow-on layer or branch coverage.
 [Validation evidence](STAGED_READINESS.md) preserves exact source/run attribution.
-Current `25e04203` passes full native hooks and generated/publication validation
+Historical `25e04203` passed full native hooks and generated/publication validation
 using PyPI. The older initial's publication finding is historical. Unpublished follow-on
 versions and the speech entity-naming rule remain separate blockers.
 
@@ -99,7 +113,7 @@ branch heads; the published initial merge commit is recorded above.
 The initial package owns release-source, matrix, changelog, and distribution
 contract checks; additive parent merges carry them through later releases.
 [Package evidence](PACKAGE_REPAIR_EVIDENCE.md) distinguishes automation from
-uncompleted human review, main merge, publisher setup, and publication.
+historical release checks from the current 0.1.1 human-review/publication gate.
 
 ## Documentation and Brands
 

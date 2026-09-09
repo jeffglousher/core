@@ -25,9 +25,9 @@ I'm adding a community-maintained SpaceXAI integration so people can use Grok as
 
 Setup uses browser-based OAuth device authorization, validates the account and available models, and creates one conversation agent per account. Assist control is selected by default, can be disabled during setup, and respects Home Assistant's exposed entities. There is no API-key fallback or runtime CLI dependency.
 
-The published, unofficial `spacexai-subscription-client` library handles provider communication and OAuth. The integration handles Home Assistant configuration, shared sessions, conversations, tool calls, and token persistence. It targets Bronze, not the full quality scale in this first PR.
+The unofficial `spacexai-subscription-client` library handles provider communication and OAuth. The integration handles Home Assistant configuration, shared sessions, conversations, tool calls, and token persistence. It targets Bronze, not the full quality scale in this first PR.
 
-The integration suite passes all 50 tests locally in a separate Linux environment on my HA host and in native CI, with 100% statement coverage. This includes login cancellation, shutdown, token refresh, provider failures, Assist exposure controls, and saving the default, enabled, or disabled Assist choice during setup. Formatting, typing, lint, hassfest, and generated-file checks pass too. Fresh initial-only OAuth setup and saved-account restart now pass, but live chat with the published client 0.1.0 is blocked by the provider's minimum CLI-version check (HTTP 426). This draft is not ready for submission until the library compatibility fix is reviewed, published, pinned, and retested.
+Fresh initial-only testing covers OAuth setup, conversation history, Assist control of an exposed test helper while an unexposed helper stays unchanged, saved-account restart with another conversation, and account removal. The corrected 0.1.1 client passes these checks. Core now requires that version; it must be published and verified before this draft is ready for upstream submission.
 
 ## Type of change
 <!--
@@ -57,9 +57,9 @@ The integration suite passes all 50 tests locally in a separate Linux environmen
 - Link to developer documentation pull request: Not applicable.
 - Link to frontend pull request: Not applicable.
 - Brands pull request: Not created yet; [prepared branding](https://github.com/jeffglousher/brands/compare/codex/spacexai/review-base...spacexai-initial).
-- New dependency: [PyPI 0.1.0](https://pypi.org/project/spacexai-subscription-client/0.1.0/), [source](https://github.com/jeffglousher/spacexai-subscription-client/tree/v0.1.0), and [release notes](https://github.com/jeffglousher/spacexai-subscription-client/blob/v0.1.0/CHANGELOG.md). This is a new dependency, so there is no previous version to compare.
-- Validation: 50 local Linux tests pass for Core `cd495263` with the published client, with no failures, errors, or skips. [Native CI](https://github.com/jeffglousher/core/actions/runs/34260917145) passes the same suite, formatting, typing, lint, unchanged development setup, native hooks, hassfest, and generated-file validation for that exact revision. No Windows test result is claimed.
-- Live testing: Fresh authorization through external Chrome creates one loaded initial-only account and conversation agent with Assist enabled by default. Published client 0.1.0 then fails chat because the provider interprets its package-version header as an outdated CLI version. With the verified 0.1.1 candidate wheel installed as an explicit test-only dependency override, chat/history, exposed-helper control with native tool calls, an unchanged unexposed helper, saved-account restart followed by chat, and account/entity removal all pass. The unchanged Core source also passes all 50 native tests with that wheel. Only the isolated test account was removed; my main HA was untouched. The Core manifest still pins 0.1.0, so these candidate results do not make this submitted dependency ready.
+- New dependency: `spacexai-subscription-client==0.1.1`, with [prepared source](https://github.com/jeffglousher/spacexai-subscription-client/tree/a7f7afb514e6a0362d927124fd01b75d25885af9) and [changelog](https://github.com/jeffglousher/spacexai-subscription-client/blob/a7f7afb514e6a0362d927124fd01b75d25885af9/CHANGELOG.md). Publication is still pending; no 0.1.1 PR, tag, release, or PyPI artifact exists. This is a new Core dependency, so there is no previous Core version to compare.
+- Validation: Core `82984cdd` passes all 50 tests locally on Linux with 100% statement coverage and no failures, errors, or skips. The installed 0.1.1 candidate matches the requirement without an override. [Current CI](https://github.com/jeffglousher/core/actions/runs/34298154970) passes both jobs, including Ruff, formatting, typing, generated requirements, unchanged setup, and native hooks. The separate hassfest report is blocked only on the pending dependency publication, with no other findings or warnings. The library passes [all three Python CI jobs](https://github.com/jeffglousher/spacexai-subscription-client/actions/runs/34290919712), with 130 tests and 100% statement coverage each.
+- Live testing: The recorded acceptance run used the verified local 0.1.1 wheel as an explicit override of the earlier Core 0.1.0 pin. All bounded checks above passed; only the disposable account was removed and the isolated service was stopped afterward. My main HA was untouched. Core's new requirement matches that candidate, but the historical live receipt is not a published-artifact check.
 - Detailed evidence and remaining gates: [first-wave review packet](https://github.com/jeffglousher/core/blob/codex/spacexai-validation/spacexai-review/FIRST_WAVE_READINESS.md).
 
 ## Checklist
@@ -74,15 +74,15 @@ The integration suite passes all 50 tests locally in a separate Linux environmen
   https://developers.home-assistant.io/docs/ai_policy
 -->
 
-- [x] I understand the code I am submitting and can explain how it works.
-- [ ] The code change is tested and works locally.
+- [ ] I understand the code I am submitting and can explain how it works.
+- [x] The code change is tested and works locally.
 - [x] Local tests pass. **Your PR cannot be merged unless tests pass**
 - [x] There is no commented out code in this PR.
-- [x] I have followed the [development checklist][dev-checklist]
+- [ ] I have followed the [development checklist][dev-checklist]
 - [ ] I have followed the [perfect PR recommendations][perfect-pr]
 - [x] The code has been formatted using Ruff (`ruff format homeassistant tests`)
 - [x] Tests have been added to verify that the new code works.
-- [x] Any generated code has been carefully reviewed for correctness and compliance with project standards.
+- [ ] Any generated code has been carefully reviewed for correctness and compliance with project standards.
 
 If user exposed functionality or configuration variables are added/changed:
 
@@ -96,7 +96,7 @@ If the code communicates with devices, web services, or third-party tools:
       Updated by running `python3 -m script.gen_requirements_all`.
 - [ ] For the updated dependencies a diff between library versions and ideally a link to the changelog/release notes is added to the PR description.
 
-The dependency-update checkbox does not apply to this new integration; the first release and its notes are linked above. Local automated tests pass, but I have cleared the works-locally checkbox because initial-only live testing found the provider rejection above. Earlier full-stack success does not establish that this initial dependency works. Review of two other PRs has not been confirmed.
+The dependency-update checkbox does not apply to this new integration. Development-checklist and perfect-PR compliance remain open until 0.1.1 is published, verified, and checked against a fresh upstream base. My prior review confirmations remain recorded, but I've left the two human-review boxes open for final review of this refreshed draft's dependency metadata, generated requirement, and library correction. The works-locally box reflects the candidate checks above, not publication readiness. Review of two other PRs has not been confirmed.
 
 <!--
   This project is very active and we have a high turnover of pull requests.
