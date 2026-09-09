@@ -20,8 +20,13 @@ The linked write-ups reflect the verified validation below; checkbox states are 
 The upstream PRs remain drafts; do not create duplicates.
 The original fork drafts below remain unchanged staging records.
 
-As of September 9, Core's latest upstream commit has no attached checks.
+As of September 9, Core's updated [upstream CI](https://github.com/home-assistant/core/actions/runs/34347659004)
+is running with no failures reported at this checkpoint. Its
+[deterministic requirements check](https://github.com/home-assistant/core/actions/runs/34347658118) passes.
 The independent fork validation below does not replace upstream CI or maintainer review.
+Copilot reviewed the updated Core commit with no new inline comments, while explicitly
+requesting final human validation of the OAuth and Assist control path. This is not
+maintainer approval.
 
 ## Python package publication
 

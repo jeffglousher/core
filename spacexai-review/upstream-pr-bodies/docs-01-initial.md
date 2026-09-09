@@ -43,8 +43,8 @@ This adds one integration page for an upcoming Home Assistant release. The prose
     Please be sure to fill out additional details, if applicable.
 -->
 
-- Link to parent pull request in the codebase: [home-assistant/core#181709](https://github.com/home-assistant/core/pull/181709).
-- Link to parent pull request in the Brands repository: [home-assistant/brands#11129](https://github.com/home-assistant/brands/pull/11129).
+- Link to parent pull request in the codebase: https://github.com/home-assistant/core/pull/181709.
+- Link to parent pull request in the Brands repository: https://github.com/home-assistant/brands/pull/11129.
 - This PR fixes or closes issue: Not applicable; this documents a new integration.
 
 ## Checklist
